@@ -2,9 +2,12 @@ package com.industrialhub.backend.oee.presentation;
 
 import com.industrialhub.backend.oee.application.dto.ImportResultDto;
 import com.industrialhub.backend.oee.application.dto.IndirectActivityDto;
+import com.industrialhub.backend.oee.application.dto.PeriodSummaryDto;
 import com.industrialhub.backend.oee.application.dto.WorkerOeeDto;
 import com.industrialhub.backend.oee.application.usecase.GetIndirectActivitiesUseCase;
 import com.industrialhub.backend.oee.application.usecase.GetOeeDashboardUseCase;
+import com.industrialhub.backend.oee.application.usecase.GetOeeSummaryUseCase;
+import com.industrialhub.backend.oee.application.usecase.GroupBy;
 import com.industrialhub.backend.oee.application.usecase.ImportDynamicsExcelUseCase;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -26,13 +29,16 @@ public class OeeController {
     private final ImportDynamicsExcelUseCase importUseCase;
     private final GetOeeDashboardUseCase dashboardUseCase;
     private final GetIndirectActivitiesUseCase indirectActivitiesUseCase;
+    private final GetOeeSummaryUseCase summaryUseCase;
 
     public OeeController(ImportDynamicsExcelUseCase importUseCase,
                          GetOeeDashboardUseCase dashboardUseCase,
-                         GetIndirectActivitiesUseCase indirectActivitiesUseCase) {
+                         GetIndirectActivitiesUseCase indirectActivitiesUseCase,
+                         GetOeeSummaryUseCase summaryUseCase) {
         this.importUseCase = importUseCase;
         this.dashboardUseCase = dashboardUseCase;
         this.indirectActivitiesUseCase = indirectActivitiesUseCase;
+        this.summaryUseCase = summaryUseCase;
     }
 
     @PostMapping("/imports")
@@ -63,6 +69,14 @@ public class OeeController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) Long workerId) {
         return ResponseEntity.ok(indirectActivitiesUseCase.execute(startDate, endDate, workerId));
+    }
+
+    @GetMapping("/summary")
+    public ResponseEntity<List<PeriodSummaryDto>> getSummary(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(defaultValue = "DAY") GroupBy groupBy) {
+        return ResponseEntity.ok(summaryUseCase.execute(startDate, endDate, groupBy));
     }
 
     private boolean isValidXlsxFile(MultipartFile file) {
