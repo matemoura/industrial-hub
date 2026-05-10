@@ -1,7 +1,9 @@
 package com.industrialhub.backend.oee.presentation;
 
 import com.industrialhub.backend.oee.application.dto.ImportResultDto;
+import com.industrialhub.backend.oee.application.dto.IndirectActivityDto;
 import com.industrialhub.backend.oee.application.dto.WorkerOeeDto;
+import com.industrialhub.backend.oee.application.usecase.GetIndirectActivitiesUseCase;
 import com.industrialhub.backend.oee.application.usecase.GetOeeDashboardUseCase;
 import com.industrialhub.backend.oee.application.usecase.ImportDynamicsExcelUseCase;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -23,11 +25,14 @@ public class OeeController {
 
     private final ImportDynamicsExcelUseCase importUseCase;
     private final GetOeeDashboardUseCase dashboardUseCase;
+    private final GetIndirectActivitiesUseCase indirectActivitiesUseCase;
 
     public OeeController(ImportDynamicsExcelUseCase importUseCase,
-                         GetOeeDashboardUseCase dashboardUseCase) {
+                         GetOeeDashboardUseCase dashboardUseCase,
+                         GetIndirectActivitiesUseCase indirectActivitiesUseCase) {
         this.importUseCase = importUseCase;
         this.dashboardUseCase = dashboardUseCase;
+        this.indirectActivitiesUseCase = indirectActivitiesUseCase;
     }
 
     @PostMapping("/imports")
@@ -50,6 +55,14 @@ public class OeeController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
             @RequestParam(required = false) Long workerId) {
         return ResponseEntity.ok(dashboardUseCase.execute(startDate, endDate, workerId));
+    }
+
+    @GetMapping("/indirect-activities")
+    public ResponseEntity<List<IndirectActivityDto>> getIndirectActivities(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long workerId) {
+        return ResponseEntity.ok(indirectActivitiesUseCase.execute(startDate, endDate, workerId));
     }
 
     private boolean isValidXlsxFile(MultipartFile file) {
