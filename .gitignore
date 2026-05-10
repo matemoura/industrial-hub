@@ -21,3 +21,9 @@ apps/frontend/.angular/
 # OS
 Thumbs.db
 .DS_Store
+
+# Claude Code / Agents (local only)
+CLAUDE.md
+docs/agents/
+docs/log-*.md
+docs/sprint-atual.md
