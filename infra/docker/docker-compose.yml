@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: industrial-hub-db
+    environment:
+      POSTGRES_DB: industrial_hub
+      POSTGRES_USER: hub_user
+      POSTGRES_PASSWORD: hub_pass
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
