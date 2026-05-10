@@ -1,12 +1,17 @@
 package com.industrialhub.backend.oee.presentation;
 
 import com.industrialhub.backend.oee.application.dto.ImportResultDto;
+import com.industrialhub.backend.oee.application.dto.WorkerOeeDto;
+import com.industrialhub.backend.oee.application.usecase.GetOeeDashboardUseCase;
 import com.industrialhub.backend.oee.application.usecase.ImportDynamicsExcelUseCase;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -17,9 +22,12 @@ public class OeeController {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 
     private final ImportDynamicsExcelUseCase importUseCase;
+    private final GetOeeDashboardUseCase dashboardUseCase;
 
-    public OeeController(ImportDynamicsExcelUseCase importUseCase) {
+    public OeeController(ImportDynamicsExcelUseCase importUseCase,
+                         GetOeeDashboardUseCase dashboardUseCase) {
         this.importUseCase = importUseCase;
+        this.dashboardUseCase = dashboardUseCase;
     }
 
     @PostMapping("/imports")
@@ -34,6 +42,14 @@ public class OeeController {
         }
         ImportResultDto result = importUseCase.execute(file);
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
+
+    @GetMapping("/dashboard")
+    public ResponseEntity<List<WorkerOeeDto>> getDashboard(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
+            @RequestParam(required = false) Long workerId) {
+        return ResponseEntity.ok(dashboardUseCase.execute(startDate, endDate, workerId));
     }
 
     private boolean isValidXlsxFile(MultipartFile file) {
