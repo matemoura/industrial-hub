@@ -1,0 +1,135 @@
+.dashboard {
+  padding: 2rem;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  max-width: 1200px;
+  margin: 0 auto;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    color: #111827;
+  }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  margin-bottom: 1.5rem;
+
+  label {
+    display: flex;
+    flex-direction: column;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #374151;
+    gap: 0.3rem;
+  }
+
+  input {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #111827;
+
+    &:focus {
+      outline: 2px solid #2563eb;
+      outline-offset: 1px;
+    }
+  }
+
+  button {
+    padding: 0.45rem 1.25rem;
+    background: #2563eb;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.15s;
+
+    &:hover:not(:disabled) {
+      background: #1d4ed8;
+    }
+
+    &:disabled {
+      background: #93c5fd;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.worker-filter {
+  margin-bottom: 1rem;
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #374151;
+  }
+
+  select {
+    padding: 0.35rem 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #111827;
+  }
+}
+
+.results-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th {
+    background: #f8fafc;
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+    color: #374151;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.55rem 0.9rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1f2937;
+  }
+
+  tr.no-punch td {
+    color: #9ca3af;
+    background: #fafafa;
+  }
+
+  .null-availability {
+    font-style: italic;
+  }
+
+  .no-punch-label {
+    font-size: 0.78rem;
+    background: #f3f4f6;
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+  }
+}
+
+.error {
+  color: #dc2626;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.empty {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 1rem;
+}

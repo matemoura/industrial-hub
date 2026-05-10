@@ -1,0 +1,96 @@
+<div class="dashboard">
+  <h2>Worker Efficiency Dashboard</h2>
+
+  <form class="filters" (ngSubmit)="search()">
+    <label>
+      Start date
+      <input
+        type="date"
+        [ngModel]="startDate()"
+        (ngModelChange)="startDate.set($event)"
+        name="startDate"
+        required
+      />
+    </label>
+    <label>
+      End date
+      <input
+        type="date"
+        [ngModel]="endDate()"
+        (ngModelChange)="endDate.set($event)"
+        name="endDate"
+        required
+      />
+    </label>
+    <label>
+      Worker ID
+      <input
+        type="number"
+        [ngModel]="workerIdInput()"
+        (ngModelChange)="workerIdInput.set($event)"
+        name="workerId"
+        placeholder="All workers"
+      />
+    </label>
+    <button type="submit" [disabled]="loading()">
+      {{ loading() ? 'Loading…' : 'Search' }}
+    </button>
+  </form>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (rows().length > 0) {
+    <div class="worker-filter">
+      <label>
+        Filter by worker:
+        <select
+          [ngModel]="selectedWorkerId()?.toString() ?? ''"
+          (ngModelChange)="selectedWorkerId.set($event ? +$event : null)"
+          name="workerFilter"
+        >
+          <option value="">All</option>
+          @for (w of workers(); track w.id) {
+            <option [value]="w.id">{{ w.name }} ({{ w.id }})</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Worker</th>
+          <th>Date</th>
+          <th>Productive (h)</th>
+          <th>Indirect (h)</th>
+          <th>Shift (h)</th>
+          <th>Availability</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of filteredRows(); track row.workerId + row.date) {
+          <tr [class.no-punch]="row.availability === null">
+            <td>{{ row.workerName }}</td>
+            <td>{{ row.date }}</td>
+            <td>{{ row.productiveHours ?? '—' }}</td>
+            <td>{{ row.indirectHours ?? '—' }}</td>
+            <td>{{ row.shiftDuration ?? '—' }}</td>
+            <td [class.null-availability]="row.availability === null">
+              @if (row.availability !== null) {
+                {{ formatAvailability(row.availability) }}
+              } @else {
+                <span class="no-punch-label">No punch data</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (!loading() && rows().length === 0 && startDate() && endDate()) {
+    <p class="empty">No data found for the selected period.</p>
+  }
+</div>
