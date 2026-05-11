@@ -36,4 +36,35 @@ describe('OeeService', () => {
     expect(req.request.params.get('workerId')).toBe('1001');
     req.flush([]);
   });
+
+  it('getIndirectActivities sends correct params', () => {
+    service.getIndirectActivities('2026-04-01', '2026-04-30').subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/indirect-activities'));
+    expect(req.request.params.get('startDate')).toBe('2026-04-01');
+    expect(req.request.params.get('endDate')).toBe('2026-04-30');
+    expect(req.request.params.has('workerId')).toBe(false);
+    req.flush([]);
+  });
+
+  it('getIndirectActivities includes workerId when provided', () => {
+    service.getIndirectActivities('2026-04-01', '2026-04-30', 2001).subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/indirect-activities'));
+    expect(req.request.params.get('workerId')).toBe('2001');
+    req.flush([]);
+  });
+
+  it('getSummary sends correct params with default groupBy DAY', () => {
+    service.getSummary('2026-04-01', '2026-04-30').subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/summary'));
+    expect(req.request.params.get('startDate')).toBe('2026-04-01');
+    expect(req.request.params.get('groupBy')).toBe('DAY');
+    req.flush([]);
+  });
+
+  it('getSummary sends WEEK groupBy when specified', () => {
+    service.getSummary('2026-04-01', '2026-04-30', 'WEEK').subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/summary'));
+    expect(req.request.params.get('groupBy')).toBe('WEEK');
+    req.flush([]);
+  });
 });

@@ -1,0 +1,54 @@
+<div class="page">
+  <h2>Period Summary</h2>
+
+  <form class="filters" (ngSubmit)="search()">
+    <label>
+      Start date
+      <input type="date" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" name="startDate" required />
+    </label>
+    <label>
+      End date
+      <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" name="endDate" required />
+    </label>
+    <label>
+      Group by
+      <select [ngModel]="groupBy()" (ngModelChange)="groupBy.set($event)" name="groupBy">
+        @for (opt of groupByOptions; track opt) {
+          <option [value]="opt">{{ opt }}</option>
+        }
+      </select>
+    </label>
+    <button type="submit" [disabled]="loading()">{{ loading() ? 'Loading…' : 'Search' }}</button>
+  </form>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (rows().length > 0) {
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Period</th>
+          <th>Avg Availability</th>
+          <th>Worker Count</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.period) {
+          <tr>
+            <td>{{ row.period }}</td>
+            <td [class.null-value]="row.avgAvailability === null">
+              {{ formatAvailability(row.avgAvailability) }}
+            </td>
+            <td>{{ row.workerCount }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (!loading() && rows().length === 0 && startDate() && endDate()) {
+    <p class="empty">No data found for the selected period.</p>
+  }
+</div>

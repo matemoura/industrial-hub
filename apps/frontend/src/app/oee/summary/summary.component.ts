@@ -1,0 +1,38 @@
+import { Component, inject, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { GroupBy, OeeService, PeriodSummaryDto } from '../oee.service';
+
+@Component({
+  selector: 'app-summary',
+  standalone: true,
+  imports: [FormsModule],
+  templateUrl: './summary.component.html',
+  styleUrl: './summary.component.scss',
+})
+export class SummaryComponent {
+  private readonly oeeService = inject(OeeService);
+
+  startDate = signal('');
+  endDate = signal('');
+  groupBy = signal<GroupBy>('DAY');
+  rows = signal<PeriodSummaryDto[]>([]);
+  loading = signal(false);
+  error = signal<string | null>(null);
+
+  readonly groupByOptions: GroupBy[] = ['DAY', 'WEEK', 'MONTH'];
+
+  formatAvailability(value: number | null): string {
+    if (value == null) return '—';
+    return (value * 100).toFixed(2) + '%';
+  }
+
+  search(): void {
+    if (!this.startDate() || !this.endDate()) return;
+    this.loading.set(true);
+    this.error.set(null);
+    this.oeeService.getSummary(this.startDate(), this.endDate(), this.groupBy()).subscribe({
+      next: (data) => { this.rows.set(data); this.loading.set(false); },
+      error: () => { this.error.set('Failed to load data. Check the date range and try again.'); this.loading.set(false); },
+    });
+  }
+}

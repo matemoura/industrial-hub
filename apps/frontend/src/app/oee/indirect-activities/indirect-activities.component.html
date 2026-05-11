@@ -1,0 +1,50 @@
+<div class="page">
+  <h2>Indirect Activities</h2>
+
+  <form class="filters" (ngSubmit)="search()">
+    <label>
+      Start date
+      <input type="date" [ngModel]="startDate()" (ngModelChange)="startDate.set($event)" name="startDate" required />
+    </label>
+    <label>
+      End date
+      <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" name="endDate" required />
+    </label>
+    <label>
+      Worker ID
+      <input type="number" [ngModel]="workerIdInput()" (ngModelChange)="workerIdInput.set($event)" name="workerId" placeholder="All workers" />
+    </label>
+    <button type="submit" [disabled]="loading()">{{ loading() ? 'Loading…' : 'Search' }}</button>
+  </form>
+
+  @if (error()) {
+    <p class="error">{{ error() }}</p>
+  }
+
+  @if (rows().length > 0) {
+    <table class="results-table">
+      <thead>
+        <tr>
+          <th>Description</th>
+          <th>Occurrences</th>
+          <th>Total Hours</th>
+          <th>% of Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.description) {
+          <tr>
+            <td>{{ row.description ?? '—' }}</td>
+            <td>{{ row.occurrences }}</td>
+            <td>{{ row.totalHours }}</td>
+            <td>{{ formatPercent(row.percentOfTotal) }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  @if (!loading() && rows().length === 0 && startDate() && endDate()) {
+    <p class="empty">No indirect activities found for the selected period.</p>
+  }
+</div>
