@@ -67,4 +67,50 @@ describe('OeeService', () => {
     expect(req.request.params.get('groupBy')).toBe('WEEK');
     req.flush([]);
   });
+
+  it('getByProcess sends startDate and endDate params', () => {
+    service.getByProcess('2026-04-01', '2026-04-30').subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/by-process'));
+    expect(req.request.params.get('startDate')).toBe('2026-04-01');
+    expect(req.request.params.get('endDate')).toBe('2026-04-30');
+    expect(req.request.params.has('workerId')).toBe(false);
+    req.flush([]);
+  });
+
+  it('getByProcess includes workerId when provided', () => {
+    service.getByProcess('2026-04-01', '2026-04-30', 1001).subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/by-process'));
+    expect(req.request.params.get('workerId')).toBe('1001');
+    req.flush([]);
+  });
+
+  it('getWorkers calls /api/v1/workers', () => {
+    service.getWorkers().subscribe();
+    const req = httpMock.expectOne('/api/v1/workers');
+    expect(req.request.method).toBe('GET');
+    req.flush([]);
+  });
+
+  it('exportDashboard sends correct params and returns blob', () => {
+    service.exportDashboard('2026-04-01', '2026-04-30').subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/dashboard/export'));
+    expect(req.request.params.get('startDate')).toBe('2026-04-01');
+    expect(req.request.params.get('endDate')).toBe('2026-04-30');
+    expect(req.request.params.has('workerId')).toBe(false);
+    req.flush(new Blob());
+  });
+
+  it('exportDashboard includes workerId when provided', () => {
+    service.exportDashboard('2026-04-01', '2026-04-30', 1001).subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/dashboard/export'));
+    expect(req.request.params.get('workerId')).toBe('1001');
+    req.flush(new Blob());
+  });
+
+  it('exportSummary sends correct params with groupBy', () => {
+    service.exportSummary('2026-04-01', '2026-04-30', 'WEEK').subscribe();
+    const req = httpMock.expectOne((r) => r.url.includes('/api/v1/oee/summary/export'));
+    expect(req.request.params.get('groupBy')).toBe('WEEK');
+    req.flush(new Blob());
+  });
 });

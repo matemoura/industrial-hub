@@ -14,6 +14,13 @@ import java.util.UUID;
 
 public interface TimeRecordRepository extends JpaRepository<TimeRecord, UUID> {
 
+    @Query("""
+            SELECT DISTINCT t.workerId AS workerId, t.workerName AS workerName
+            FROM TimeRecord t
+            ORDER BY t.workerName ASC
+            """)
+    List<WorkerProjection> findDistinctWorkers();
+
     @Modifying
     @Query("DELETE FROM TimeRecord t WHERE t.batch = :batch")
     void deleteAllByBatch(@Param("batch") ImportBatch batch);
@@ -31,6 +38,24 @@ public interface TimeRecordRepository extends JpaRepository<TimeRecord, UUID> {
             @Param("start") LocalDate start,
             @Param("end") LocalDate end,
             @Param("workerId") Long workerId);
+
+    @Query("""
+            SELECT t.description AS description,
+                   SUM(t.hours) AS totalHours,
+                   COUNT(DISTINCT t.workerId) AS workerCount,
+                   COUNT(t) AS occurrences
+            FROM TimeRecord t
+            WHERE t.profileDate BETWEEN :start AND :end
+            AND t.recordType = :type
+            AND (:workerId IS NULL OR t.workerId = :workerId)
+            GROUP BY t.description
+            ORDER BY SUM(t.hours) DESC
+            """)
+    List<ProcessSummary> findProcessSummary(
+            @Param("start") LocalDate start,
+            @Param("end") LocalDate end,
+            @Param("workerId") Long workerId,
+            @Param("type") RecordType type);
 
     @Query("""
             SELECT t.description as description,

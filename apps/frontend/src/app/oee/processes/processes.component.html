@@ -1,5 +1,5 @@
 <div class="page">
-  <h2>Period Summary</h2>
+  <h2>Process Efficiency Breakdown</h2>
 
   <form class="filters" (ngSubmit)="search()">
     <label>
@@ -11,10 +11,15 @@
       <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" name="endDate" required />
     </label>
     <label>
-      Group by
-      <select [ngModel]="groupBy()" (ngModelChange)="groupBy.set($event)" name="groupBy">
-        @for (opt of groupByOptions; track opt) {
-          <option [value]="opt">{{ opt }}</option>
+      Worker
+      <select
+        [ngModel]="searchWorkerId()"
+        (ngModelChange)="searchWorkerId.set($event ? +$event : null)"
+        name="workerId"
+      >
+        <option [value]="null">All workers</option>
+        @for (w of allWorkers(); track w.workerId) {
+          <option [value]="w.workerId">{{ w.workerName }} ({{ w.workerId }})</option>
         }
       </select>
     </label>
@@ -26,26 +31,22 @@
   }
 
   @if (rows().length > 0) {
-    <div class="table-actions">
-      <button type="button" class="btn-export" (click)="exportCsv()">Export CSV</button>
-    </div>
-
     <table class="results-table">
       <thead>
         <tr>
-          <th>Period</th>
-          <th>Avg Availability</th>
-          <th>Worker Count</th>
+          <th>Process</th>
+          <th>Total Hours</th>
+          <th>Workers</th>
+          <th>Occurrences</th>
         </tr>
       </thead>
       <tbody>
-        @for (row of rows(); track row.period) {
+        @for (row of rows(); track row.description) {
           <tr>
-            <td>{{ row.period }}</td>
-            <td [class.null-value]="row.avgAvailability === null">
-              {{ formatAvailability(row.avgAvailability) }}
-            </td>
+            <td>{{ row.description ?? '—' }}</td>
+            <td>{{ formatHours(row.totalHours) }}</td>
             <td>{{ row.workerCount }}</td>
+            <td>{{ row.occurrences }}</td>
           </tr>
         }
       </tbody>
@@ -53,6 +54,6 @@
   }
 
   @if (!loading() && rows().length === 0 && startDate() && endDate()) {
-    <p class="empty">No data found for the selected period.</p>
+    <p class="empty">No process data found for the selected period.</p>
   }
 </div>

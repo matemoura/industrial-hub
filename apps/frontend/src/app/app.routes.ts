@@ -18,5 +18,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./oee/summary/summary.component').then((m) => m.SummaryComponent),
   },
+  {
+    path: 'processes',
+    loadComponent: () =>
+      import('./oee/processes/processes.component').then((m) => m.ProcessesComponent),
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];

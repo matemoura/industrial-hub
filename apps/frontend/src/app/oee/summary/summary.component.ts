@@ -26,6 +26,18 @@ export class SummaryComponent {
     return (value * 100).toFixed(2) + '%';
   }
 
+  exportCsv(): void {
+    if (!this.startDate() || !this.endDate()) return;
+    this.oeeService.exportSummary(this.startDate(), this.endDate(), this.groupBy()).subscribe((blob) => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `oee-summary-${this.startDate()}-${this.endDate()}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  }
+
   search(): void {
     if (!this.startDate() || !this.endDate()) return;
     this.loading.set(true);

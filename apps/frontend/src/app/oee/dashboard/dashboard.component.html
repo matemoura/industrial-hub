@@ -23,14 +23,17 @@
       />
     </label>
     <label>
-      Worker ID
-      <input
-        type="number"
-        [ngModel]="workerIdInput()"
-        (ngModelChange)="workerIdInput.set($event)"
+      Worker
+      <select
+        [ngModel]="searchWorkerId()"
+        (ngModelChange)="searchWorkerId.set($event ? +$event : null)"
         name="workerId"
-        placeholder="All workers"
-      />
+      >
+        <option [value]="null">All workers</option>
+        @for (w of allWorkers(); track w.workerId) {
+          <option [value]="w.workerId">{{ w.workerName }} ({{ w.workerId }})</option>
+        }
+      </select>
     </label>
     <button type="submit" [disabled]="loading()">
       {{ loading() ? 'Loading…' : 'Search' }}
@@ -42,6 +45,10 @@
   }
 
   @if (rows().length > 0) {
+    <div class="table-actions">
+      <button type="button" class="btn-export" (click)="exportCsv()">Export CSV</button>
+    </div>
+
     <div class="worker-filter">
       <label>
         Filter by worker:

@@ -1,8 +1,8 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
+import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
 import { DashboardComponent } from './dashboard.component';
-import { WorkerOeeDto } from '../oee.service';
+import { WorkerDto, WorkerOeeDto } from '../oee.service';
 
 const makeRow = (workerId: number, workerName: string, availability: number | null): WorkerOeeDto => ({
   workerId,
@@ -69,5 +69,34 @@ describe('DashboardComponent', () => {
     comp.search();
     expect(comp.loading()).toBe(false);
     expect(comp.rows().length).toBe(0);
+  });
+
+  it('ngOnInit loads workers from API into allWorkers', () => {
+    const fixture = TestBed.createComponent(DashboardComponent);
+    const httpTesting = TestBed.inject(HttpTestingController);
+
+    fixture.detectChanges(); // triggers ngOnInit
+
+    const workers: WorkerDto[] = [
+      { workerId: 1001, workerName: 'Alice' },
+      { workerId: 1002, workerName: 'Bob' },
+    ];
+    httpTesting.expectOne('/api/v1/workers').flush(workers);
+
+    expect(fixture.componentInstance.allWorkers().length).toBe(2);
+    expect(fixture.componentInstance.allWorkers()[0].workerName).toBe('Alice');
+
+    httpTesting.verify();
+  });
+
+  it('searchWorkerId starts as null (All workers default)', () => {
+    const { componentInstance: comp } = TestBed.createComponent(DashboardComponent);
+    expect(comp.searchWorkerId()).toBeNull();
+  });
+
+  it('exportCsv does nothing when dates are empty', () => {
+    const { componentInstance: comp } = TestBed.createComponent(DashboardComponent);
+    // should not throw — just guards and returns
+    expect(() => comp.exportCsv()).not.toThrow();
   });
 });

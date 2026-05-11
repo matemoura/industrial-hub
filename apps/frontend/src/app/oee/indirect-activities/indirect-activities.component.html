@@ -11,8 +11,17 @@
       <input type="date" [ngModel]="endDate()" (ngModelChange)="endDate.set($event)" name="endDate" required />
     </label>
     <label>
-      Worker ID
-      <input type="number" [ngModel]="workerIdInput()" (ngModelChange)="workerIdInput.set($event)" name="workerId" placeholder="All workers" />
+      Worker
+      <select
+        [ngModel]="searchWorkerId()"
+        (ngModelChange)="searchWorkerId.set($event ? +$event : null)"
+        name="workerId"
+      >
+        <option [value]="null">All workers</option>
+        @for (w of allWorkers(); track w.workerId) {
+          <option [value]="w.workerId">{{ w.workerName }} ({{ w.workerId }})</option>
+        }
+      </select>
     </label>
     <button type="submit" [disabled]="loading()">{{ loading() ? 'Loading…' : 'Search' }}</button>
   </form>

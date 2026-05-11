@@ -54,4 +54,9 @@ describe('SummaryComponent', () => {
     expect(comp.rows().length).toBe(2);
     expect(comp.rows()[1].avgAvailability).toBeNull();
   });
+
+  it('exportCsv does nothing when dates are empty', () => {
+    const { componentInstance: comp } = TestBed.createComponent(SummaryComponent);
+    expect(() => comp.exportCsv()).not.toThrow();
+  });
 });
