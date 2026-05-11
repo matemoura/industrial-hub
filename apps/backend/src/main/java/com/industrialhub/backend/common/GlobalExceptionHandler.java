@@ -2,6 +2,7 @@ package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.oee.application.usecase.DuplicateImportException;
 import com.industrialhub.backend.oee.application.usecase.InvalidExcelFormatException;
+import com.industrialhub.backend.oee.application.validation.InvalidDateRangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -30,6 +31,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidExcelFormatException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidFormat(InvalidExcelFormatException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InvalidDateRangeException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidDateRange(InvalidDateRangeException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));

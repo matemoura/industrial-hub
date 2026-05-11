@@ -1,6 +1,7 @@
 package com.industrialhub.backend.oee.application.usecase;
 
 import com.industrialhub.backend.oee.application.dto.IndirectActivityDto;
+import com.industrialhub.backend.oee.application.validation.DateRangeValidator;
 import com.industrialhub.backend.oee.domain.RecordType;
 import com.industrialhub.backend.oee.infrastructure.IndirectActivitySummary;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
@@ -16,13 +17,17 @@ import java.util.List;
 public class GetIndirectActivitiesUseCase {
 
     private final TimeRecordRepository timeRecordRepository;
+    private final DateRangeValidator dateRangeValidator;
 
-    public GetIndirectActivitiesUseCase(TimeRecordRepository timeRecordRepository) {
+    public GetIndirectActivitiesUseCase(TimeRecordRepository timeRecordRepository,
+                                         DateRangeValidator dateRangeValidator) {
         this.timeRecordRepository = timeRecordRepository;
+        this.dateRangeValidator = dateRangeValidator;
     }
 
     @Transactional(readOnly = true)
     public List<IndirectActivityDto> execute(LocalDate startDate, LocalDate endDate, Long workerId) {
+        dateRangeValidator.validate(startDate, endDate);
         List<IndirectActivitySummary> summaries = timeRecordRepository
                 .findActivitySummaryByType(startDate, endDate, workerId, RecordType.ATIVIDADE_INDIRETA);
 

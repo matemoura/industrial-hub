@@ -35,7 +35,7 @@ public class ImportDynamicsExcelUseCase {
     }
 
     @Transactional
-    public ImportResultDto execute(MultipartFile file) {
+    public ImportResultDto execute(MultipartFile file, boolean overwrite) {
         String rawFileName = file.getOriginalFilename();
         String fileName = rawFileName != null ? rawFileName.replaceAll("[\r\n\t]", "_") : "unknown";
         log.info("Iniciando importação do arquivo: {}", fileName);
@@ -47,10 +47,18 @@ public class ImportDynamicsExcelUseCase {
             throw new InvalidExcelFormatException("Erro ao ler o arquivo: " + e.getMessage());
         }
 
-        // 409 se período já importado
-        batchRepository.findByPeriodDate(parsed.periodDate()).ifPresent(existing -> {
-            throw new DuplicateImportException(existing.getId(), existing.getPeriodDate());
-        });
+        boolean replaced = false;
+        var existing = batchRepository.findByPeriodDate(parsed.periodDate());
+        if (existing.isPresent()) {
+            if (!overwrite) {
+                throw new DuplicateImportException(existing.get().getId(), existing.get().getPeriodDate());
+            }
+            timeRecordRepository.deleteAllByBatch(existing.get());
+            batchRepository.delete(existing.get());
+            batchRepository.flush();
+            replaced = true;
+            log.info("Overwrite: registros do período {} removidos", parsed.periodDate());
+        }
 
         ImportBatch batch = batchRepository.save(ImportBatch.builder()
                 .fileName(fileName)
@@ -88,7 +96,8 @@ public class ImportDynamicsExcelUseCase {
                 batch.getWorkerCount(),
                 records.size(),
                 parsed.skippedCount(),
-                parsed.errors()
+                parsed.errors(),
+                replaced
         );
     }
 }

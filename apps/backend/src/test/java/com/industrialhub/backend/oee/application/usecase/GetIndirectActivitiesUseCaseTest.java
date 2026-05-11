@@ -3,6 +3,7 @@ package com.industrialhub.backend.oee.application.usecase;
 import com.industrialhub.backend.oee.application.dto.IndirectActivityDto;
 import com.industrialhub.backend.oee.domain.RecordType;
 import com.industrialhub.backend.oee.infrastructure.IndirectActivitySummary;
+import com.industrialhub.backend.oee.application.validation.DateRangeValidator;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +23,9 @@ class GetIndirectActivitiesUseCaseTest {
 
     @Mock
     private TimeRecordRepository timeRecordRepository;
+
+    @Mock
+    private DateRangeValidator dateRangeValidator;
 
     @InjectMocks
     private GetIndirectActivitiesUseCase useCase;

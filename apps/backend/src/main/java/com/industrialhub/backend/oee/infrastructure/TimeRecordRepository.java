@@ -1,8 +1,10 @@
 package com.industrialhub.backend.oee.infrastructure;
 
+import com.industrialhub.backend.oee.domain.ImportBatch;
 import com.industrialhub.backend.oee.domain.RecordType;
 import com.industrialhub.backend.oee.domain.TimeRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -11,6 +13,10 @@ import java.util.List;
 import java.util.UUID;
 
 public interface TimeRecordRepository extends JpaRepository<TimeRecord, UUID> {
+
+    @Modifying
+    @Query("DELETE FROM TimeRecord t WHERE t.batch = :batch")
+    void deleteAllByBatch(@Param("batch") ImportBatch batch);
 
     List<TimeRecord> findByProfileDateBetweenOrderByWorkerIdAscProfileDateAsc(
             LocalDate startDate, LocalDate endDate);

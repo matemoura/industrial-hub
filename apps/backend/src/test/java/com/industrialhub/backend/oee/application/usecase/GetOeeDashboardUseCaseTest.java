@@ -4,6 +4,7 @@ import com.industrialhub.backend.oee.application.dto.WorkerOeeDto;
 import com.industrialhub.backend.oee.domain.ImportBatch;
 import com.industrialhub.backend.oee.domain.RecordType;
 import com.industrialhub.backend.oee.domain.TimeRecord;
+import com.industrialhub.backend.oee.application.validation.DateRangeValidator;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -26,6 +27,9 @@ class GetOeeDashboardUseCaseTest {
 
     @Mock
     private TimeRecordRepository timeRecordRepository;
+
+    @Mock
+    private DateRangeValidator dateRangeValidator;
 
     @InjectMocks
     private GetOeeDashboardUseCase useCase;

@@ -1,6 +1,7 @@
 package com.industrialhub.backend.oee.application.usecase;
 
 import com.industrialhub.backend.oee.application.dto.PeriodSummaryDto;
+import com.industrialhub.backend.oee.application.validation.DateRangeValidator;
 import com.industrialhub.backend.oee.domain.RecordType;
 import com.industrialhub.backend.oee.domain.TimeRecord;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
@@ -20,13 +21,17 @@ import java.util.stream.Collectors;
 public class GetOeeSummaryUseCase {
 
     private final TimeRecordRepository timeRecordRepository;
+    private final DateRangeValidator dateRangeValidator;
 
-    public GetOeeSummaryUseCase(TimeRecordRepository timeRecordRepository) {
+    public GetOeeSummaryUseCase(TimeRecordRepository timeRecordRepository,
+                                 DateRangeValidator dateRangeValidator) {
         this.timeRecordRepository = timeRecordRepository;
+        this.dateRangeValidator = dateRangeValidator;
     }
 
     @Transactional(readOnly = true)
     public List<PeriodSummaryDto> execute(LocalDate startDate, LocalDate endDate, GroupBy groupBy) {
+        dateRangeValidator.validate(startDate, endDate);
         List<TimeRecord> records = timeRecordRepository
                 .findByPeriodAndOptionalWorker(startDate, endDate, null);
 

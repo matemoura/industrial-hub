@@ -10,5 +10,6 @@ public record ImportResultDto(
         int workerCount,
         int recordsImported,
         int recordsSkipped,
-        List<String> errors
+        List<String> errors,
+        boolean replaced
 ) {}
