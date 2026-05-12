@@ -1,5 +1,6 @@
 package com.industrialhub.backend.common;
 
+import com.industrialhub.backend.common.auth.application.usecase.InvalidCredentialsException;
 import com.industrialhub.backend.oee.application.usecase.DuplicateImportException;
 import com.industrialhub.backend.oee.application.usecase.InvalidExcelFormatException;
 import com.industrialhub.backend.oee.application.validation.InvalidDateRangeException;
@@ -17,6 +18,14 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    @ExceptionHandler(InvalidCredentialsException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidCredentials(InvalidCredentialsException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
 
     @ExceptionHandler(DuplicateImportException.class)
     public ResponseEntity<Map<String, Object>> handleDuplicateImport(DuplicateImportException ex) {
