@@ -1,7 +1,25 @@
-<nav class="main-nav">
-  <span class="brand">Industrial Hub</span>
-  <a routerLink="/dashboard" routerLinkActive="active">OEE Dashboard</a>
-  <a routerLink="/indirect-activities" routerLinkActive="active">Indirect Activities</a>
-  <a routerLink="/processes" routerLinkActive="active">Process Efficiency</a>
-  <a routerLink="/summary" routerLinkActive="active">Period Summary</a>
+<nav class="main-nav" role="navigation" aria-label="Navegação principal">
+  <div class="nav-brand">
+    <span class="brand-mark" aria-hidden="true">MSB</span>
+    <span class="brand-name">Industrial Hub</span>
+  </div>
+
+  <div class="nav-links">
+    <a routerLink="/dashboard" routerLinkActive="active">OEE Dashboard</a>
+    <a routerLink="/indirect-activities" routerLinkActive="active">Atividades Indiretas</a>
+    <a routerLink="/processes" routerLinkActive="active">Processos</a>
+    <a routerLink="/summary" routerLinkActive="active">Resumo</a>
+  </div>
+
+  <div class="nav-user">
+    @if (role()) {
+      <span class="role-badge" aria-label="Perfil: {{ role() }}">{{ role() }}</span>
+    }
+    <button class="logout-btn" (click)="logout()" type="button" aria-label="Sair do sistema">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+        <path d="M5 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3M9 10l3-3-3-3M13 7H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span>Sair</span>
+    </button>
+  </div>
 </nav>
