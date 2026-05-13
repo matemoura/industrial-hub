@@ -6,6 +6,7 @@ import com.industrialhub.backend.qms.domain.NcType;
 import com.industrialhub.backend.qms.domain.NonConformance;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public record NcResponse(
@@ -18,7 +19,8 @@ public record NcResponse(
     String reportedBy,
     LocalDateTime reportedAt,
     LocalDateTime closedAt,
-    String closedBy
+    String closedBy,
+    List<ActionResponse> actions
 ) {
     public static NcResponse from(NonConformance nc) {
         return new NcResponse(
@@ -31,7 +33,8 @@ public record NcResponse(
             nc.getReportedBy(),
             nc.getReportedAt(),
             nc.getClosedAt(),
-            nc.getClosedBy()
+            nc.getClosedBy(),
+            nc.getActions().stream().map(ActionResponse::from).toList()
         );
     }
 }

@@ -4,6 +4,8 @@ import com.industrialhub.backend.common.auth.application.usecase.InvalidCredenti
 import com.industrialhub.backend.oee.application.usecase.DuplicateImportException;
 import com.industrialhub.backend.oee.application.usecase.InvalidExcelFormatException;
 import com.industrialhub.backend.oee.application.validation.InvalidDateRangeException;
+import com.industrialhub.backend.qms.domain.ActionNotAllowedException;
+import com.industrialhub.backend.qms.domain.ActionNotFoundException;
 import com.industrialhub.backend.qms.domain.InvalidNcTransitionException;
 import com.industrialhub.backend.qms.domain.NcNotFoundException;
 import org.slf4j.Logger;
@@ -84,6 +86,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
                 "message", ex.getMessage(),
                 "allowedNext", ex.getAllowedNext(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(ActionNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleActionNotFound(ActionNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(ActionNotAllowedException.class)
+    public ResponseEntity<Map<String, Object>> handleActionNotAllowed(ActionNotAllowedException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));
     }

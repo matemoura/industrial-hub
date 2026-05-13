@@ -1,15 +1,21 @@
 package com.industrialhub.backend.qms.presentation;
 
+import com.industrialhub.backend.qms.application.dto.ActionResponse;
+import com.industrialhub.backend.qms.application.dto.CreateActionRequest;
 import com.industrialhub.backend.qms.application.dto.CreateNcRequest;
 import com.industrialhub.backend.qms.application.dto.NcKpiSummary;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.application.dto.NcSummaryItem;
 import com.industrialhub.backend.qms.application.dto.TransitionStatusRequest;
+import com.industrialhub.backend.qms.application.usecase.CompleteCorrectiveActionUseCase;
+import com.industrialhub.backend.qms.application.usecase.CreateCorrectiveActionUseCase;
 import com.industrialhub.backend.qms.application.usecase.CreateNcUseCase;
+import com.industrialhub.backend.qms.application.usecase.DeleteCorrectiveActionUseCase;
 import com.industrialhub.backend.qms.application.usecase.ExportNcCsvUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcDetailUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcKpiSummaryUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcListUseCase;
+import com.industrialhub.backend.qms.application.usecase.ListCorrectiveActionsUseCase;
 import com.industrialhub.backend.qms.application.usecase.TransitionNcStatusUseCase;
 import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
@@ -26,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.io.IOException;
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -38,19 +45,31 @@ public class QmsController {
     private final GetNcDetailUseCase getNcDetail;
     private final GetNcKpiSummaryUseCase getKpiSummary;
     private final ExportNcCsvUseCase exportCsv;
+    private final CreateCorrectiveActionUseCase createAction;
+    private final ListCorrectiveActionsUseCase listActions;
+    private final CompleteCorrectiveActionUseCase completeAction;
+    private final DeleteCorrectiveActionUseCase deleteAction;
 
     public QmsController(CreateNcUseCase createNc,
                          TransitionNcStatusUseCase transitionStatus,
                          GetNcListUseCase getNcList,
                          GetNcDetailUseCase getNcDetail,
                          GetNcKpiSummaryUseCase getKpiSummary,
-                         ExportNcCsvUseCase exportCsv) {
+                         ExportNcCsvUseCase exportCsv,
+                         CreateCorrectiveActionUseCase createAction,
+                         ListCorrectiveActionsUseCase listActions,
+                         CompleteCorrectiveActionUseCase completeAction,
+                         DeleteCorrectiveActionUseCase deleteAction) {
         this.createNc = createNc;
         this.transitionStatus = transitionStatus;
         this.getNcList = getNcList;
         this.getNcDetail = getNcDetail;
         this.getKpiSummary = getKpiSummary;
         this.exportCsv = exportCsv;
+        this.createAction = createAction;
+        this.listActions = listActions;
+        this.completeAction = completeAction;
+        this.deleteAction = deleteAction;
     }
 
     @PostMapping
@@ -96,5 +115,34 @@ public class QmsController {
                                   @Valid @RequestBody TransitionStatusRequest request,
                                   Principal principal) {
         return transitionStatus.execute(id, request.status(), principal.getName());
+    }
+
+    @PostMapping("/{id}/actions")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public ActionResponse createAction(@PathVariable UUID id,
+                                       @Valid @RequestBody CreateActionRequest request) {
+        return createAction.execute(id, request);
+    }
+
+    @GetMapping("/{id}/actions")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public List<ActionResponse> listActions(@PathVariable UUID id) {
+        return listActions.execute(id);
+    }
+
+    @PutMapping("/{id}/actions/{aid}/complete")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public ActionResponse completeAction(@PathVariable UUID id,
+                                          @PathVariable UUID aid,
+                                          Principal principal) {
+        return completeAction.execute(id, aid, principal.getName());
+    }
+
+    @DeleteMapping("/{id}/actions/{aid}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public void deleteAction(@PathVariable UUID id, @PathVariable UUID aid) {
+        deleteAction.execute(id, aid);
     }
 }
