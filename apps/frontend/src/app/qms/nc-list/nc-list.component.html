@@ -1,0 +1,135 @@
+<div class="nc-list-page">
+
+  @if (toast()) {
+    <div class="toast toast--success">{{ toast() }}</div>
+  }
+
+  <div class="page-header">
+    <h2>Não-Conformidades</h2>
+    <a routerLink="/qms/non-conformances/new" class="btn btn--primary">+ Nova NC</a>
+  </div>
+
+  @if (kpi(); as k) {
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-card--amber">
+        <span class="kpi-label">Abertas</span>
+        <span class="kpi-value">{{ k.totalOpen }}</span>
+      </div>
+      <div class="kpi-card kpi-card--blue">
+        <span class="kpi-label">Em análise</span>
+        <span class="kpi-value">{{ k.totalInAnalysis }}</span>
+      </div>
+      <div class="kpi-card kpi-card--green">
+        <span class="kpi-label">Fechadas</span>
+        <span class="kpi-value">{{ k.totalClosed }}</span>
+      </div>
+      <div class="kpi-card kpi-card--red">
+        <span class="kpi-label">Críticas</span>
+        <span class="kpi-value">{{ k.totalCritical }}</span>
+      </div>
+      <div class="kpi-card kpi-card--teal">
+        <span class="kpi-label">Este mês</span>
+        <span class="kpi-value">{{ k.totalThisMonth }}</span>
+      </div>
+    </div>
+  }
+
+  <div class="filters">
+    <label class="filter-field">
+      Status
+      <select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="status">
+        <option value="">Todos</option>
+        @for (s of statuses; track s) {
+          <option [value]="s">{{ statusLabels[s] }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filter-field">
+      Severidade
+      <select [ngModel]="filterSeverity()" (ngModelChange)="filterSeverity.set($event)" name="severity">
+        <option value="">Todas</option>
+        @for (s of severities; track s) {
+          <option [value]="s">{{ severityLabels[s] }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filter-field">
+      Tipo
+      <select [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="type">
+        <option value="">Todos</option>
+        @for (t of types; track t) {
+          <option [value]="t">{{ typeLabels[t] }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="filter-actions">
+      <button type="button" class="btn btn--primary" (click)="applyFilters()">Filtrar</button>
+      <button type="button" class="btn btn--secondary" (click)="clearFilters()">Limpar</button>
+      @if (isSupervisor) {
+        <button type="button" class="btn btn--outline" (click)="exportCsv()">Exportar CSV</button>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="loading-msg">Carregando…</p>
+  }
+
+  @if (page(); as p) {
+    @if (p.content.length === 0) {
+      <p class="empty-msg">Nenhuma NC encontrada com os filtros aplicados.</p>
+    } @else {
+      <table class="nc-table">
+        <thead>
+          <tr>
+            <th>Título</th>
+            <th>Tipo</th>
+            <th>Severidade</th>
+            <th>Status</th>
+            <th>Registrado por</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (nc of p.content; track nc.id) {
+            <tr class="nc-row" (click)="openDetail(nc.id)">
+              <td class="nc-title">{{ nc.title }}</td>
+              <td>{{ typeLabels[nc.type] }}</td>
+              <td>
+                <span [class]="'severity-chip severity-' + nc.severity.toLowerCase()">
+                  {{ severityLabels[nc.severity] }}
+                </span>
+              </td>
+              <td>
+                <span [class]="'status-chip status-' + nc.status.toLowerCase()">
+                  {{ statusLabels[nc.status] }}
+                </span>
+              </td>
+              <td>{{ nc.reportedBy }}</td>
+              <td>{{ nc.reportedAt | slice: 0 : 10 }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (p.totalPages > 1) {
+        <div class="pagination">
+          <button
+            type="button"
+            [disabled]="p.page === 0"
+            (click)="goToPage(p.page - 1)"
+          >Anterior</button>
+          <span>{{ p.page + 1 }} / {{ p.totalPages }}</span>
+          <button
+            type="button"
+            [disabled]="p.page >= p.totalPages - 1"
+            (click)="goToPage(p.page + 1)"
+          >Próxima</button>
+        </div>
+      }
+    }
+  }
+</div>

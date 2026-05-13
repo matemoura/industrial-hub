@@ -1,0 +1,93 @@
+<div class="nc-detail-page">
+  <div class="page-header">
+    <a routerLink="/qms/non-conformances" class="back-link">← Não-Conformidades</a>
+  </div>
+
+  @if (loading()) {
+    <p class="loading-msg">Carregando…</p>
+  }
+
+  @if (errorMsg() && !nc()) {
+    <p class="error-msg">{{ errorMsg() }}</p>
+  }
+
+  @if (nc(); as nc) {
+    <div class="nc-card">
+      <div class="nc-card__header">
+        <div class="nc-card__title-row">
+          <h2>{{ nc.title }}</h2>
+          <span [class]="'status-chip status-' + nc.status.toLowerCase()">
+            {{ statusLabels[nc.status] }}
+          </span>
+        </div>
+
+        @if (allowedTransitions.length > 0) {
+          <div class="transition-actions">
+            @for (t of allowedTransitions; track t.target) {
+              <button
+                type="button"
+                class="btn"
+                [class.btn--danger]="t.target === 'CLOSED'"
+                [class.btn--primary]="t.target === 'IN_ANALYSIS'"
+                [class.btn--secondary]="t.target === 'OPEN'"
+                [disabled]="transitionLoading()"
+                (click)="transition(t.target)"
+              >
+                {{ transitionLoading() ? '…' : t.label }}
+              </button>
+            }
+          </div>
+        }
+      </div>
+
+      @if (errorMsg()) {
+        <p class="msg msg--error">{{ errorMsg() }}</p>
+      }
+
+      <dl class="nc-fields">
+        <div class="nc-field">
+          <dt>Tipo</dt>
+          <dd>{{ nc.type }}</dd>
+        </div>
+        <div class="nc-field">
+          <dt>Severidade</dt>
+          <dd>
+            <span [class]="'severity-chip severity-' + nc.severity.toLowerCase()">
+              {{ nc.severity }}
+            </span>
+          </dd>
+        </div>
+        <div class="nc-field">
+          <dt>Registrado por</dt>
+          <dd>{{ nc.reportedBy }}</dd>
+        </div>
+        <div class="nc-field">
+          <dt>Data de abertura</dt>
+          <dd>{{ formatDate(nc.reportedAt) }}</dd>
+        </div>
+        @if (nc.closedBy) {
+          <div class="nc-field">
+            <dt>Fechado por</dt>
+            <dd>{{ nc.closedBy }}</dd>
+          </div>
+          <div class="nc-field">
+            <dt>Data de fechamento</dt>
+            <dd>{{ formatDate(nc.closedAt) }}</dd>
+          </div>
+        }
+      </dl>
+
+      @if (nc.description) {
+        <div class="nc-description">
+          <h3>Descrição</h3>
+          <p>{{ nc.description }}</p>
+        </div>
+      }
+
+      <div class="nc-actions-section">
+        <h3>Ações Corretivas</h3>
+        <p class="empty-actions">Nenhuma ação corretiva cadastrada. <em>(disponível no Sprint 6)</em></p>
+      </div>
+    </div>
+  }
+</div>
