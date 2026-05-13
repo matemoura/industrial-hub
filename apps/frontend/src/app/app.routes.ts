@@ -32,5 +32,10 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./oee/processes/processes.component').then((m) => m.ProcessesComponent),
   },
+  {
+    path: 'qms',
+    canActivate: [authGuard],
+    loadChildren: () => import('./qms/qms.routes').then((m) => m.QMS_ROUTES),
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];

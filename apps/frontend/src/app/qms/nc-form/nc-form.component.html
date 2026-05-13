@@ -1,0 +1,76 @@
+<div class="nc-form-page">
+  <div class="page-header">
+    <a routerLink="/qms/non-conformances" class="back-link">← Voltar</a>
+    <h2>Registrar Não-Conformidade</h2>
+  </div>
+
+  <form class="nc-form" (ngSubmit)="submit()">
+
+    <label class="form-field">
+      Título <span class="required">*</span>
+      <input
+        type="text"
+        [ngModel]="title()"
+        (ngModelChange)="title.set($event)"
+        name="title"
+        maxlength="200"
+        placeholder="Descreva brevemente a não-conformidade"
+        required
+      />
+    </label>
+
+    <div class="form-row">
+      <label class="form-field">
+        Tipo <span class="required">*</span>
+        <select
+          [ngModel]="type()"
+          (ngModelChange)="type.set($event)"
+          name="type"
+          required
+        >
+          <option value="">Selecione…</option>
+          @for (t of ncTypes; track t) {
+            <option [value]="t">{{ typeLabels[t] }}</option>
+          }
+        </select>
+      </label>
+
+      <label class="form-field">
+        Severidade <span class="required">*</span>
+        <select
+          [ngModel]="severity()"
+          (ngModelChange)="severity.set($event)"
+          name="severity"
+          required
+        >
+          <option value="">Selecione…</option>
+          @for (s of ncSeverities; track s) {
+            <option [value]="s">{{ severityLabels[s] }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <label class="form-field">
+      Descrição
+      <textarea
+        [ngModel]="description()"
+        (ngModelChange)="description.set($event)"
+        name="description"
+        rows="4"
+        placeholder="Detalhes adicionais (opcional)"
+      ></textarea>
+    </label>
+
+    @if (errorMsg()) {
+      <p class="msg msg--error">{{ errorMsg() }}</p>
+    }
+
+    <div class="form-actions">
+      <a routerLink="/qms/non-conformances" class="btn btn--secondary">Cancelar</a>
+      <button type="submit" class="btn btn--primary" [disabled]="!isValid || loading()">
+        {{ loading() ? 'Registrando…' : 'Registrar NC' }}
+      </button>
+    </div>
+  </form>
+</div>
