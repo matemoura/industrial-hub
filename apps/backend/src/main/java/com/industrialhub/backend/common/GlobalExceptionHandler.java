@@ -27,7 +27,9 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
-                .map(FieldError::getDefaultMessage)
+                .map(fe -> fe.getDefaultMessage() != null
+                        ? fe.getDefaultMessage()
+                        : fe.getField() + " inválido")
                 .collect(Collectors.joining("; "));
         return ResponseEntity.badRequest().body(Map.of(
                 "message", message.isBlank() ? "Dados inválidos" : message,

@@ -21,7 +21,6 @@ export class NcFormComponent {
   description = signal('');
   loading = signal(false);
   errorMsg = signal<string | null>(null);
-  successMsg = signal<string | null>(null);
 
   readonly ncTypes: NcType[] = ['PROCESS', 'PRODUCT', 'SUPPLIER', 'EQUIPMENT', 'OTHER'];
   readonly ncSeverities: NcSeverity[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -60,6 +59,7 @@ export class NcFormComponent {
       })
       .subscribe({
         next: () => {
+          this.loading.set(false);
           this.router.navigate(['/qms/non-conformances'], {
             state: { toast: 'Não-conformidade registrada com sucesso' },
           });

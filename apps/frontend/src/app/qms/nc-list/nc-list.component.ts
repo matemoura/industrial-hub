@@ -1,3 +1,4 @@
+import { SlicePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
@@ -16,7 +17,7 @@ import { AuthService } from '../../auth/auth.service';
   selector: 'app-nc-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink],
+  imports: [FormsModule, RouterLink, SlicePipe],
   templateUrl: './nc-list.component.html',
   styleUrl: './nc-list.component.scss',
 })

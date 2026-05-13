@@ -7,6 +7,7 @@ import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Service
@@ -20,8 +21,7 @@ public class GetNcKpiSummaryUseCase {
 
     @Transactional(readOnly = true)
     public NcKpiSummary execute() {
-        LocalDateTime monthStart = LocalDateTime.now()
-                .withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime monthStart = LocalDate.now().withDayOfMonth(1).atStartOfDay();
         LocalDateTime monthEnd = monthStart.plusMonths(1);
 
         return new NcKpiSummary(
