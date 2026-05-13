@@ -1,0 +1,42 @@
+package com.industrialhub.backend.qms.infrastructure;
+
+import com.industrialhub.backend.qms.domain.NonConformance;
+import com.industrialhub.backend.qms.domain.NcSeverity;
+import com.industrialhub.backend.qms.domain.NcStatus;
+import com.industrialhub.backend.qms.domain.NcType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
+
+public interface NonConformanceRepository extends JpaRepository<NonConformance, UUID> {
+
+    @Query("""
+        SELECT nc FROM NonConformance nc
+        WHERE (:status IS NULL OR nc.status = :status)
+        AND (:severity IS NULL OR nc.severity = :severity)
+        AND (:type IS NULL OR nc.type = :type)
+        """)
+    Page<NonConformance> findAllFiltered(
+        @Param("status") NcStatus status,
+        @Param("severity") NcSeverity severity,
+        @Param("type") NcType type,
+        Pageable pageable
+    );
+
+    List<NonConformance> findAllByOrderByReportedAtDesc();
+
+    @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.status = :status")
+    long countByStatus(@Param("status") NcStatus status);
+
+    @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.severity = :severity")
+    long countBySeverity(@Param("severity") NcSeverity severity);
+
+    @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.reportedAt >= :start AND nc.reportedAt < :end")
+    long countInPeriod(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+}

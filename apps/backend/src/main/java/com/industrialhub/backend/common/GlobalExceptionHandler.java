@@ -4,6 +4,8 @@ import com.industrialhub.backend.common.auth.application.usecase.InvalidCredenti
 import com.industrialhub.backend.oee.application.usecase.DuplicateImportException;
 import com.industrialhub.backend.oee.application.usecase.InvalidExcelFormatException;
 import com.industrialhub.backend.oee.application.validation.InvalidDateRangeException;
+import com.industrialhub.backend.qms.domain.InvalidNcTransitionException;
+import com.industrialhub.backend.qms.domain.NcNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -49,6 +51,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleInvalidDateRange(InvalidDateRangeException ex) {
         return ResponseEntity.badRequest().body(Map.of(
                 "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(NcNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNcNotFound(NcNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InvalidNcTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidNcTransition(InvalidNcTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "allowedNext", ex.getAllowedNext(),
                 "timestamp", Instant.now().toString()
         ));
     }

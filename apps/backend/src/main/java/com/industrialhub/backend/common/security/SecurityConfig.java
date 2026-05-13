@@ -43,6 +43,15 @@ public class SecurityConfig {
                 // OEE writes: SUPERVISOR and above
                 .requestMatchers(HttpMethod.POST, "/api/v1/oee/**")
                     .hasAnyRole("SUPERVISOR", "ADMIN")
+                // QMS reads: OPERATOR and above
+                .requestMatchers(HttpMethod.GET, "/api/v1/qms/**")
+                    .hasAnyRole("OPERATOR", "SUPERVISOR", "ADMIN")
+                // QMS NC creation: OPERATOR and above
+                .requestMatchers(HttpMethod.POST, "/api/v1/qms/non-conformances")
+                    .hasAnyRole("OPERATOR", "SUPERVISOR", "ADMIN")
+                // QMS status transitions: SUPERVISOR and above
+                .requestMatchers(HttpMethod.PUT, "/api/v1/qms/**")
+                    .hasAnyRole("SUPERVISOR", "ADMIN")
                 // Everything else requires authentication
                 .anyRequest().authenticated()
             )
