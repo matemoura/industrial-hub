@@ -66,8 +66,7 @@ export class NcListComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    const nav = this.router.getCurrentNavigation();
-    const toastMsg = nav?.extras?.state?.['toast'] as string | undefined;
+    const toastMsg = (history.state as { toast?: string })?.toast;
     if (toastMsg) {
       this.toast.set(toastMsg);
       setTimeout(() => this.toast.set(null), 4000);
