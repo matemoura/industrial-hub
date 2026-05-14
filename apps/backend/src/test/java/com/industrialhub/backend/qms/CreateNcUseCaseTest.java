@@ -7,6 +7,7 @@ import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
 import com.industrialhub.backend.qms.domain.NcType;
 import com.industrialhub.backend.qms.domain.NonConformance;
+import com.industrialhub.backend.qms.application.usecase.QmsEmailService;
 import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,11 +30,14 @@ class CreateNcUseCaseTest {
     @Mock
     private NonConformanceRepository repository;
 
+    @Mock
+    private QmsEmailService emailService;
+
     private CreateNcUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new CreateNcUseCase(repository);
+        useCase = new CreateNcUseCase(repository, emailService);
     }
 
     @Test

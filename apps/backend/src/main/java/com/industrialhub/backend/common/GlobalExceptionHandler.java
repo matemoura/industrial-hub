@@ -1,6 +1,11 @@
 package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.common.auth.application.usecase.InvalidCredentialsException;
+import com.industrialhub.backend.maintenance.domain.EquipmentDuplicateCodeException;
+import com.industrialhub.backend.maintenance.domain.EquipmentHasOpenOrdersException;
+import com.industrialhub.backend.maintenance.domain.EquipmentNotFoundException;
+import com.industrialhub.backend.maintenance.domain.InvalidWorkOrderTransitionException;
+import com.industrialhub.backend.maintenance.domain.WorkOrderNotFoundException;
 import com.industrialhub.backend.oee.application.usecase.DuplicateImportException;
 import com.industrialhub.backend.oee.application.usecase.InvalidExcelFormatException;
 import com.industrialhub.backend.oee.application.validation.InvalidDateRangeException;
@@ -102,6 +107,47 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleActionNotAllowed(ActionNotAllowedException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
                 "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(EquipmentNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleEquipmentNotFound(EquipmentNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(EquipmentDuplicateCodeException.class)
+    public ResponseEntity<Map<String, Object>> handleEquipmentDuplicateCode(EquipmentDuplicateCodeException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(EquipmentHasOpenOrdersException.class)
+    public ResponseEntity<Map<String, Object>> handleEquipmentHasOpenOrders(EquipmentHasOpenOrdersException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(WorkOrderNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleWorkOrderNotFound(WorkOrderNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InvalidWorkOrderTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidWorkOrderTransition(InvalidWorkOrderTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "allowedNext", ex.getAllowedNext(),
                 "timestamp", Instant.now().toString()
         ));
     }
