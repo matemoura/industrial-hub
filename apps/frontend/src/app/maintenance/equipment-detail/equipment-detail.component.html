@@ -26,6 +26,9 @@
 
         @if (isAdmin && eq.active) {
           <div class="eq-card__actions">
+            <a [routerLink]="['/maintenance/equipment', eq.id, 'edit']" class="btn btn--secondary btn--sm">
+              Editar
+            </a>
             <button type="button" class="btn btn--danger btn--sm" (click)="deactivate()">
               Desativar
             </button>

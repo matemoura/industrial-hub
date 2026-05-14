@@ -15,6 +15,12 @@ export const MAINTENANCE_ROUTES: Routes = [
       import('./equipment-form/equipment-form.component').then((m) => m.EquipmentFormComponent),
   },
   {
+    path: 'equipment/:id/edit',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./equipment-form/equipment-form.component').then((m) => m.EquipmentFormComponent),
+  },
+  {
     path: 'equipment/:id',
     canActivate: [authGuard],
     loadComponent: () =>

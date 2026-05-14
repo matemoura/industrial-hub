@@ -1,25 +1,44 @@
 <div class="equipment-form-page">
   <div class="page-header">
-    <a routerLink="/maintenance/equipment" class="back-link">← Voltar</a>
-    <h2>Cadastrar Equipamento</h2>
+    <a [routerLink]="isEditMode ? ['/maintenance/equipment', editId()] : '/maintenance/equipment'" class="back-link">← Voltar</a>
+    <h2>{{ isEditMode ? 'Editar Equipamento' : 'Cadastrar Equipamento' }}</h2>
   </div>
 
   <form class="equipment-form" (ngSubmit)="submit()">
 
-    <div class="form-row">
-      <label class="form-field">
-        Código <span class="required">*</span>
-        <input
-          type="text"
-          [ngModel]="code()"
-          (ngModelChange)="code.set($event)"
-          name="code"
-          maxlength="50"
-          placeholder="Ex.: EQ-001"
-          required
-        />
-      </label>
+    @if (!isEditMode) {
+      <div class="form-row">
+        <label class="form-field">
+          Código <span class="required">*</span>
+          <input
+            type="text"
+            [ngModel]="code()"
+            (ngModelChange)="code.set($event)"
+            name="code"
+            maxlength="50"
+            placeholder="Ex.: EQ-001"
+            required
+          />
+        </label>
 
+        <label class="form-field">
+          Tipo <span class="required">*</span>
+          <select
+            [ngModel]="type()"
+            (ngModelChange)="type.set($event)"
+            name="type"
+            required
+          >
+            <option value="">Selecione…</option>
+            @for (t of equipmentTypes; track t) {
+              <option [value]="t">{{ typeLabels[t] }}</option>
+            }
+          </select>
+        </label>
+      </div>
+    }
+
+    @if (isEditMode) {
       <label class="form-field">
         Tipo <span class="required">*</span>
         <select
@@ -34,7 +53,7 @@
           }
         </select>
       </label>
-    </div>
+    }
 
     <label class="form-field">
       Nome <span class="required">*</span>
@@ -78,9 +97,13 @@
     }
 
     <div class="form-actions">
-      <a routerLink="/maintenance/equipment" class="btn btn--secondary">Cancelar</a>
+      <a [routerLink]="isEditMode ? ['/maintenance/equipment', editId()] : '/maintenance/equipment'" class="btn btn--secondary">Cancelar</a>
       <button type="submit" class="btn btn--primary" [disabled]="!isValid || loading()">
-        {{ loading() ? 'Cadastrando…' : 'Cadastrar Equipamento' }}
+        @if (loading()) {
+          {{ isEditMode ? 'Salvando…' : 'Cadastrando…' }}
+        } @else {
+          {{ isEditMode ? 'Salvar Alterações' : 'Cadastrar Equipamento' }}
+        }
       </button>
     </div>
   </form>
