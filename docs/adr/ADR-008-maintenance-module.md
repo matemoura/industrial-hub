@@ -207,9 +207,42 @@ List<Equipment> findByActiveTrueAndTypeAndStatusOrderByNameAsc(...);
 
 ---
 
+### Decisão 6 — Campos imutáveis e DTO de atualização
+
+`PUT /api/v1/maintenance/equipment/{id}` aceita `UpdateEquipmentRequest` com apenas: `name`, `location`, `type`, `acquiredAt`.
+
+Os campos `code` e `status` são **imutáveis via API**:
+- `code` é chave de negócio única — alteração exigiria auditoria fora do escopo atual
+- `status` só muda via criação/transição de OS (efeito colateral do use case)
+
+```java
+public record UpdateEquipmentRequest(
+    @NotBlank @Size(max = 200) String name,
+    @Size(max = 100) String location,
+    @NotNull EquipmentType type,
+    LocalDate acquiredAt               // nullable
+) {}
+```
+
+Tentativa de alterar `code` via PUT retorna `400` (campo ignorado ou rejeitado via `@JsonIgnoreProperties`).
+
+---
+
+### Decisão 7 — Scope por sprint
+
+| Sprint | US | Endpoints incluídos |
+|--------|----|---------------------|
+| 7 | US-027, US-028 | Todos exceto `/metrics` |
+| 8 | US-029 | `GET /api/v1/maintenance/work-orders/metrics` |
+
+`GetWorkOrderMetricsUseCase` e `WorkOrderMetricsResponse` são criados na Sprint 8.
+
+---
+
 ### Consequências
 ✅ Cálculo MTTR em Java (sem SQL nativo) — funciona igual em H2 e PostgreSQL
 ✅ Soft delete com verificação de OS abertas — garante integridade referencial sem FK desnecessária
 ✅ Efeito colateral de status do equipamento dentro do mesmo `@Transactional` — atomicidade garantida
+✅ `code` e `status` imutáveis via PUT elimina edge cases de consistência
 ⚠️ `existsByEquipmentAndTypeAndStatusIn` — verificar suporte do Spring Data para `StatusIn` com lista de enum; usar `@Query` explícito se necessário
 ⚠️ Manutenção preventiva com recorrência é out-of-scope — não modelar `recurrenceRule` na entidade agora para evitar YAGNI; adicionar em sprint futura via migration
