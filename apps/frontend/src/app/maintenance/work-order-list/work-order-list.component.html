@@ -1,0 +1,126 @@
+<div class="wo-list-page">
+
+  <div class="page-header">
+    <h2>Ordens de Serviço</h2>
+  </div>
+
+  <div class="filters">
+    <label class="filter-field">
+      Equipamento (ID)
+      <input
+        type="text"
+        [ngModel]="filterEquipmentId()"
+        (ngModelChange)="filterEquipmentId.set($event)"
+        name="equipmentId"
+        placeholder="ID do equipamento"
+      />
+    </label>
+
+    <label class="filter-field">
+      Tipo
+      <select [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="type">
+        <option value="">Todos</option>
+        @for (t of woTypes; track t) {
+          <option [value]="t">{{ woTypeLabels[t] }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filter-field">
+      Status
+      <select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="status">
+        <option value="">Todos</option>
+        @for (s of woStatuses; track s) {
+          <option [value]="s">{{ woStatusLabels[s] }}</option>
+        }
+      </select>
+    </label>
+
+    <label class="filter-field">
+      Prioridade
+      <select [ngModel]="filterPriority()" (ngModelChange)="filterPriority.set($event)" name="priority">
+        <option value="">Todas</option>
+        @for (p of woPriorities; track p) {
+          <option [value]="p">{{ woPriorityLabels[p] }}</option>
+        }
+      </select>
+    </label>
+
+    <div class="filter-actions">
+      <button type="button" class="btn btn--primary" (click)="applyFilters()">Filtrar</button>
+      <button type="button" class="btn btn--secondary" (click)="clearFilters()">Limpar</button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <p class="loading-msg">Carregando…</p>
+  }
+
+  @if (errorMsg()) {
+    <p class="error-msg">{{ errorMsg() }}</p>
+  }
+
+  @if (page(); as p) {
+    @if (p.content.length === 0) {
+      <p class="empty-msg">Nenhuma ordem de serviço encontrada com os filtros aplicados.</p>
+    } @else {
+      <table class="wo-table">
+        <thead>
+          <tr>
+            <th>Equipamento</th>
+            <th>Título</th>
+            <th>Tipo</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            <th>Aberta por</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (wo of p.content; track wo.id) {
+            <tr class="wo-row" (click)="openEquipment(wo.equipmentId)">
+              <td class="wo-equipment">
+                <span class="eq-code">{{ wo.equipmentCode }}</span>
+                <span class="eq-name">{{ wo.equipmentName }}</span>
+              </td>
+              <td class="wo-title">{{ wo.title }}</td>
+              <td>
+                <span [class]="'type-badge type-' + wo.type.toLowerCase()">
+                  {{ woTypeLabels[wo.type] }}
+                </span>
+              </td>
+              <td>
+                <span [class]="'priority-chip priority-' + wo.priority.toLowerCase()">
+                  {{ woPriorityLabels[wo.priority] }}
+                </span>
+              </td>
+              <td>
+                <span [class]="'status-chip status-' + wo.status.toLowerCase().replace('_', '-')">
+                  {{ woStatusLabels[wo.status] }}
+                </span>
+              </td>
+              <td>{{ wo.openedBy }}</td>
+              <td>{{ wo.openedAt.slice(0, 10) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      @if (p.totalPages > 1) {
+        <div class="pagination">
+          <button
+            type="button"
+            [disabled]="p.page === 0"
+            (click)="goToPage(p.page - 1)"
+          >Anterior</button>
+          <span>{{ p.page + 1 }} / {{ p.totalPages }}</span>
+          <button
+            type="button"
+            [disabled]="p.page >= p.totalPages - 1"
+            (click)="goToPage(p.page + 1)"
+          >Próxima</button>
+        </div>
+      }
+    }
+  }
+</div>

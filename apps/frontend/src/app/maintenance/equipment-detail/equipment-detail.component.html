@@ -1,0 +1,217 @@
+<div class="equipment-detail-page">
+  <div class="page-header">
+    <a routerLink="/maintenance/equipment" class="back-link">← Equipamentos</a>
+  </div>
+
+  @if (loading()) {
+    <p class="loading-msg">Carregando…</p>
+  }
+
+  @if (errorMsg() && !equipment()) {
+    <p class="error-msg">{{ errorMsg() }}</p>
+  }
+
+  @if (equipment(); as eq) {
+    <div class="eq-card">
+      <div class="eq-card__header">
+        <div class="eq-card__title-row">
+          <div>
+            <span class="eq-card__code">{{ eq.code }}</span>
+            <h2>{{ eq.name }}</h2>
+          </div>
+          <span [class]="'status-chip status-' + eq.status.toLowerCase().replace('_', '-')">
+            {{ equipmentStatusLabels[eq.status] }}
+          </span>
+        </div>
+
+        @if (isAdmin && eq.active) {
+          <div class="eq-card__actions">
+            <button type="button" class="btn btn--danger btn--sm" (click)="deactivate()">
+              Desativar
+            </button>
+          </div>
+        }
+      </div>
+
+      @if (errorMsg()) {
+        <p class="msg msg--error">{{ errorMsg() }}</p>
+      }
+
+      <dl class="eq-fields">
+        <div class="eq-field">
+          <dt>Tipo</dt>
+          <dd>{{ equipmentTypeLabels[eq.type] }}</dd>
+        </div>
+        <div class="eq-field">
+          <dt>Localização</dt>
+          <dd>{{ eq.location ?? '—' }}</dd>
+        </div>
+        <div class="eq-field">
+          <dt>Adquirido em</dt>
+          <dd>{{ eq.acquiredAt ?? '—' }}</dd>
+        </div>
+        <div class="eq-field">
+          <dt>Ativo</dt>
+          <dd>{{ eq.active ? 'Sim' : 'Não' }}</dd>
+        </div>
+      </dl>
+
+      <div class="wo-section">
+        <div class="wo-section__header">
+          <h3>Ordens de Serviço</h3>
+          @if (isSupervisor && eq.active) {
+            <button
+              type="button"
+              class="btn btn--primary btn--sm"
+              (click)="showWorkOrderForm.set(!showWorkOrderForm())"
+            >
+              {{ showWorkOrderForm() ? 'Cancelar' : '+ Nova OS' }}
+            </button>
+          }
+        </div>
+
+        @if (woError()) {
+          <p class="msg msg--error">{{ woError() }}</p>
+        }
+
+        @if (showWorkOrderForm()) {
+          <form class="wo-form" (ngSubmit)="submitWorkOrder()">
+            <div class="form-row">
+              <label class="form-field">
+                Tipo <span class="required">*</span>
+                <select
+                  [ngModel]="woType()"
+                  (ngModelChange)="woType.set($event)"
+                  name="woType"
+                  required
+                >
+                  <option value="">Selecione…</option>
+                  @for (t of woTypes; track t) {
+                    <option [value]="t">{{ woTypeLabels[t] }}</option>
+                  }
+                </select>
+              </label>
+
+              <label class="form-field">
+                Prioridade <span class="required">*</span>
+                <select
+                  [ngModel]="woPriority()"
+                  (ngModelChange)="woPriority.set($event)"
+                  name="woPriority"
+                  required
+                >
+                  <option value="">Selecione…</option>
+                  @for (p of woPriorities; track p) {
+                    <option [value]="p">{{ woPriorityLabels[p] }}</option>
+                  }
+                </select>
+              </label>
+            </div>
+
+            <label class="form-field">
+              Título <span class="required">*</span>
+              <input
+                type="text"
+                [ngModel]="woTitle()"
+                (ngModelChange)="woTitle.set($event)"
+                name="woTitle"
+                maxlength="200"
+                placeholder="Título da ordem de serviço"
+                required
+              />
+            </label>
+
+            <label class="form-field">
+              Descrição
+              <textarea
+                [ngModel]="woDescription()"
+                (ngModelChange)="woDescription.set($event)"
+                name="woDescription"
+                rows="3"
+                placeholder="Detalhes (opcional)"
+              ></textarea>
+            </label>
+
+            <label class="form-field">
+              Responsável
+              <input
+                type="text"
+                [ngModel]="woAssignedTo()"
+                (ngModelChange)="woAssignedTo.set($event)"
+                name="woAssignedTo"
+                maxlength="50"
+                placeholder="Username do responsável (opcional)"
+              />
+            </label>
+
+            <div class="form-actions">
+              <button
+                type="submit"
+                class="btn btn--primary"
+                [disabled]="!isWoFormValid || woSubmitting()"
+              >
+                {{ woSubmitting() ? 'Salvando…' : 'Salvar OS' }}
+              </button>
+            </div>
+          </form>
+        }
+
+        @if (workOrdersLoading()) {
+          <p class="loading-msg">Carregando ordens de serviço…</p>
+        } @else if (workOrders().length === 0) {
+          <p class="empty-msg">Nenhuma ordem de serviço registrada.</p>
+        } @else {
+          <ul class="wo-list">
+            @for (wo of workOrders(); track wo.id) {
+              <li class="wo-item">
+                <div class="wo-item__header">
+                  <span class="wo-item__title">{{ wo.title }}</span>
+                  <div class="wo-item__badges">
+                    <span [class]="'type-badge type-' + wo.type.toLowerCase()">
+                      {{ woTypeLabels[wo.type] }}
+                    </span>
+                    <span [class]="'priority-chip priority-' + wo.priority.toLowerCase()">
+                      {{ woPriorityLabels[wo.priority] }}
+                    </span>
+                    <span [class]="'status-chip status-' + wo.status.toLowerCase().replace('_', '-')">
+                      {{ woStatusLabels[wo.status] }}
+                    </span>
+                  </div>
+                </div>
+
+                <p class="wo-item__meta">
+                  Aberta por <strong>{{ wo.openedBy }}</strong>
+                  em {{ formatDate(wo.openedAt) }}
+                  @if (wo.assignedTo) {
+                    · Responsável: <strong>{{ wo.assignedTo }}</strong>
+                  }
+                </p>
+
+                @if (isSupervisor) {
+                  <div class="wo-item__transitions">
+                    @if (wo.status === 'OPEN') {
+                      <button type="button" class="btn btn--primary btn--sm" (click)="transition(wo.id, 'IN_PROGRESS')">
+                        Iniciar
+                      </button>
+                      <button type="button" class="btn btn--danger btn--sm" (click)="transition(wo.id, 'CANCELLED')">
+                        Cancelar
+                      </button>
+                    }
+                    @if (wo.status === 'IN_PROGRESS') {
+                      <button type="button" class="btn btn--primary btn--sm" (click)="transition(wo.id, 'DONE')">
+                        Concluir
+                      </button>
+                      <button type="button" class="btn btn--danger btn--sm" (click)="transition(wo.id, 'CANCELLED')">
+                        Cancelar
+                      </button>
+                    }
+                  </div>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </div>
+  }
+</div>

@@ -1,0 +1,87 @@
+<div class="equipment-form-page">
+  <div class="page-header">
+    <a routerLink="/maintenance/equipment" class="back-link">← Voltar</a>
+    <h2>Cadastrar Equipamento</h2>
+  </div>
+
+  <form class="equipment-form" (ngSubmit)="submit()">
+
+    <div class="form-row">
+      <label class="form-field">
+        Código <span class="required">*</span>
+        <input
+          type="text"
+          [ngModel]="code()"
+          (ngModelChange)="code.set($event)"
+          name="code"
+          maxlength="50"
+          placeholder="Ex.: EQ-001"
+          required
+        />
+      </label>
+
+      <label class="form-field">
+        Tipo <span class="required">*</span>
+        <select
+          [ngModel]="type()"
+          (ngModelChange)="type.set($event)"
+          name="type"
+          required
+        >
+          <option value="">Selecione…</option>
+          @for (t of equipmentTypes; track t) {
+            <option [value]="t">{{ typeLabels[t] }}</option>
+          }
+        </select>
+      </label>
+    </div>
+
+    <label class="form-field">
+      Nome <span class="required">*</span>
+      <input
+        type="text"
+        [ngModel]="name()"
+        (ngModelChange)="name.set($event)"
+        name="name"
+        maxlength="200"
+        placeholder="Nome do equipamento"
+        required
+      />
+    </label>
+
+    <div class="form-row">
+      <label class="form-field">
+        Localização
+        <input
+          type="text"
+          [ngModel]="location()"
+          (ngModelChange)="location.set($event)"
+          name="location"
+          maxlength="100"
+          placeholder="Ex.: Linha A, Setor 2 (opcional)"
+        />
+      </label>
+
+      <label class="form-field">
+        Data de aquisição
+        <input
+          type="date"
+          [ngModel]="acquiredAt()"
+          (ngModelChange)="acquiredAt.set($event)"
+          name="acquiredAt"
+        />
+      </label>
+    </div>
+
+    @if (errorMsg()) {
+      <p class="msg msg--error">{{ errorMsg() }}</p>
+    }
+
+    <div class="form-actions">
+      <a routerLink="/maintenance/equipment" class="btn btn--secondary">Cancelar</a>
+      <button type="submit" class="btn btn--primary" [disabled]="!isValid || loading()">
+        {{ loading() ? 'Cadastrando…' : 'Cadastrar Equipamento' }}
+      </button>
+    </div>
+  </form>
+</div>

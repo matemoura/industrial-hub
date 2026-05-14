@@ -37,5 +37,10 @@ export const routes: Routes = [
     canActivate: [authGuard],
     loadChildren: () => import('./qms/qms.routes').then((m) => m.QMS_ROUTES),
   },
+  {
+    path: 'maintenance',
+    canActivate: [authGuard],
+    loadChildren: () => import('./maintenance/maintenance.routes').then((m) => m.MAINTENANCE_ROUTES),
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];
