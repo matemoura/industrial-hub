@@ -85,8 +85,99 @@
       }
 
       <div class="nc-actions-section">
-        <h3>Ações Corretivas</h3>
-        <p class="empty-actions">Nenhuma ação corretiva cadastrada. <em>(disponível no Sprint 6)</em></p>
+        <div class="actions-header">
+          <h3>Ações Corretivas</h3>
+          @if (isSupervisor && nc.status === 'IN_ANALYSIS') {
+            <button type="button" class="btn btn--primary btn--sm" (click)="showActionForm.set(!showActionForm())">
+              {{ showActionForm() ? 'Cancelar' : '+ Nova Ação' }}
+            </button>
+          }
+        </div>
+
+        @if (actionError()) {
+          <p class="msg msg--error">{{ actionError() }}</p>
+        }
+
+        @if (showActionForm()) {
+          <form class="action-form" (ngSubmit)="submitAction()">
+            <label class="form-field">
+              Descrição <span class="required">*</span>
+              <textarea
+                [ngModel]="actionDescription()"
+                (ngModelChange)="actionDescription.set($event)"
+                name="actionDescription"
+                rows="3"
+                placeholder="Descreva a ação corretiva"
+                required
+              ></textarea>
+            </label>
+            <div class="form-row">
+              <label class="form-field">
+                Responsável <span class="required">*</span>
+                <input
+                  type="text"
+                  [ngModel]="actionResponsible()"
+                  (ngModelChange)="actionResponsible.set($event)"
+                  name="actionResponsible"
+                  maxlength="50"
+                  placeholder="Username do responsável"
+                  required
+                />
+              </label>
+              <label class="form-field">
+                Data de vencimento <span class="required">*</span>
+                <input
+                  type="date"
+                  [ngModel]="actionDueDate()"
+                  (ngModelChange)="actionDueDate.set($event)"
+                  name="actionDueDate"
+                  required
+                />
+              </label>
+            </div>
+            <div class="form-actions">
+              <button type="submit" class="btn btn--primary" [disabled]="!isActionFormValid || actionSubmitting()">
+                {{ actionSubmitting() ? 'Salvando…' : 'Salvar Ação' }}
+              </button>
+            </div>
+          </form>
+        }
+
+        @if (actionsLoading()) {
+          <p class="loading-msg">Carregando ações…</p>
+        } @else if (actions().length === 0) {
+          <p class="empty-actions">Nenhuma ação corretiva cadastrada.</p>
+        } @else {
+          <ul class="action-list">
+            @for (action of actions(); track action.id) {
+              <li class="action-item">
+                <div class="action-item__header">
+                  <span [class]="'action-status action-status--' + action.status.toLowerCase()">
+                    {{ action.status === 'DONE' ? 'Concluída' : 'Pendente' }}
+                  </span>
+                  <span class="action-due">Vence: {{ formatLocalDate(action.dueDate) }}</span>
+                  @if (isSupervisor && action.status === 'PENDING') {
+                    <div class="action-item__btns">
+                      <button type="button" class="btn btn--primary btn--sm" (click)="completeAction(action.id)">
+                        Concluir
+                      </button>
+                      <button type="button" class="btn btn--danger btn--sm" (click)="deleteAction(action.id)">
+                        Excluir
+                      </button>
+                    </div>
+                  }
+                </div>
+                <p class="action-desc">{{ action.description }}</p>
+                <p class="action-meta">
+                  Responsável: <strong>{{ action.responsible }}</strong>
+                  @if (action.completedBy) {
+                    &nbsp;· Concluída por <strong>{{ action.completedBy }}</strong> em {{ formatDate(action.completedAt) }}
+                  }
+                </p>
+              </li>
+            }
+          </ul>
+        }
       </div>
     </div>
   }

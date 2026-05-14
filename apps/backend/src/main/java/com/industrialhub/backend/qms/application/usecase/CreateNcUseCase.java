@@ -3,6 +3,7 @@ package com.industrialhub.backend.qms.application.usecase;
 import com.industrialhub.backend.qms.application.dto.CreateNcRequest;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.domain.NonConformance;
+import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
 import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
 import org.springframework.stereotype.Service;
@@ -14,9 +15,11 @@ import java.time.LocalDateTime;
 public class CreateNcUseCase {
 
     private final NonConformanceRepository repository;
+    private final QmsEmailService emailService;
 
-    public CreateNcUseCase(NonConformanceRepository repository) {
+    public CreateNcUseCase(NonConformanceRepository repository, QmsEmailService emailService) {
         this.repository = repository;
+        this.emailService = emailService;
     }
 
     @Transactional
@@ -31,6 +34,12 @@ public class CreateNcUseCase {
                 .reportedAt(LocalDateTime.now())
                 .build();
 
-        return NcResponse.from(repository.save(nc));
+        NonConformance saved = repository.save(nc);
+
+        if (saved.getSeverity() == NcSeverity.CRITICAL) {
+            emailService.notifyCriticalNc(saved);
+        }
+
+        return NcResponse.from(saved);
     }
 }

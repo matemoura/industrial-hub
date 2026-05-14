@@ -5,6 +5,7 @@ import { Observable } from 'rxjs';
 export type NcStatus = 'OPEN' | 'IN_ANALYSIS' | 'CLOSED';
 export type NcType = 'PROCESS' | 'PRODUCT' | 'SUPPLIER' | 'EQUIPMENT' | 'OTHER';
 export type NcSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type ActionStatus = 'PENDING' | 'DONE';
 
 export interface NcSummaryItem {
   id: string;
@@ -16,10 +17,22 @@ export interface NcSummaryItem {
   reportedAt: string;
 }
 
+export interface ActionResponse {
+  id: string;
+  ncId: string;
+  description: string;
+  responsible: string;
+  dueDate: string;
+  status: ActionStatus;
+  completedAt: string | null;
+  completedBy: string | null;
+}
+
 export interface NcResponse extends NcSummaryItem {
   description: string | null;
   closedAt: string | null;
   closedBy: string | null;
+  actions: ActionResponse[];
 }
 
 export interface NcKpiSummary {
@@ -43,6 +56,12 @@ export interface CreateNcPayload {
   type: NcType;
   severity: NcSeverity;
   description?: string;
+}
+
+export interface CreateActionPayload {
+  description: string;
+  responsible: string;
+  dueDate: string;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -79,5 +98,21 @@ export class QmsService {
 
   exportCsv(): Observable<Blob> {
     return this.http.get(`${this.baseUrl}/export`, { responseType: 'blob' });
+  }
+
+  createAction(ncId: string, payload: CreateActionPayload): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/${ncId}/actions`, payload);
+  }
+
+  listActions(ncId: string): Observable<ActionResponse[]> {
+    return this.http.get<ActionResponse[]>(`${this.baseUrl}/${ncId}/actions`);
+  }
+
+  completeAction(ncId: string, actionId: string): Observable<ActionResponse> {
+    return this.http.put<ActionResponse>(`${this.baseUrl}/${ncId}/actions/${actionId}/complete`, {});
+  }
+
+  deleteAction(ncId: string, actionId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${ncId}/actions/${actionId}`);
   }
 }
