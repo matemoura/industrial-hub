@@ -24,4 +24,7 @@ public interface EquipmentRepository extends JpaRepository<Equipment, UUID> {
     List<Equipment> findByActiveTrueAndStatusOrderByNameAsc(EquipmentStatus status);
 
     List<Equipment> findByActiveTrueAndTypeAndStatusOrderByNameAsc(EquipmentType type, EquipmentStatus status);
+
+    @org.springframework.data.jpa.repository.Query("SELECT COUNT(e) FROM Equipment e WHERE e.active = true")
+    long countByActiveTrue();
 }
