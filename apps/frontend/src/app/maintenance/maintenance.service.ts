@@ -68,6 +68,12 @@ export interface CreateWorkOrderPayload {
   assignedTo?: string;
 }
 
+export interface WorkOrderMetricsResponse {
+  mttr: number | null;
+  totalOrders: number;
+  openOrders: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MaintenanceService {
   private readonly http = inject(HttpClient);
@@ -122,5 +128,11 @@ export class MaintenanceService {
 
   transitionStatus(id: string, status: WorkOrderStatus): Observable<WorkOrderResponse> {
     return this.http.put<WorkOrderResponse>(`${this.workOrderUrl}/${id}/status`, { status });
+  }
+
+  getWorkOrderMetrics(equipmentId?: string): Observable<WorkOrderMetricsResponse> {
+    let params = new HttpParams();
+    if (equipmentId) params = params.set('equipmentId', equipmentId);
+    return this.http.get<WorkOrderMetricsResponse>(`${this.workOrderUrl}/metrics`, { params });
   }
 }

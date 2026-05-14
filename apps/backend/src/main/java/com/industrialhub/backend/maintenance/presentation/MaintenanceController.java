@@ -5,6 +5,7 @@ import com.industrialhub.backend.maintenance.application.dto.CreateWorkOrderRequ
 import com.industrialhub.backend.maintenance.application.dto.EquipmentResponse;
 import com.industrialhub.backend.maintenance.application.dto.TransitionWorkOrderStatusRequest;
 import com.industrialhub.backend.maintenance.application.dto.UpdateEquipmentRequest;
+import com.industrialhub.backend.maintenance.application.dto.WorkOrderMetricsResponse;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderResponse;
 import com.industrialhub.backend.maintenance.application.usecase.CreateEquipmentUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.CreateWorkOrderUseCase;
@@ -12,6 +13,7 @@ import com.industrialhub.backend.maintenance.application.usecase.DeleteEquipment
 import com.industrialhub.backend.maintenance.application.usecase.GetEquipmentDetailUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetEquipmentListUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderListUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderMetricsUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.TransitionWorkOrderStatusUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.UpdateEquipmentUseCase;
 import com.industrialhub.backend.maintenance.domain.EquipmentStatus;
@@ -43,6 +45,7 @@ public class MaintenanceController {
     private final DeleteEquipmentUseCase deleteEquipment;
     private final CreateWorkOrderUseCase createWorkOrder;
     private final GetWorkOrderListUseCase getWorkOrderList;
+    private final GetWorkOrderMetricsUseCase getWorkOrderMetrics;
     private final TransitionWorkOrderStatusUseCase transitionWorkOrderStatus;
 
     public MaintenanceController(CreateEquipmentUseCase createEquipment,
@@ -52,6 +55,7 @@ public class MaintenanceController {
                                   DeleteEquipmentUseCase deleteEquipment,
                                   CreateWorkOrderUseCase createWorkOrder,
                                   GetWorkOrderListUseCase getWorkOrderList,
+                                  GetWorkOrderMetricsUseCase getWorkOrderMetrics,
                                   TransitionWorkOrderStatusUseCase transitionWorkOrderStatus) {
         this.createEquipment = createEquipment;
         this.getEquipmentList = getEquipmentList;
@@ -60,6 +64,7 @@ public class MaintenanceController {
         this.deleteEquipment = deleteEquipment;
         this.createWorkOrder = createWorkOrder;
         this.getWorkOrderList = getWorkOrderList;
+        this.getWorkOrderMetrics = getWorkOrderMetrics;
         this.transitionWorkOrderStatus = transitionWorkOrderStatus;
     }
 
@@ -119,6 +124,12 @@ public class MaintenanceController {
             @RequestParam(required = false) WorkOrderPriority priority,
             @PageableDefault(size = 20, sort = "openedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return getWorkOrderList.execute(equipmentId, type, status, priority, pageable);
+    }
+
+    @GetMapping("/work-orders/metrics")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public WorkOrderMetricsResponse getMetrics(@RequestParam(required = false) UUID equipmentId) {
+        return getWorkOrderMetrics.execute(equipmentId);
     }
 
     @PutMapping("/work-orders/{id}/status")

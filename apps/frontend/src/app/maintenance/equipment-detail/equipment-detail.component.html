@@ -59,6 +59,29 @@
         </div>
       </dl>
 
+      @if (metrics(); as m) {
+        <div class="metrics-section">
+          <h3 class="metrics-title">Métricas de Manutenção</h3>
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <span class="metric-label">MTTR</span>
+              <span class="metric-value">{{ m.mttr !== null ? (m.mttr | number:'1.1-1') + ' h' : 'N/A' }}</span>
+              <span class="metric-sub">tempo médio de reparo</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Total de OS</span>
+              <span class="metric-value">{{ m.totalOrders }}</span>
+              <span class="metric-sub">ordens registradas</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">OS Abertas</span>
+              <span class="metric-value">{{ m.openOrders }}</span>
+              <span class="metric-sub">em aberto ou em andamento</span>
+            </div>
+          </div>
+        </div>
+      }
+
       <div class="wo-section">
         <div class="wo-section__header">
           <h3>Ordens de Serviço</h3>

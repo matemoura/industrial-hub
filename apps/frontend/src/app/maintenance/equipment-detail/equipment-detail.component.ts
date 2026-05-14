@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import {
@@ -6,6 +7,7 @@ import {
   EquipmentStatus,
   EquipmentType,
   MaintenanceService,
+  WorkOrderMetricsResponse,
   WorkOrderPriority,
   WorkOrderResponse,
   WorkOrderStatus,
@@ -17,7 +19,7 @@ import { AuthService } from '../../auth/auth.service';
   selector: 'app-equipment-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, DecimalPipe],
   templateUrl: './equipment-detail.component.html',
   styleUrl: './equipment-detail.component.scss',
 })
@@ -35,6 +37,8 @@ export class EquipmentDetailComponent implements OnInit {
 
   workOrders = signal<WorkOrderResponse[]>([]);
   workOrdersLoading = signal(false);
+
+  metrics = signal<WorkOrderMetricsResponse | null>(null);
 
   showWorkOrderForm = signal(false);
   woType = signal<WorkOrderType | ''>('');
@@ -96,6 +100,7 @@ export class EquipmentDetailComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.loadEquipment(id);
     this.loadWorkOrders(id);
+    this.loadMetrics(id);
   }
 
   loadEquipment(id: string): void {
@@ -109,6 +114,13 @@ export class EquipmentDetailComponent implements OnInit {
         this.errorMsg.set('Equipamento não encontrado.');
         this.loading.set(false);
       },
+    });
+  }
+
+  loadMetrics(equipmentId: string): void {
+    this.maintenanceService.getWorkOrderMetrics(equipmentId).subscribe({
+      next: (m) => this.metrics.set(m),
+      error: () => { /* métricas não bloqueiam a página */ },
     });
   }
 

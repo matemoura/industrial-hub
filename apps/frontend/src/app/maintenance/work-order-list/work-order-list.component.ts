@@ -1,9 +1,11 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import {
   MaintenanceService,
   PageResponse,
+  WorkOrderMetricsResponse,
   WorkOrderPriority,
   WorkOrderResponse,
   WorkOrderStatus,
@@ -14,7 +16,7 @@ import {
   selector: 'app-work-order-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule],
+  imports: [FormsModule, DecimalPipe],
   templateUrl: './work-order-list.component.html',
   styleUrl: './work-order-list.component.scss',
 })
@@ -25,6 +27,8 @@ export class WorkOrderListComponent implements OnInit {
   page = signal<PageResponse<WorkOrderResponse> | null>(null);
   loading = signal(false);
   errorMsg = signal<string | null>(null);
+
+  globalMetrics = signal<WorkOrderMetricsResponse | null>(null);
 
   filterEquipmentId = signal('');
   filterType = signal<WorkOrderType | ''>('');
@@ -56,6 +60,14 @@ export class WorkOrderListComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadList(0);
+    this.loadGlobalMetrics();
+  }
+
+  loadGlobalMetrics(): void {
+    this.maintenanceService.getWorkOrderMetrics().subscribe({
+      next: (m) => this.globalMetrics.set(m),
+      error: () => { /* métricas globais não bloqueiam a página */ },
+    });
   }
 
   loadList(pageIndex: number): void {

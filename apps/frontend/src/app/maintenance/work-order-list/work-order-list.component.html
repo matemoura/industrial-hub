@@ -4,6 +4,26 @@
     <h2>Ordens de Serviço</h2>
   </div>
 
+  @if (globalMetrics(); as m) {
+    <div class="global-metrics">
+      <div class="metric-card">
+        <span class="metric-label">MTTR Global</span>
+        <span class="metric-value">{{ m.mttr !== null ? (m.mttr | number:'1.1-1') + ' h' : 'N/A' }}</span>
+        <span class="metric-sub">tempo médio de reparo (corretivas)</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">Total de OS</span>
+        <span class="metric-value">{{ m.totalOrders }}</span>
+        <span class="metric-sub">ordens registradas</span>
+      </div>
+      <div class="metric-card">
+        <span class="metric-label">OS Abertas</span>
+        <span class="metric-value">{{ m.openOrders }}</span>
+        <span class="metric-sub">em aberto ou em andamento</span>
+      </div>
+    </div>
+  }
+
   <div class="filters">
     <label class="filter-field">
       Equipamento (ID)

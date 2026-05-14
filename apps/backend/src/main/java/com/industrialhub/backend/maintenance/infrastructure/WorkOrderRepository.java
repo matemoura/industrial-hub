@@ -40,4 +40,27 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
                            com.industrialhub.backend.maintenance.domain.WorkOrderStatus.IN_PROGRESS)
     """)
     List<WorkOrder> findOpenCorrectiveByEquipmentId(@Param("equipmentId") UUID equipmentId);
+
+    @Query("""
+        SELECT w FROM WorkOrder w
+        WHERE w.type = com.industrialhub.backend.maintenance.domain.WorkOrderType.CORRECTIVE
+          AND w.status = com.industrialhub.backend.maintenance.domain.WorkOrderStatus.DONE
+          AND w.startedAt IS NOT NULL
+          AND (:equipmentId IS NULL OR w.equipment.id = :equipmentId)
+    """)
+    List<WorkOrder> findCompletedCorrectiveForMetrics(@Param("equipmentId") UUID equipmentId);
+
+    @Query("""
+        SELECT COUNT(w) FROM WorkOrder w
+        WHERE (:equipmentId IS NULL OR w.equipment.id = :equipmentId)
+    """)
+    long countByEquipmentId(@Param("equipmentId") UUID equipmentId);
+
+    @Query("""
+        SELECT COUNT(w) FROM WorkOrder w
+        WHERE w.status IN (com.industrialhub.backend.maintenance.domain.WorkOrderStatus.OPEN,
+                           com.industrialhub.backend.maintenance.domain.WorkOrderStatus.IN_PROGRESS)
+          AND (:equipmentId IS NULL OR w.equipment.id = :equipmentId)
+    """)
+    long countOpenByEquipmentId(@Param("equipmentId") UUID equipmentId);
 }
