@@ -445,17 +445,17 @@
 
 ---
 
-## Sprint 12 ⬜
+## Sprint 12 ✅
 **Objetivo**: Gestão de usuários — CRUD via UI + troca de senha self-service
 **ADR**: ADR-010
-**Status**: pendente
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-037 | CRUD de usuários — backend (ADMIN) | 3 | ⬜ pendente |
-| US-038 | CRUD de usuários — frontend (ADMIN) | 3 | ⬜ pendente |
-| US-039 | Alteração de senha self-service | 2 | ⬜ pendente |
+| US-037 | CRUD de usuários — backend (ADMIN) | 3 | ✅ concluído |
+| US-038 | CRUD de usuários — frontend (ADMIN) | 3 | ✅ concluído |
+| US-039 | Alteração de senha self-service | 2 | ✅ concluído |
 
 ---
 
@@ -495,14 +495,15 @@
 1. `PUT /api/v1/users/me/password` aceita `{ "currentPassword": "...", "newPassword": "..." }` (qualquer usuário autenticado)
 2. Valida `currentPassword` contra BCrypt; mismatch retorna `400` com `{ "message": "Senha atual incorreta" }`
 3. Valida `newPassword`: mínimo 8 caracteres, 1 maiúscula, 1 dígito; violação retorna `400`
-4. Após troca bem-sucedida, seta `mustChangePassword = false` e retorna `200`
+4. Após troca bem-sucedida, seta `mustChangePassword = false`, emite um **novo JWT** (sem o claim `mustChangePassword`) e o retorna no body `{ "token": "...", "expiresInMs": ... }` com status `200` — o frontend substitui o token em localStorage
+5. Nova senha igual à senha atual retorna `400` com `{ "message": "A nova senha deve ser diferente da senha atual" }`
 
 **Frontend**
-5. Link "Alterar Senha" no menu do nav (para todos os usuários autenticados)
-6. Formulário: senha atual, nova senha, confirmar nova senha
-7. Validação client-side: nova senha === confirmação; botão desabilitado até validação passar
-8. Se JWT contém `mustChangePassword = true` após login, frontend redireciona para `/change-password` antes de qualquer outra rota
-9. Após troca bem-sucedida, snackbar "Senha alterada com sucesso" e retorno ao dashboard
+6. Link "Alterar Senha" no menu do nav (para todos os usuários autenticados)
+7. Formulário: senha atual, nova senha, confirmar nova senha
+8. Validação client-side: nova senha === confirmação; botão desabilitado até validação passar
+9. Se JWT contém `mustChangePassword = true` após login, frontend redireciona para `/change-password` antes de qualquer outra rota; guard impede navegação para outras rotas enquanto flag ativo
+10. Após troca bem-sucedida, frontend substitui o token em localStorage com o novo JWT retornado, exibe snackbar "Senha alterada com sucesso" e redireciona para `/dashboard`
 
 ---
 

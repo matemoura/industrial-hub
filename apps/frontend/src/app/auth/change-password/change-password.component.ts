@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormControl, FormGroup, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../auth.service';
 import { UserService } from '../../admin/user.service';
@@ -29,9 +29,9 @@ export class ChangePasswordComponent {
     { validators: this.passwordsMatchValidator },
   );
 
-  private passwordsMatchValidator(group: FormGroup): { mismatch: true } | null {
-    const np = (group.get('newPassword') as FormControl).value;
-    const cp = (group.get('confirmPassword') as FormControl).value;
+  private passwordsMatchValidator(control: AbstractControl): ValidationErrors | null {
+    const np = control.get('newPassword')?.value as string;
+    const cp = control.get('confirmPassword')?.value as string;
     return np && cp && np !== cp ? { mismatch: true } : null;
   }
 
