@@ -25,11 +25,11 @@ public class GetWorkOrderMetricsUseCase {
 
         Double mttr = null;
         if (!completed.isEmpty()) {
-            double totalSeconds = completed.stream()
+            double avgDurationSeconds = completed.stream()
                     .mapToLong(wo -> ChronoUnit.SECONDS.between(wo.getStartedAt(), wo.getClosedAt()))
                     .average()
                     .orElse(0.0);
-            mttr = totalSeconds / 3600.0;
+            mttr = avgDurationSeconds / 3600.0;
         }
 
         long totalOrders = repository.countByEquipmentId(equipmentId);

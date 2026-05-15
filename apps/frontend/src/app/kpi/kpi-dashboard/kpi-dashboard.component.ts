@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { DecimalPipe } from '@angular/common';
-import { interval, startWith, Subscription, switchMap } from 'rxjs';
+import { EMPTY, Subscription, catchError, interval, startWith, switchMap } from 'rxjs';
 import { KpiService, KpiSummaryResponse } from '../kpi.service';
 
 const REFRESH_INTERVAL_MS = 300_000;
@@ -26,18 +26,20 @@ export class KpiDashboardComponent implements OnInit, OnDestroy {
     this.refreshSub = interval(REFRESH_INTERVAL_MS)
       .pipe(
         startWith(0),
-        switchMap(() => this.kpiService.getSummary()),
+        switchMap(() =>
+          this.kpiService.getSummary().pipe(
+            catchError(() => {
+              this.loading.set(false);
+              this.errorMsg.set('Não foi possível carregar os indicadores. Tente novamente.');
+              return EMPTY;
+            }),
+          ),
+        ),
       )
-      .subscribe({
-        next: (data) => {
-          this.kpi.set(data);
-          this.loading.set(false);
-          this.errorMsg.set(null);
-        },
-        error: () => {
-          this.loading.set(false);
-          this.errorMsg.set('Não foi possível carregar os indicadores. Tente novamente.');
-        },
+      .subscribe((data) => {
+        this.kpi.set(data);
+        this.loading.set(false);
+        this.errorMsg.set(null);
       });
   }
 

@@ -10,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -63,4 +64,16 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
           AND (:equipmentId IS NULL OR w.equipment.id = :equipmentId)
     """)
     long countOpenByEquipmentId(@Param("equipmentId") UUID equipmentId);
+
+    @Query("""
+        SELECT w FROM WorkOrder w
+        WHERE w.type = com.industrialhub.backend.maintenance.domain.WorkOrderType.CORRECTIVE
+          AND w.status = com.industrialhub.backend.maintenance.domain.WorkOrderStatus.DONE
+          AND w.startedAt IS NOT NULL
+          AND w.closedAt >= :from AND w.closedAt < :to
+    """)
+    List<WorkOrder> findCompletedCorrectiveInPeriod(
+        @Param("from") LocalDateTime from,
+        @Param("to")   LocalDateTime to
+    );
 }

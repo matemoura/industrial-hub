@@ -1,10 +1,9 @@
 package com.industrialhub.backend.common.kpi.application;
 
 import com.industrialhub.backend.common.auth.domain.Role;
+import com.industrialhub.backend.common.auth.domain.User;
 import com.industrialhub.backend.common.auth.infrastructure.UserRepository;
 import com.industrialhub.backend.maintenance.infrastructure.WorkOrderRepository;
-import com.industrialhub.backend.oee.domain.RecordType;
-import com.industrialhub.backend.oee.domain.TimeRecord;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
 import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
@@ -19,30 +18,27 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.Locale;
 import java.util.OptionalDouble;
-import java.util.stream.Collectors;
 
 @Service
 public class WeeklyReportService {
 
     private static final Logger log = LoggerFactory.getLogger(WeeklyReportService.class);
 
-    @Autowired(required = false)
+    @Autowired(required = false) // null when mail.enabled=false (dev/test)
     private JavaMailSender mailSender;
 
     private final UserRepository userRepository;
     private final TimeRecordRepository timeRecordRepository;
     private final NonConformanceRepository nonConformanceRepository;
     private final WorkOrderRepository workOrderRepository;
+    private final OeeCalculator oeeCalculator;
 
     @Value("${mail.enabled:false}")
     private boolean mailEnabled;
@@ -53,11 +49,13 @@ public class WeeklyReportService {
     public WeeklyReportService(UserRepository userRepository,
                                 TimeRecordRepository timeRecordRepository,
                                 NonConformanceRepository nonConformanceRepository,
-                                WorkOrderRepository workOrderRepository) {
+                                WorkOrderRepository workOrderRepository,
+                                OeeCalculator oeeCalculator) {
         this.userRepository = userRepository;
         this.timeRecordRepository = timeRecordRepository;
         this.nonConformanceRepository = nonConformanceRepository;
         this.workOrderRepository = workOrderRepository;
+        this.oeeCalculator = oeeCalculator;
     }
 
     @Async
@@ -74,7 +72,7 @@ public class WeeklyReportService {
         }
 
         List<String> emails = userRepository.findByRoleIn(List.of(Role.SUPERVISOR, Role.ADMIN)).stream()
-                .map(u -> u.getEmail())
+                .map(User::getEmail)
                 .filter(e -> e != null && !e.isBlank())
                 .toList();
 
@@ -92,70 +90,25 @@ public class WeeklyReportService {
         });
     }
 
-    private ReportData collectData() {
+    ReportData collectData() {
         LocalDate today = LocalDate.now();
         LocalDate weekStart = today.minusDays(6);
         LocalDateTime weekStartDt = weekStart.atStartOfDay();
         LocalDateTime todayDt = today.plusDays(1).atStartOfDay();
 
-        Double oeeAvg = computeOeeAvg(weekStart, today);
+        Double oeeAvg = oeeCalculator.computeAvg(
+                timeRecordRepository.findByPeriodAndOptionalWorker(weekStart, today, null));
         long newNcs = nonConformanceRepository.countInPeriod(weekStartDt, todayDt);
         long criticalNcs = nonConformanceRepository.countBySeverity(NcSeverity.CRITICAL);
         long openWos = workOrderRepository.countOpenByEquipmentId(null);
-        Double mttr = computeMttr(weekStart, today);
+        Double mttr = computeMttr(weekStartDt, todayDt);
 
         return new ReportData(oeeAvg, newNcs, criticalNcs, openWos, mttr);
     }
 
-    private Double computeOeeAvg(LocalDate start, LocalDate end) {
-        List<TimeRecord> records = timeRecordRepository.findByPeriodAndOptionalWorker(start, end, null);
-        if (records.isEmpty()) return null;
-
-        Map<String, List<TimeRecord>> byWorkerDay = records.stream()
-                .collect(Collectors.groupingBy(r -> r.getWorkerId() + "|" + r.getProfileDate()));
-
-        List<Double> avails = byWorkerDay.values().stream()
-                .map(this::availabilityForDay)
-                .filter(Objects::nonNull)
-                .toList();
-
-        return avails.isEmpty() ? null : avails.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-    }
-
-    private Double availabilityForDay(List<TimeRecord> dayRecords) {
-        double productive = dayRecords.stream()
-                .filter(r -> r.getRecordType() == RecordType.PROCESSO)
-                .map(r -> r.getHours() != null ? r.getHours() : BigDecimal.ZERO)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .doubleValue();
-
-        LocalDateTime entry = dayRecords.stream()
-                .filter(r -> r.getRecordType() == RecordType.REGISTRO_ENTRADA)
-                .map(TimeRecord::getStartTime)
-                .filter(Objects::nonNull)
-                .min(Comparator.naturalOrder())
-                .orElse(null);
-
-        LocalDateTime exit = dayRecords.stream()
-                .filter(r -> r.getRecordType() == RecordType.REGISTRO_SAIDA)
-                .map(r -> r.getEndTime() != null ? r.getEndTime() : r.getStartTime())
-                .filter(Objects::nonNull)
-                .max(Comparator.naturalOrder())
-                .orElse(null);
-
-        if (entry == null || exit == null || !exit.isAfter(entry)) return null;
-        double shiftHours = java.time.Duration.between(entry, exit).toMinutes() / 60.0;
-        return shiftHours == 0 ? null : productive / shiftHours;
-    }
-
-    private Double computeMttr(LocalDate start, LocalDate end) {
-        // MTTR from work orders closed in the week
+    private Double computeMttr(LocalDateTime from, LocalDateTime to) {
         List<com.industrialhub.backend.maintenance.domain.WorkOrder> completed =
-                workOrderRepository.findCompletedCorrectiveForMetrics(null).stream()
-                        .filter(wo -> wo.getClosedAt() != null &&
-                                !wo.getClosedAt().toLocalDate().isBefore(start) &&
-                                !wo.getClosedAt().toLocalDate().isAfter(end))
-                        .toList();
+                workOrderRepository.findCompletedCorrectiveInPeriod(from, to);
         if (completed.isEmpty()) return null;
         OptionalDouble avg = completed.stream()
                 .mapToLong(wo -> ChronoUnit.SECONDS.between(wo.getStartedAt(), wo.getClosedAt()))
@@ -163,9 +116,9 @@ public class WeeklyReportService {
         return avg.isPresent() ? avg.getAsDouble() / 3600.0 : null;
     }
 
-    private String buildBody(ReportData d) {
-        String oee = d.oeeAvg() != null ? String.format("%.1f%%", d.oeeAvg() * 100) : "N/A";
-        String mttr = d.mttr() != null ? String.format("%.1f h", d.mttr()) : "N/A";
+    String buildBody(ReportData d) {
+        String oee = d.oeeAvg() != null ? String.format(Locale.ROOT, "%.1f%%", d.oeeAvg() * 100) : "N/A";
+        String mttr = d.mttr() != null ? String.format(Locale.ROOT, "%.1f h", d.mttr()) : "N/A";
         return String.format(
                 "MSB Industrial Hub — Relatório Semanal\n" +
                 "========================================\n\n" +
@@ -178,5 +131,5 @@ public class WeeklyReportService {
         );
     }
 
-    private record ReportData(Double oeeAvg, long newNcs, long criticalNcs, long openWos, Double mttr) {}
+    record ReportData(Double oeeAvg, long newNcs, long criticalNcs, long openWos, Double mttr) {}
 }
