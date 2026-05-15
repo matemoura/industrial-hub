@@ -124,4 +124,78 @@ describe('LoginComponent', () => {
     expect(spy).toHaveBeenCalledWith(['/dashboard']);
     spy.mockRestore();
   });
+
+  it('displays block message and countdown on 429 response', () => {
+    vi.useFakeTimers();
+    try {
+      const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
+      comp.form.setValue({ username: 'user', password: 'wrong' });
+      comp.submit();
+
+      httpTesting.expectOne('/api/v1/auth/login').flush(
+        { message: 'Too Many Requests' },
+        {
+          status: 429,
+          statusText: 'Too Many Requests',
+          headers: { 'Retry-After': '10' },
+        },
+      );
+
+      expect(comp.blockMessage()).toContain('10 segundos');
+      expect(comp.blockSeconds()).toBe(10);
+      expect(comp.blockSeconds()).toBeGreaterThan(0);
+
+      vi.advanceTimersByTime(10000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('clears block message when countdown reaches zero', () => {
+    vi.useFakeTimers();
+    try {
+      const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
+      comp.form.setValue({ username: 'user', password: 'wrong' });
+      comp.submit();
+
+      httpTesting.expectOne('/api/v1/auth/login').flush(
+        { message: 'Too Many Requests' },
+        {
+          status: 429,
+          statusText: 'Too Many Requests',
+          headers: { 'Retry-After': '10' },
+        },
+      );
+
+      expect(comp.blockMessage()).not.toBeNull();
+
+      vi.advanceTimersByTime(10000);
+
+      expect(comp.blockMessage()).toBeNull();
+      expect(comp.blockSeconds()).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('falls back to 300 seconds when Retry-After header is absent', () => {
+    vi.useFakeTimers();
+    try {
+      const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
+      comp.form.setValue({ username: 'user', password: 'wrong' });
+      comp.submit();
+
+      httpTesting.expectOne('/api/v1/auth/login').flush(
+        { message: 'Too Many Requests' },
+        { status: 429, statusText: 'Too Many Requests' },
+      );
+
+      expect(comp.blockSeconds()).toBe(300);
+      expect(comp.blockMessage()).toContain('300 segundos');
+
+      vi.advanceTimersByTime(300000);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });
