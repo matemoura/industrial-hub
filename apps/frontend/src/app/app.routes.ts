@@ -10,6 +10,12 @@ export const routes: Routes = [
     path: 'dashboard',
     canActivate: [authGuard],
     loadComponent: () =>
+      import('./kpi/kpi-dashboard/kpi-dashboard.component').then((m) => m.KpiDashboardComponent),
+  },
+  {
+    path: 'oee/efficiency',
+    canActivate: [authGuard],
+    loadComponent: () =>
       import('./oee/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {

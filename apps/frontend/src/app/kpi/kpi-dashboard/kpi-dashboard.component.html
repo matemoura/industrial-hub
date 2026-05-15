@@ -1,0 +1,67 @@
+<div class="kpi-page">
+  <div class="page-header">
+    <h2>Dashboard</h2>
+    <span class="refresh-hint">Atualiza automaticamente a cada 5 min</span>
+  </div>
+
+  @if (errorMsg()) {
+    <div class="error-banner" role="alert">{{ errorMsg() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="kpi-grid">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="kpi-card skeleton"></div>
+      }
+    </div>
+  } @else if (kpi(); as k) {
+    <div class="kpi-grid">
+
+      <div [class]="'kpi-card ' + oeeClass(k.oeeAvgLast30Days)">
+        <span class="kpi-label">OEE médio (30 dias)</span>
+        <span class="kpi-value">{{ formatOee(k.oeeAvgLast30Days) }}</span>
+        @if (k.oeeAvgLast30Days !== null && k.oeeAvgLast30Days < 0.65) {
+          <span class="kpi-alert">Abaixo do alvo (65%)</span>
+        }
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">NCs Abertas</span>
+        <span class="kpi-value">{{ k.totalNcOpen }}</span>
+        <span class="kpi-sub">não-conformidades em aberto</span>
+      </div>
+
+      <div [class]="'kpi-card ' + criticalClass(k.totalNcCritical)">
+        <span class="kpi-label">NCs Críticas</span>
+        <span class="kpi-value">
+          {{ k.totalNcCritical }}
+          @if (k.totalNcCritical > 0) {
+            <span class="pulse-chip">CRÍTICO</span>
+          }
+        </span>
+        <span class="kpi-sub">severidade crítica</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">OSs Abertas</span>
+        <span class="kpi-value">{{ k.totalWorkOrdersOpen }}</span>
+        <span class="kpi-sub">ordens em aberto ou andamento</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">MTTR Global</span>
+        <span class="kpi-value">
+          {{ k.mttrGlobalHours !== null ? (k.mttrGlobalHours | number:'1.1-1') + ' h' : 'N/A' }}
+        </span>
+        <span class="kpi-sub">tempo médio de reparo (corretivas)</span>
+      </div>
+
+      <div class="kpi-card">
+        <span class="kpi-label">Equipamentos Ativos</span>
+        <span class="kpi-value">{{ k.activeEquipmentCount }}</span>
+        <span class="kpi-sub">equipamentos em operação</span>
+      </div>
+
+    </div>
+  }
+</div>
