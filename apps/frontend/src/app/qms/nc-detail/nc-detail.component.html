@@ -16,7 +16,7 @@
       <div class="nc-card__header">
         <div class="nc-card__title-row">
           <h2>{{ nc.title }}</h2>
-          <span [class]="'status-chip status-' + nc.status.toLowerCase()">
+          <span [class]="'status-chip status-' + nc.status.toLowerCase()" data-testid="nc-status-chip">
             {{ statusLabels[nc.status] }}
           </span>
         </div>
@@ -30,6 +30,7 @@
                 [class.btn--danger]="t.target === 'CLOSED'"
                 [class.btn--primary]="t.target === 'IN_ANALYSIS'"
                 [class.btn--secondary]="t.target === 'OPEN'"
+                [attr.data-testid]="t.target === 'IN_ANALYSIS' ? 'btn-start-analysis' : t.target === 'CLOSED' ? 'btn-close-nc' : 'btn-reopen-nc'"
                 [disabled]="transitionLoading()"
                 (click)="transition(t.target)"
               >

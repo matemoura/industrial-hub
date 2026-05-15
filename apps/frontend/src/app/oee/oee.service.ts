@@ -2,6 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export interface ImportResultDto {
+  batchId: string;
+  periodDate: string;
+  workerCount: number;
+  recordsImported: number;
+}
+
 export interface WorkerDto {
   workerId: number;
   workerName: string;
@@ -90,5 +97,12 @@ export class OeeService {
       .set('endDate', endDate)
       .set('groupBy', groupBy);
     return this.http.get<PeriodSummaryDto[]>(`${this.baseUrl}/summary`, { params });
+  }
+
+  importFile(file: File, overwrite = false): Observable<ImportResultDto> {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('overwrite', String(overwrite));
+    return this.http.post<ImportResultDto>(`${this.baseUrl}/import`, fd);
   }
 }

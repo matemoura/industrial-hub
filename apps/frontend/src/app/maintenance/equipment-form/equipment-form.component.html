@@ -17,6 +17,7 @@
             name="code"
             maxlength="50"
             placeholder="Ex.: EQ-001"
+            data-testid="equipment-code"
             required
           />
         </label>
@@ -27,6 +28,7 @@
             [ngModel]="type()"
             (ngModelChange)="type.set($event)"
             name="type"
+            data-testid="equipment-type"
             required
           >
             <option value="">Selecione…</option>
@@ -64,6 +66,7 @@
         name="name"
         maxlength="200"
         placeholder="Nome do equipamento"
+        data-testid="equipment-name"
         required
       />
     </label>
@@ -98,7 +101,7 @@
 
     <div class="form-actions">
       <a [routerLink]="isEditMode ? ['/maintenance/equipment', editId()] : '/maintenance/equipment'" class="btn btn--secondary">Cancelar</a>
-      <button type="submit" class="btn btn--primary" [disabled]="!isValid || loading()">
+      <button type="submit" class="btn btn--primary" data-testid="equipment-submit" [disabled]="!isValid || loading()">
         @if (loading()) {
           {{ isEditMode ? 'Salvando…' : 'Cadastrando…' }}
         } @else {

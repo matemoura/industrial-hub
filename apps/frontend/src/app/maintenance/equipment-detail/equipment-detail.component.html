@@ -19,7 +19,7 @@
             <span class="eq-card__code">{{ eq.code }}</span>
             <h2>{{ eq.name }}</h2>
           </div>
-          <span [class]="'status-chip status-' + eq.status.toLowerCase().replace('_', '-')">
+          <span [class]="'status-chip status-' + eq.status.toLowerCase().replace('_', '-')" data-testid="equipment-status-chip">
             {{ equipmentStatusLabels[eq.status] }}
           </span>
         </div>
@@ -89,6 +89,7 @@
             <button
               type="button"
               class="btn btn--primary btn--sm"
+              data-testid="btn-new-work-order"
               (click)="showWorkOrderForm.set(!showWorkOrderForm())"
             >
               {{ showWorkOrderForm() ? 'Cancelar' : '+ Nova OS' }}
@@ -109,6 +110,7 @@
                   [ngModel]="woType()"
                   (ngModelChange)="woType.set($event)"
                   name="woType"
+                  data-testid="wo-type"
                   required
                 >
                   <option value="">Selecione…</option>
@@ -124,6 +126,7 @@
                   [ngModel]="woPriority()"
                   (ngModelChange)="woPriority.set($event)"
                   name="woPriority"
+                  data-testid="wo-priority"
                   required
                 >
                   <option value="">Selecione…</option>
@@ -143,6 +146,7 @@
                 name="woTitle"
                 maxlength="200"
                 placeholder="Título da ordem de serviço"
+                data-testid="wo-title"
                 required
               />
             </label>
@@ -174,6 +178,7 @@
               <button
                 type="submit"
                 class="btn btn--primary"
+                data-testid="wo-submit"
                 [disabled]="!isWoFormValid || woSubmitting()"
               >
                 {{ woSubmitting() ? 'Salvando…' : 'Salvar OS' }}
@@ -199,7 +204,7 @@
                     <span [class]="'priority-chip priority-' + wo.priority.toLowerCase()">
                       {{ woPriorityLabels[wo.priority] }}
                     </span>
-                    <span [class]="'status-chip status-' + wo.status.toLowerCase().replace('_', '-')">
+                    <span [class]="'status-chip status-' + wo.status.toLowerCase().replace('_', '-')" data-testid="wo-status-chip">
                       {{ woStatusLabels[wo.status] }}
                     </span>
                   </div>
@@ -216,18 +221,18 @@
                 @if (isSupervisor) {
                   <div class="wo-item__transitions">
                     @if (wo.status === 'OPEN') {
-                      <button type="button" class="btn btn--primary btn--sm" (click)="transition(wo.id, 'IN_PROGRESS')">
+                      <button type="button" class="btn btn--primary btn--sm" data-testid="btn-wo-in_progress" (click)="transition(wo.id, 'IN_PROGRESS')">
                         Iniciar
                       </button>
-                      <button type="button" class="btn btn--danger btn--sm" (click)="transition(wo.id, 'CANCELLED')">
+                      <button type="button" class="btn btn--danger btn--sm" data-testid="btn-wo-cancelled" (click)="transition(wo.id, 'CANCELLED')">
                         Cancelar
                       </button>
                     }
                     @if (wo.status === 'IN_PROGRESS') {
-                      <button type="button" class="btn btn--primary btn--sm" (click)="transition(wo.id, 'DONE')">
+                      <button type="button" class="btn btn--primary btn--sm" data-testid="btn-wo-done" (click)="transition(wo.id, 'DONE')">
                         Concluir
                       </button>
-                      <button type="button" class="btn btn--danger btn--sm" (click)="transition(wo.id, 'CANCELLED')">
+                      <button type="button" class="btn btn--danger btn--sm" data-testid="btn-wo-cancelled" (click)="transition(wo.id, 'CANCELLED')">
                         Cancelar
                       </button>
                     }

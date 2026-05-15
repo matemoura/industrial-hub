@@ -15,6 +15,7 @@
         name="title"
         maxlength="200"
         placeholder="Descreva brevemente a não-conformidade"
+        data-testid="nc-title"
         required
       />
     </label>
@@ -26,6 +27,7 @@
           [ngModel]="type()"
           (ngModelChange)="type.set($event)"
           name="type"
+          data-testid="nc-type"
           required
         >
           <option value="">Selecione…</option>
@@ -41,6 +43,7 @@
           [ngModel]="severity()"
           (ngModelChange)="severity.set($event)"
           name="severity"
+          data-testid="nc-severity"
           required
         >
           <option value="">Selecione…</option>
@@ -68,7 +71,7 @@
 
     <div class="form-actions">
       <a routerLink="/qms/non-conformances" class="btn btn--secondary">Cancelar</a>
-      <button type="submit" class="btn btn--primary" [disabled]="!isValid || loading()">
+      <button type="submit" class="btn btn--primary" data-testid="nc-submit" [disabled]="!isValid || loading()">
         {{ loading() ? 'Registrando…' : 'Registrar NC' }}
       </button>
     </div>

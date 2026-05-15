@@ -95,7 +95,7 @@
         </thead>
         <tbody>
           @for (nc of p.content; track nc.id) {
-            <tr class="nc-row" (click)="openDetail(nc.id)">
+            <tr class="nc-row" data-testid="nc-row" (click)="openDetail(nc.id)">
               <td class="nc-title">{{ nc.title }}</td>
               <td>{{ typeLabels[nc.type] }}</td>
               <td>

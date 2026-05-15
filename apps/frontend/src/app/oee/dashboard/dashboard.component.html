@@ -1,4 +1,4 @@
-<div class="dashboard">
+<div class="dashboard" data-testid="oee-dashboard">
   <h2>Worker Efficiency Dashboard</h2>
 
   <form class="filters" (ngSubmit)="search()">
@@ -9,6 +9,7 @@
         [ngModel]="startDate()"
         (ngModelChange)="startDate.set($event)"
         name="startDate"
+        data-testid="filter-start-date"
         required
       />
     </label>
@@ -19,6 +20,7 @@
         [ngModel]="endDate()"
         (ngModelChange)="endDate.set($event)"
         name="endDate"
+        data-testid="filter-end-date"
         required
       />
     </label>
@@ -35,7 +37,7 @@
         }
       </select>
     </label>
-    <button type="submit" [disabled]="loading()">
+    <button type="submit" data-testid="filter-apply" [disabled]="loading()">
       {{ loading() ? 'Loading…' : 'Search' }}
     </button>
   </form>

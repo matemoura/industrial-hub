@@ -59,7 +59,7 @@
         </thead>
         <tbody>
           @for (eq of equipment(); track eq.id) {
-            <tr class="eq-row" (click)="openDetail(eq.id)">
+            <tr class="eq-row" data-testid="equipment-row" (click)="openDetail(eq.id)">
               <td class="eq-code">{{ eq.code }}</td>
               <td class="eq-name">{{ eq.name }}</td>
               <td>{{ typeLabels[eq.type] }}</td>

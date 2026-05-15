@@ -33,9 +33,9 @@ export class MaintenancePage {
     await this.page.click('[data-testid="wo-submit"]');
   }
 
+  /** WO transitions call the backend directly — no dialog confirmation in the template. */
   async transitionWorkOrderTo(targetStatus: string) {
     await this.page.click(`[data-testid="btn-wo-${targetStatus.toLowerCase()}"]`);
-    await this.page.click('[data-testid="confirm-dialog-ok"]');
   }
 
   equipmentStatusChip() {

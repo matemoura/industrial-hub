@@ -25,14 +25,13 @@ export class NcPage {
     await this.page.locator('[data-testid="nc-row"]').first().click();
   }
 
+  /** Transitions call the backend directly — no dialog confirmation in the template. */
   async transitionToInAnalysis() {
     await this.page.click('[data-testid="btn-start-analysis"]');
-    await this.page.click('[data-testid="confirm-dialog-ok"]');
   }
 
   async transitionToClose() {
     await this.page.click('[data-testid="btn-close-nc"]');
-    await this.page.click('[data-testid="confirm-dialog-ok"]');
   }
 
   statusChip() {
