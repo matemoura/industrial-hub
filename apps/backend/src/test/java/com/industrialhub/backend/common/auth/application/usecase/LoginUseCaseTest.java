@@ -53,7 +53,7 @@ class LoginUseCaseTest {
         User user = activeUser("admin", "hashed", Role.ADMIN);
         when(userRepository.findByUsername("admin")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("admin", "hashed")).thenReturn(true);
-        when(jwtService.generateToken("admin", "ADMIN")).thenReturn("jwt-token");
+        when(jwtService.generateToken("admin", "ADMIN", false)).thenReturn("jwt-token");
         when(jwtService.getExpirationMs()).thenReturn(28800000L);
 
         LoginResponseDto response = loginUseCase.execute(new LoginRequestDto("admin", "admin"), TEST_IP);
@@ -62,6 +62,7 @@ class LoginUseCaseTest {
         assertThat(response.username()).isEqualTo("admin");
         assertThat(response.role()).isEqualTo("ADMIN");
         assertThat(response.expiresInMs()).isEqualTo(28800000L);
+        assertThat(response.mustChangePassword()).isFalse();
     }
 
     @Test
@@ -69,7 +70,7 @@ class LoginUseCaseTest {
         User user = activeUser("admin", "hashed", Role.ADMIN);
         when(userRepository.findByUsername("admin")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("admin", "hashed")).thenReturn(true);
-        when(jwtService.generateToken("admin", "ADMIN")).thenReturn("jwt-token");
+        when(jwtService.generateToken("admin", "ADMIN", false)).thenReturn("jwt-token");
         when(jwtService.getExpirationMs()).thenReturn(28800000L);
 
         loginUseCase.execute(new LoginRequestDto("admin", "admin"), TEST_IP);
@@ -154,13 +155,34 @@ class LoginUseCaseTest {
         User user = activeUser("supervisor", "hashed", Role.SUPERVISOR);
         when(userRepository.findByUsername("supervisor")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("supervisor", "hashed")).thenReturn(true);
-        when(jwtService.generateToken("supervisor", "SUPERVISOR")).thenReturn("sup-token");
+        when(jwtService.generateToken("supervisor", "SUPERVISOR", false)).thenReturn("sup-token");
         when(jwtService.getExpirationMs()).thenReturn(28800000L);
 
         LoginResponseDto response = loginUseCase.execute(new LoginRequestDto("supervisor", "supervisor"), TEST_IP);
 
         assertThat(response.role()).isEqualTo("SUPERVISOR");
-        verify(jwtService).generateToken("supervisor", "SUPERVISOR");
+        verify(jwtService).generateToken("supervisor", "SUPERVISOR", false);
+    }
+
+    @Test
+    void mustChangePassword_isIncludedInResponse() {
+        User user = User.builder()
+                .id(UUID.randomUUID())
+                .username("newuser")
+                .password("hashed")
+                .role(Role.OPERATOR)
+                .active(true)
+                .mustChangePassword(true)
+                .build();
+        when(userRepository.findByUsername("newuser")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("pass", "hashed")).thenReturn(true);
+        when(jwtService.generateToken("newuser", "OPERATOR", true)).thenReturn("token-mcp");
+        when(jwtService.getExpirationMs()).thenReturn(28800000L);
+
+        LoginResponseDto response = loginUseCase.execute(new LoginRequestDto("newuser", "pass"), TEST_IP);
+
+        assertThat(response.mustChangePassword()).isTrue();
+        verify(jwtService).generateToken("newuser", "OPERATOR", true);
     }
 
     @Test

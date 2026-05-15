@@ -31,7 +31,7 @@ class AuthControllerTest {
         when(request.getHeader("X-Forwarded-For")).thenReturn("203.0.113.5, 10.0.0.1");
 
         LoginRequestDto loginRequest = new LoginRequestDto("user", "pass");
-        LoginResponseDto loginResponse = new LoginResponseDto("token", "user", "OPERATOR", 28800000L);
+        LoginResponseDto loginResponse = new LoginResponseDto("token", "user", "OPERATOR", 28800000L, false);
         when(loginUseCase.execute(any(), eq("203.0.113.5"))).thenReturn(loginResponse);
 
         ResponseEntity<LoginResponseDto> response = authController.login(loginRequest, request);
@@ -48,7 +48,7 @@ class AuthControllerTest {
         when(request.getRemoteAddr()).thenReturn("192.168.1.10");
 
         LoginRequestDto loginRequest = new LoginRequestDto("user", "pass");
-        LoginResponseDto loginResponse = new LoginResponseDto("token", "user", "OPERATOR", 28800000L);
+        LoginResponseDto loginResponse = new LoginResponseDto("token", "user", "OPERATOR", 28800000L, false);
         when(loginUseCase.execute(any(), eq("192.168.1.10"))).thenReturn(loginResponse);
 
         ResponseEntity<LoginResponseDto> response = authController.login(loginRequest, request);
