@@ -1,5 +1,7 @@
 package com.industrialhub.backend.qms.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.qms.application.dto.ActionResponse;
 import com.industrialhub.backend.qms.domain.ActionNotAllowedException;
 import com.industrialhub.backend.qms.domain.ActionNotFoundException;
@@ -14,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -22,13 +25,16 @@ public class CompleteCorrectiveActionUseCase {
     private final NonConformanceRepository ncRepository;
     private final CorrectiveActionRepository actionRepository;
     private final QmsEmailService emailService;
+    private final AuditService auditService;
 
     public CompleteCorrectiveActionUseCase(NonConformanceRepository ncRepository,
                                             CorrectiveActionRepository actionRepository,
-                                            QmsEmailService emailService) {
+                                            QmsEmailService emailService,
+                                            AuditService auditService) {
         this.ncRepository = ncRepository;
         this.actionRepository = actionRepository;
         this.emailService = emailService;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -48,6 +54,9 @@ public class CompleteCorrectiveActionUseCase {
         action.setCompletedAt(LocalDateTime.now());
         action.setCompletedBy(username);
         actionRepository.save(action);
+
+        auditService.log(username, AuditAction.ACTION_COMPLETED, "CorrectiveAction",
+                actionId, Map.of("ncId", ncId.toString()));
 
         boolean hasPending = actionRepository.existsByNonConformanceIdAndStatus(ncId, ActionStatus.PENDING);
         if (!hasPending) {

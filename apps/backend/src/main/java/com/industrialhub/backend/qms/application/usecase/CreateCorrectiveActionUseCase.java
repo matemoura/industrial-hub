@@ -1,5 +1,7 @@
 package com.industrialhub.backend.qms.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.qms.application.dto.ActionResponse;
 import com.industrialhub.backend.qms.application.dto.CreateActionRequest;
 import com.industrialhub.backend.qms.domain.ActionNotAllowedException;
@@ -13,6 +15,7 @@ import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -20,15 +23,18 @@ public class CreateCorrectiveActionUseCase {
 
     private final NonConformanceRepository ncRepository;
     private final CorrectiveActionRepository actionRepository;
+    private final AuditService auditService;
 
     public CreateCorrectiveActionUseCase(NonConformanceRepository ncRepository,
-                                         CorrectiveActionRepository actionRepository) {
+                                         CorrectiveActionRepository actionRepository,
+                                         AuditService auditService) {
         this.ncRepository = ncRepository;
         this.actionRepository = actionRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
-    public ActionResponse execute(UUID ncId, CreateActionRequest request) {
+    public ActionResponse execute(UUID ncId, CreateActionRequest request, String username) {
         NonConformance nc = ncRepository.findById(ncId)
                 .orElseThrow(() -> new NcNotFoundException(ncId));
 
@@ -46,6 +52,11 @@ public class CreateCorrectiveActionUseCase {
                 .status(ActionStatus.PENDING)
                 .build();
 
-        return ActionResponse.from(actionRepository.save(action));
+        ActionResponse response = ActionResponse.from(actionRepository.save(action));
+
+        auditService.log(username, AuditAction.ACTION_CREATED, "CorrectiveAction",
+                response.id(), Map.of("ncId", ncId.toString()));
+
+        return response;
     }
 }

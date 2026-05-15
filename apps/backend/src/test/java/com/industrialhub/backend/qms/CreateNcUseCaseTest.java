@@ -1,5 +1,6 @@
 package com.industrialhub.backend.qms;
 
+import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.qms.application.dto.CreateNcRequest;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.application.usecase.CreateNcUseCase;
@@ -33,11 +34,14 @@ class CreateNcUseCaseTest {
     @Mock
     private QmsEmailService emailService;
 
+    @Mock
+    private AuditService auditService;
+
     private CreateNcUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new CreateNcUseCase(repository, emailService);
+        useCase = new CreateNcUseCase(repository, emailService, auditService);
     }
 
     @Test

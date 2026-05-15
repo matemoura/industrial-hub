@@ -12,4 +12,6 @@ public interface ImportBatchRepository extends JpaRepository<ImportBatch, UUID> 
     Optional<ImportBatch> findByPeriodDate(LocalDate periodDate);
 
     boolean existsByPeriodDate(LocalDate periodDate);
+
+    boolean existsByPeriodDateAfter(LocalDate date);
 }

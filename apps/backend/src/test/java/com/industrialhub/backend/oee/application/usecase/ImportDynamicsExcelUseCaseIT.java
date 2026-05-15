@@ -35,7 +35,7 @@ class ImportDynamicsExcelUseCaseIT {
     void execute_validFile_persistsBatchAndRecords() throws Exception {
         MockMultipartFile file = buildMockFile("test_28abr.xlsx", LocalDate.of(2026, 4, 28));
 
-        ImportResultDto result = useCase.execute(file, false);
+        ImportResultDto result = useCase.execute(file, false, "system");
 
         assertThat(result.batchId()).isNotNull();
         assertThat(result.periodDate()).isEqualTo(LocalDate.of(2026, 4, 28));
@@ -49,11 +49,11 @@ class ImportDynamicsExcelUseCaseIT {
     @Test
     void execute_duplicatePeriod_throwsDuplicateImportException() throws Exception {
         MockMultipartFile file = buildMockFile("test_29abr.xlsx", LocalDate.of(2026, 4, 29));
-        useCase.execute(file, false);
+        useCase.execute(file, false, "system");
 
         MockMultipartFile duplicate = buildMockFile("test_29abr_dup.xlsx", LocalDate.of(2026, 4, 29));
 
-        assertThatThrownBy(() -> useCase.execute(duplicate, false))
+        assertThatThrownBy(() -> useCase.execute(duplicate, false, "system"))
                 .isInstanceOf(DuplicateImportException.class)
                 .hasMessageContaining("2026-04-29");
     }

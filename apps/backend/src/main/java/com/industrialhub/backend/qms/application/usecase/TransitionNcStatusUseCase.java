@@ -1,5 +1,7 @@
 package com.industrialhub.backend.qms.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.domain.InvalidNcTransitionException;
 import com.industrialhub.backend.qms.domain.NcNotFoundException;
@@ -24,9 +26,11 @@ public class TransitionNcStatusUseCase {
     );
 
     private final NonConformanceRepository repository;
+    private final AuditService auditService;
 
-    public TransitionNcStatusUseCase(NonConformanceRepository repository) {
+    public TransitionNcStatusUseCase(NonConformanceRepository repository, AuditService auditService) {
         this.repository = repository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -39,6 +43,7 @@ public class TransitionNcStatusUseCase {
             throw new InvalidNcTransitionException(nc.getStatus(), targetStatus, allowed);
         }
 
+        NcStatus previousStatus = nc.getStatus();
         nc.setStatus(targetStatus);
 
         if (targetStatus == NcStatus.CLOSED) {
@@ -49,6 +54,11 @@ public class TransitionNcStatusUseCase {
             nc.setClosedBy(null);
         }
 
-        return NcResponse.from(repository.save(nc));
+        NcResponse response = NcResponse.from(repository.save(nc));
+
+        auditService.log(username, AuditAction.NC_STATUS_CHANGED, "NonConformance", id,
+                Map.of("from", previousStatus.name(), "to", targetStatus.name()));
+
+        return response;
     }
 }

@@ -1,5 +1,7 @@
 package com.industrialhub.backend.maintenance.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.maintenance.application.dto.CreateWorkOrderRequest;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderResponse;
 import com.industrialhub.backend.maintenance.domain.Equipment;
@@ -14,17 +16,21 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Map;
 
 @Service
 public class CreateWorkOrderUseCase {
 
     private final EquipmentRepository equipmentRepository;
     private final WorkOrderRepository workOrderRepository;
+    private final AuditService auditService;
 
     public CreateWorkOrderUseCase(EquipmentRepository equipmentRepository,
-                                   WorkOrderRepository workOrderRepository) {
+                                   WorkOrderRepository workOrderRepository,
+                                   AuditService auditService) {
         this.equipmentRepository = equipmentRepository;
         this.workOrderRepository = workOrderRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -50,6 +56,10 @@ public class CreateWorkOrderUseCase {
         }
 
         WorkOrder saved = workOrderRepository.save(workOrder);
+
+        auditService.log(username, AuditAction.WORK_ORDER_CREATED, "WorkOrder", saved.getId(),
+                Map.of("type", saved.getType().name(), "equipmentId", request.equipmentId().toString()));
+
         return WorkOrderResponse.from(saved);
     }
 }

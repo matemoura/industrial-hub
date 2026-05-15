@@ -55,7 +55,8 @@ public class OeeController {
     @PostMapping("/imports")
     public ResponseEntity<?> importExcel(
             @RequestParam("file") MultipartFile file,
-            @RequestParam(defaultValue = "false") boolean overwrite) {
+            @RequestParam(defaultValue = "false") boolean overwrite,
+            java.security.Principal principal) {
         if (file.isEmpty()) {
             return ResponseEntity.badRequest()
                     .body(Map.of("message", "Arquivo vazio"));
@@ -64,7 +65,8 @@ public class OeeController {
             return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
                     .body(Map.of("message", "Formato inválido. Envie um arquivo .xlsx exportado do Dynamics"));
         }
-        ImportResultDto result = importUseCase.execute(file, overwrite);
+        ImportResultDto result = importUseCase.execute(file, overwrite,
+                principal != null ? principal.getName() : "system");
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 

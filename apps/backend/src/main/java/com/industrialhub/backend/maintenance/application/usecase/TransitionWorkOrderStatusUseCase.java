@@ -1,5 +1,7 @@
 package com.industrialhub.backend.maintenance.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderResponse;
 import com.industrialhub.backend.maintenance.domain.Equipment;
 import com.industrialhub.backend.maintenance.domain.EquipmentStatus;
@@ -30,11 +32,14 @@ public class TransitionWorkOrderStatusUseCase {
 
     private final WorkOrderRepository workOrderRepository;
     private final EquipmentRepository equipmentRepository;
+    private final AuditService auditService;
 
     public TransitionWorkOrderStatusUseCase(WorkOrderRepository workOrderRepository,
-                                             EquipmentRepository equipmentRepository) {
+                                             EquipmentRepository equipmentRepository,
+                                             AuditService auditService) {
         this.workOrderRepository = workOrderRepository;
         this.equipmentRepository = equipmentRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
@@ -47,6 +52,7 @@ public class TransitionWorkOrderStatusUseCase {
             throw new InvalidWorkOrderTransitionException(workOrder.getStatus(), targetStatus, allowed);
         }
 
+        WorkOrderStatus previousStatus = workOrder.getStatus();
         workOrder.setStatus(targetStatus);
 
         switch (targetStatus) {
@@ -65,6 +71,10 @@ public class TransitionWorkOrderStatusUseCase {
         }
 
         WorkOrder saved = workOrderRepository.save(workOrder);
+
+        auditService.log(username, AuditAction.WORK_ORDER_STATUS_CHANGED, "WorkOrder", id,
+                Map.of("from", previousStatus.name(), "to", targetStatus.name()));
+
         return WorkOrderResponse.from(saved);
     }
 }

@@ -37,6 +37,8 @@ public class SecurityConfig {
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/actuator/health").permitAll()
+                .requestMatchers("/actuator/**").hasRole("ADMIN")
                 // OEE & worker reads: OPERATOR and above
                 .requestMatchers(HttpMethod.GET, "/api/v1/oee/**", "/api/v1/workers/**")
                     .hasAnyRole("OPERATOR", "SUPERVISOR", "ADMIN")

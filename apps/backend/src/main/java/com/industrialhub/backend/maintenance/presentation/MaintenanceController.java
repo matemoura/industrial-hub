@@ -73,8 +73,9 @@ public class MaintenanceController {
     @PostMapping("/equipment")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasRole('ADMIN')")
-    public EquipmentResponse createEquipment(@Valid @RequestBody CreateEquipmentRequest request) {
-        return createEquipment.execute(request);
+    public EquipmentResponse createEquipment(@Valid @RequestBody CreateEquipmentRequest request,
+                                              Principal principal) {
+        return createEquipment.execute(request, principal.getName());
     }
 
     @GetMapping("/equipment")
@@ -101,8 +102,8 @@ public class MaintenanceController {
     @DeleteMapping("/equipment/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
-    public void deleteEquipment(@PathVariable UUID id) {
-        deleteEquipment.execute(id);
+    public void deleteEquipment(@PathVariable UUID id, Principal principal) {
+        deleteEquipment.execute(id, principal.getName());
     }
 
     // --- Work order endpoints ---

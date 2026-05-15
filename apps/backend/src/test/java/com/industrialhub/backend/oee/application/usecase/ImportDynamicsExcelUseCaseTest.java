@@ -32,6 +32,7 @@ class ImportDynamicsExcelUseCaseTest {
     @Mock private DynamicsExcelParser parser;
     @Mock private ImportBatchRepository batchRepository;
     @Mock private TimeRecordRepository timeRecordRepository;
+    @Mock private com.industrialhub.backend.common.application.AuditService auditService;
     @Mock private MultipartFile file;
 
     @InjectMocks
@@ -46,7 +47,7 @@ class ImportDynamicsExcelUseCaseTest {
         when(batchRepository.findByPeriodDate(PERIOD)).thenReturn(Optional.empty());
         stubBatchSave();
 
-        ImportResultDto result = useCase.execute(file, false);
+        ImportResultDto result = useCase.execute(file, false, "system");
 
         assertThat(result.replaced()).isFalse();
         assertThat(result.periodDate()).isEqualTo(PERIOD);
@@ -61,7 +62,7 @@ class ImportDynamicsExcelUseCaseTest {
         ImportBatch existing = existingBatch();
         when(batchRepository.findByPeriodDate(PERIOD)).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> useCase.execute(file, false))
+        assertThatThrownBy(() -> useCase.execute(file, false, "system"))
                 .isInstanceOf(DuplicateImportException.class);
 
         verify(batchRepository, never()).delete(any());
@@ -75,7 +76,7 @@ class ImportDynamicsExcelUseCaseTest {
         when(batchRepository.findByPeriodDate(PERIOD)).thenReturn(Optional.of(existing));
         stubBatchSave();
 
-        ImportResultDto result = useCase.execute(file, true);
+        ImportResultDto result = useCase.execute(file, true, "system");
 
         assertThat(result.replaced()).isTrue();
         verify(timeRecordRepository).deleteAllByBatch(existing);
@@ -90,7 +91,7 @@ class ImportDynamicsExcelUseCaseTest {
         when(batchRepository.findByPeriodDate(PERIOD)).thenReturn(Optional.empty());
         stubBatchSave();
 
-        ImportResultDto result = useCase.execute(file, true);
+        ImportResultDto result = useCase.execute(file, true, "system");
 
         assertThat(result.replaced()).isFalse();
         verify(batchRepository, never()).delete(any());

@@ -1,0 +1,13 @@
+package com.industrialhub.backend.common.domain;
+
+public enum AuditAction {
+    IMPORT_CREATED,
+    NC_CREATED,
+    NC_STATUS_CHANGED,
+    ACTION_CREATED,
+    ACTION_COMPLETED,
+    WORK_ORDER_CREATED,
+    WORK_ORDER_STATUS_CHANGED,
+    EQUIPMENT_CREATED,
+    EQUIPMENT_DELETED
+}

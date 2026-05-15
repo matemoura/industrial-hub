@@ -121,8 +121,9 @@ public class QmsController {
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
     public ActionResponse createAction(@PathVariable UUID id,
-                                       @Valid @RequestBody CreateActionRequest request) {
-        return createAction.execute(id, request);
+                                       @Valid @RequestBody CreateActionRequest request,
+                                       Principal principal) {
+        return createAction.execute(id, request, principal.getName());
     }
 
     @GetMapping("/{id}/actions")

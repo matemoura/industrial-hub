@@ -1,5 +1,7 @@
 package com.industrialhub.backend.oee.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.oee.application.dto.ImportResultDto;
 import com.industrialhub.backend.oee.application.parser.DynamicsExcelParser;
 import com.industrialhub.backend.oee.application.parser.ParseResult;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class ImportDynamicsExcelUseCase {
@@ -25,17 +28,20 @@ public class ImportDynamicsExcelUseCase {
     private final DynamicsExcelParser parser;
     private final ImportBatchRepository batchRepository;
     private final TimeRecordRepository timeRecordRepository;
+    private final AuditService auditService;
 
     public ImportDynamicsExcelUseCase(DynamicsExcelParser parser,
                                       ImportBatchRepository batchRepository,
-                                      TimeRecordRepository timeRecordRepository) {
+                                      TimeRecordRepository timeRecordRepository,
+                                      AuditService auditService) {
         this.parser = parser;
         this.batchRepository = batchRepository;
         this.timeRecordRepository = timeRecordRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
-    public ImportResultDto execute(MultipartFile file, boolean overwrite) {
+    public ImportResultDto execute(MultipartFile file, boolean overwrite, String username) {
         String rawFileName = file.getOriginalFilename();
         String fileName = rawFileName != null ? rawFileName.replaceAll("[\r\n\t]", "_") : "unknown";
         log.info("Iniciando importação do arquivo: {}", fileName);
@@ -89,6 +95,11 @@ public class ImportDynamicsExcelUseCase {
 
         log.info("Importação concluída: {} registros, {} trabalhadores, data {}",
                 records.size(), parsed.workerCount(), parsed.periodDate());
+
+        auditService.log(username, AuditAction.IMPORT_CREATED, "ImportBatch", batch.getId(),
+                Map.of("periodDate", batch.getPeriodDate().toString(),
+                       "rowCount", records.size(),
+                       "replaced", replaced));
 
         return new ImportResultDto(
                 batch.getId(),
