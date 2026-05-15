@@ -47,13 +47,15 @@ public class LoginUseCase {
                 throw new InvalidCredentialsException();
             }
 
-            String token = jwtService.generateToken(user.getUsername(), user.getRole().name());
+            String token = jwtService.generateToken(
+                    user.getUsername(), user.getRole().name(), user.isMustChangePassword());
 
             return new LoginResponseDto(
                     token,
                     user.getUsername(),
                     user.getRole().name(),
-                    jwtService.getExpirationMs()
+                    jwtService.getExpirationMs(),
+                    user.isMustChangePassword()
             );
         } catch (InvalidCredentialsException ex) {
             auditService.logWithIp(

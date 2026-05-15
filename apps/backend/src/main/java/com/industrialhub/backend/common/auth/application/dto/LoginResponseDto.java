@@ -4,5 +4,6 @@ public record LoginResponseDto(
         String token,
         String username,
         String role,
-        long expiresInMs
+        long expiresInMs,
+        boolean mustChangePassword
 ) {}

@@ -36,14 +36,21 @@ public class JwtService {
     }
 
     public String generateToken(String username, String role) {
-        return Jwts.builder()
+        return generateToken(username, role, false);
+    }
+
+    public String generateToken(String username, String role, boolean mustChangePassword) {
+        var builder = Jwts.builder()
                 .subject(username)
                 .claim("role", role)
                 .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
-                .signWith(getSigningKey())
-                .compact();
+                .signWith(getSigningKey());
+        if (mustChangePassword) {
+            builder.claim("mustChangePassword", true);
+        }
+        return builder.compact();
     }
 
     public String extractUsername(String token) {

@@ -33,4 +33,8 @@ public class User {
 
     @Column(length = 100)
     private String email;
+
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean mustChangePassword = false;
 }

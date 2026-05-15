@@ -1,6 +1,10 @@
 package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.common.auth.application.usecase.InvalidCredentialsException;
+import com.industrialhub.backend.common.auth.domain.InvalidPasswordException;
+import com.industrialhub.backend.common.auth.domain.LastAdminException;
+import com.industrialhub.backend.common.auth.domain.UserAlreadyExistsException;
+import com.industrialhub.backend.common.auth.domain.UserNotFoundException;
 import com.industrialhub.backend.common.security.TooManyRequestsException;
 import com.industrialhub.backend.maintenance.domain.EquipmentDuplicateCodeException;
 import com.industrialhub.backend.maintenance.domain.EquipmentHasOpenOrdersException;
@@ -161,6 +165,38 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
                 "message", ex.getMessage(),
                 "allowedNext", ex.getAllowedNext(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(UserNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleUserNotFound(UserNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(UserAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleUserAlreadyExists(UserAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(LastAdminException.class)
+    public ResponseEntity<Map<String, Object>> handleLastAdmin(LastAdminException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidPassword(InvalidPasswordException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));
     }

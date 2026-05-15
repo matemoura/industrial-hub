@@ -59,6 +59,8 @@ public class SecurityConfig {
                 // QMS status transitions: SUPERVISOR and above
                 .requestMatchers(HttpMethod.PUT, "/api/v1/qms/**")
                     .hasAnyRole("SUPERVISOR", "ADMIN")
+                // User management: ADMIN only
+                .requestMatchers("/api/v1/admin/users/**").hasRole("ADMIN")
                 // Everything else requires authentication
                 .anyRequest().authenticated()
             )
