@@ -1,8 +1,8 @@
 package com.industrialhub.backend.common.presentation;
 
 import com.industrialhub.backend.common.application.dto.AuditLogResponse;
+import com.industrialhub.backend.common.application.usecase.GetAuditLogUseCase;
 import com.industrialhub.backend.common.domain.AuditAction;
-import com.industrialhub.backend.common.infrastructure.AuditLogRepository;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -16,10 +16,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1/admin")
 public class AdminController {
 
-    private final AuditLogRepository auditLogRepository;
+    private final GetAuditLogUseCase getAuditLogUseCase;
 
-    public AdminController(AuditLogRepository auditLogRepository) {
-        this.auditLogRepository = auditLogRepository;
+    public AdminController(GetAuditLogUseCase getAuditLogUseCase) {
+        this.getAuditLogUseCase = getAuditLogUseCase;
     }
 
     @GetMapping("/audit-log")
@@ -30,7 +30,6 @@ public class AdminController {
         @RequestParam(required = false) String username,
         @PageableDefault(size = 50) Pageable pageable
     ) {
-        return auditLogRepository.findWithFilters(entityType, action, username, pageable)
-                .map(AuditLogResponse::from);
+        return getAuditLogUseCase.execute(entityType, action, username, pageable);
     }
 }

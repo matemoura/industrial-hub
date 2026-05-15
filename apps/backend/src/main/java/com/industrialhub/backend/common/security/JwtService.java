@@ -3,14 +3,23 @@ package com.industrialhub.backend.common.security;
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
 import java.util.Date;
+import java.util.UUID;
 
 @Service
 public class JwtService {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
+
+    private static final String DEV_SECRET_PLACEHOLDER =
+            "dGVzdFNlY3JldEtleUZvckRldlVzZU9ubHlOb3RGb3JQcm9kdWN0aW9u";
 
     @Value("${app.jwt.secret}")
     private String secret;
@@ -18,10 +27,19 @@ public class JwtService {
     @Value("${app.jwt.expiration-ms:28800000}")
     private long expirationMs;
 
+    @PostConstruct
+    void validateSecret() {
+        if (secret.equals(DEV_SECRET_PLACEHOLDER)) {
+            log.warn("SECURITY: JWT secret is using the dev placeholder. " +
+                     "Set JWT_SECRET environment variable in production.");
+        }
+    }
+
     public String generateToken(String username, String role) {
         return Jwts.builder()
                 .subject(username)
                 .claim("role", role)
+                .id(UUID.randomUUID().toString())
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + expirationMs))
                 .signWith(getSigningKey())

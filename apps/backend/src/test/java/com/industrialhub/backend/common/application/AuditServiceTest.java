@@ -50,6 +50,7 @@ class AuditServiceTest {
         assertThat(saved.getEntityId()).isEqualTo(entityId.toString());
         assertThat(saved.getDetails()).contains("HIGH");
         assertThat(saved.getTimestamp()).isNotNull();
+        assertThat(saved.getIpAddress()).isNull(); // sobrecarga UUID não propaga IP
     }
 
     @Test
@@ -77,5 +78,50 @@ class AuditServiceTest {
 
         assertThat(captor.getValue().getEntityId()).isEqualTo("batch-123");
         assertThat(captor.getValue().getDetails()).contains("42");
+        assertThat(captor.getValue().getIpAddress()).isNull(); // sobrecarga String não propaga IP
+    }
+
+    // SH-22: testa o refactor doSave — logWithIp deve persistir ipAddress
+    @Test
+    void logWithIp_persistsIpAddressCorrectly() {
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.logWithIp("attacker", AuditAction.LOGIN_FAILED, "Auth",
+                "attacker", Map.of("ipAddress", "10.0.0.99"), "10.0.0.99");
+
+        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(repository).save(captor.capture());
+
+        AuditLog saved = captor.getValue();
+        assertThat(saved.getUsername()).isEqualTo("attacker");
+        assertThat(saved.getAction()).isEqualTo(AuditAction.LOGIN_FAILED);
+        assertThat(saved.getIpAddress()).isEqualTo("10.0.0.99");
+        assertThat(saved.getEntityType()).isEqualTo("Auth");
+    }
+
+    @Test
+    void logWithIp_withNullIp_persistsNullIpAddress() {
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.logWithIp("user", AuditAction.LOGIN_FAILED, "Auth",
+                "user", null, null);
+
+        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(repository).save(captor.capture());
+
+        assertThat(captor.getValue().getIpAddress()).isNull();
+    }
+
+    @Test
+    void logWithIp_withEmptyDetails_persistsNullDetailsJson() {
+        when(repository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        service.logWithIp("user", AuditAction.LOGIN_FAILED, "Auth",
+                "user", Map.of(), "192.168.1.1");
+
+        ArgumentCaptor<AuditLog> captor = ArgumentCaptor.forClass(AuditLog.class);
+        verify(repository).save(captor.capture());
+
+        assertThat(captor.getValue().getDetails()).isNull();
     }
 }

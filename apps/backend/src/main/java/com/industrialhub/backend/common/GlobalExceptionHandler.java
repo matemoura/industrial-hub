@@ -1,6 +1,7 @@
 package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.common.auth.application.usecase.InvalidCredentialsException;
+import com.industrialhub.backend.common.security.TooManyRequestsException;
 import com.industrialhub.backend.maintenance.domain.EquipmentDuplicateCodeException;
 import com.industrialhub.backend.maintenance.domain.EquipmentHasOpenOrdersException;
 import com.industrialhub.backend.maintenance.domain.EquipmentNotFoundException;
@@ -20,7 +21,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
 import java.util.Map;
@@ -50,6 +53,16 @@ public class GlobalExceptionHandler {
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));
+    }
+
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<Map<String, Object>> handleTooManyRequests(TooManyRequestsException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .header("Retry-After", String.valueOf(ex.getRetryAfterSeconds()))
+                .body(Map.of(
+                        "message", ex.getMessage(),
+                        "timestamp", Instant.now().toString()
+                ));
     }
 
     @ExceptionHandler(DuplicateImportException.class)
@@ -150,6 +163,12 @@ public class GlobalExceptionHandler {
                 "allowedNext", ex.getAllowedNext(),
                 "timestamp", Instant.now().toString()
         ));
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
+    public Map<String, String> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
+        return Map.of("message", "Arquivo muito grande. Limite: 10 MB.");
     }
 
     @ExceptionHandler(Exception.class)
