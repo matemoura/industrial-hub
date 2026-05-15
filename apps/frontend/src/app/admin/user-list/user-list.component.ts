@@ -5,7 +5,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { LowerCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserResponse, UserService, CreateUserRequest } from '../user.service';
 
@@ -13,7 +13,7 @@ import { UserResponse, UserService, CreateUserRequest } from '../user.service';
   selector: 'app-user-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [CommonModule, FormsModule],
+  imports: [LowerCasePipe, FormsModule],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.scss',
 })
@@ -97,6 +97,9 @@ export class UserListComponent implements OnInit {
   }
 
   toggleActive(user: UserResponse): void {
+    const label = user.active ? 'desativar' : 'reativar';
+    if (!confirm(`Confirmar ${label} o usuário "${user.username}"?`)) return;
+
     const action = user.active
       ? this.userService.deactivate(user.id)
       : this.userService.reactivate(user.id);
