@@ -14,6 +14,7 @@ export interface LoginResponse {
   username: string;
   role: string;
   expiresInMs: number;
+  mustChangePassword: boolean;
 }
 
 interface JwtPayload {
@@ -21,6 +22,7 @@ interface JwtPayload {
   role: string;
   exp: number;
   iat: number;
+  mustChangePassword?: boolean;
 }
 
 const TOKEN_KEY = 'msb_token';
@@ -40,6 +42,7 @@ export class AuthService {
 
   readonly role = computed(() => this._payload()?.role ?? null);
   readonly username = computed(() => this._payload()?.sub ?? null);
+  readonly mustChangePassword = computed(() => this._payload()?.mustChangePassword === true);
 
   login(credentials: LoginRequest): Observable<LoginResponse> {
     return this.http.post<LoginResponse>('/api/v1/auth/login', credentials).pipe(
@@ -48,6 +51,11 @@ export class AuthService {
         this._token.set(res.token);
       }),
     );
+  }
+
+  updateToken(newToken: string): void {
+    localStorage.setItem(TOKEN_KEY, newToken);
+    this._token.set(newToken);
   }
 
   logout(): void {

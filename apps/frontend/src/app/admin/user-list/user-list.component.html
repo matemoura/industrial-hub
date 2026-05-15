@@ -1,0 +1,141 @@
+<div class="page-wrapper">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Gestão de Usuários</h1>
+      <p class="page-subtitle">Cadastro e administração de contas do sistema</p>
+    </div>
+    <button class="btn-primary" (click)="openCreateDialog()">+ Novo Usuário</button>
+  </div>
+
+  @if (successMessage()) {
+    <div class="alert alert-success" role="alert">{{ successMessage() }}</div>
+  }
+
+  @if (error()) {
+    <div class="alert alert-error" role="alert">
+      {{ error() }}
+      <button class="alert-close" (click)="dismissError()" type="button" aria-label="Fechar">×</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="loading-state">Carregando usuários…</div>
+  } @else {
+    <div class="table-card">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Usuário</th>
+            <th>E-mail</th>
+            <th>Role</th>
+            <th>Status</th>
+            <th>Senha temp.</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (user of users(); track user.id) {
+            <tr [class.inactive]="!user.active">
+              <td class="username-cell">{{ user.username }}</td>
+              <td>{{ user.email }}</td>
+              <td>
+                <button
+                  class="chip chip-role chip-{{ user.role | lowercase }}"
+                  (click)="openRoleDialog(user)"
+                  type="button"
+                  [attr.aria-label]="'Alterar role de ' + user.username"
+                >
+                  {{ user.role }}
+                </button>
+              </td>
+              <td>
+                <span class="chip" [class.chip-active]="user.active" [class.chip-inactive]="!user.active">
+                  {{ user.active ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+              <td class="center">
+                @if (user.mustChangePassword) {
+                  <span class="warning-icon" title="Deve trocar a senha no próximo login">⚠</span>
+                }
+              </td>
+              <td class="actions-cell">
+                <button
+                  class="btn-action"
+                  [class.btn-deactivate]="user.active"
+                  [class.btn-reactivate]="!user.active"
+                  (click)="toggleActive(user)"
+                  type="button"
+                >
+                  {{ user.active ? 'Desativar' : 'Reativar' }}
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>
+
+@if (showCreateDialog()) {
+  <div class="dialog-overlay" (click)="showCreateDialog.set(false)" role="dialog" aria-modal="true" aria-label="Novo usuário">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <h2 class="dialog-title">Novo Usuário</h2>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="new-username">Usuário</label>
+          <input id="new-username" type="text" [(ngModel)]="newUser.username" placeholder="ex: joao.silva" />
+        </div>
+        <div class="field">
+          <label for="new-email">E-mail</label>
+          <input id="new-email" type="email" [(ngModel)]="newUser.email" placeholder="ex: joao@msbbrasil.com" />
+        </div>
+        <div class="field">
+          <label for="new-role">Role</label>
+          <select id="new-role" [(ngModel)]="newUser.role">
+            @for (r of roles; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </div>
+        <div class="field">
+          <label for="new-password">Senha temporária</label>
+          <input id="new-password" type="password" [(ngModel)]="newUser.temporaryPassword" placeholder="Mín. 8 chars, 1 maiúscula, 1 dígito" />
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-secondary" (click)="showCreateDialog.set(false)" type="button">Cancelar</button>
+        <button
+          class="btn-primary"
+          (click)="submitCreate()"
+          type="button"
+          [disabled]="!newUser.username || !newUser.email || !newUser.temporaryPassword"
+        >
+          Criar
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showRoleDialog()) {
+  <div class="dialog-overlay" (click)="showRoleDialog.set(false)" role="dialog" aria-modal="true" aria-label="Alterar role">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <h2 class="dialog-title">Alterar Role — {{ selectedUser()?.username }}</h2>
+      <div class="dialog-body">
+        <div class="field">
+          <label for="edit-role">Novo role</label>
+          <select id="edit-role" [ngModel]="selectedRole()" (ngModelChange)="selectedRole.set($event)">
+            @for (r of roles; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-secondary" (click)="showRoleDialog.set(false)" type="button">Cancelar</button>
+        <button class="btn-primary" (click)="submitRoleChange()" type="button">Confirmar</button>
+      </div>
+    </div>
+  </div>
+}
