@@ -1,0 +1,111 @@
+<section class="rca-section">
+  <div class="rca-header">
+    <h3>Análise de Causa Raiz (5-Porquês)</h3>
+
+    @if (canInitiate() && !showWizard()) {
+      <button
+        type="button"
+        class="btn btn--primary btn--sm"
+        [disabled]="initiateDisabled()"
+        [title]="initiateDisabled() ? 'Inicie a análise da NC primeiro' : ''"
+        (click)="initiate()"
+        data-testid="btn-initiate-rca"
+      >
+        Iniciar Análise de Causa Raiz
+      </button>
+    }
+  </div>
+
+  @if (!showWizard() && !nc().rca && !canInitiate()) {
+    <p class="rca-empty">Nenhuma análise de causa raiz registrada.</p>
+  }
+
+  @if (showWizard() || nc().rca) {
+    <div class="rca-wizard">
+
+      @if (errorMsg()) {
+        <p class="msg msg--error" data-testid="rca-error">{{ errorMsg() }}</p>
+      }
+
+      @if (successMsg()) {
+        <p class="msg msg--success" data-testid="rca-success">{{ successMsg() }}</p>
+      }
+
+      @for (n of pairs(); track n) {
+        <div class="rca-pair" [attr.data-testid]="'rca-pair-' + n">
+          <div class="rca-pair__label">Porquê {{ n }}</div>
+
+          <label class="form-field">
+            Por quê? <span class="required">*</span>
+            <textarea
+              rows="2"
+              [value]="getNthWhy(n)"
+              (input)="setNthWhy(n, $any($event.target).value)"
+              [disabled]="isReadonly()"
+              [placeholder]="isReadonly() ? '' : 'Descreva o porquê ' + n"
+              maxlength="500"
+              [attr.data-testid]="'why-' + n"
+            ></textarea>
+          </label>
+
+          <label class="form-field">
+            Resposta @if (n === 1) { <span class="required">*</span> }
+            <textarea
+              rows="2"
+              [value]="getNthAnswer(n)"
+              (input)="setNthAnswer(n, $any($event.target).value)"
+              [disabled]="isReadonly()"
+              [placeholder]="isReadonly() ? '' : 'Resposta ao porquê ' + n"
+              maxlength="500"
+              [attr.data-testid]="'answer-' + n"
+            ></textarea>
+          </label>
+        </div>
+      }
+
+      @if (!isReadonly() && canAddPair()) {
+        <button
+          type="button"
+          class="btn btn--secondary btn--sm rca-add-pair"
+          (click)="addPair()"
+          data-testid="btn-add-pair"
+        >
+          + Adicionar próximo Porquê
+        </button>
+      }
+
+      @if (showRootCauseField()) {
+        <label class="form-field rca-root-cause">
+          Causa Raiz Identificada
+          <textarea
+            rows="3"
+            [value]="rootCause()"
+            (input)="rootCause.set($any($event.target).value)"
+            [disabled]="isReadonly()"
+            placeholder="Descreva a causa raiz identificada"
+            maxlength="1000"
+            data-testid="root-cause"
+          ></textarea>
+        </label>
+      }
+
+      @if (!isReadonly()) {
+        <div class="rca-actions">
+          <button
+            type="button"
+            class="btn btn--primary"
+            [disabled]="!canSave()"
+            (click)="save()"
+            data-testid="btn-save-rca"
+          >
+            {{ saving() ? 'Salvando…' : 'Salvar RCA' }}
+          </button>
+        </div>
+      }
+
+      @if (isReadonly() && nc().status === 'CLOSED') {
+        <p class="rca-readonly-notice">Análise em modo somente leitura — NC fechada.</p>
+      }
+    </div>
+  }
+</section>

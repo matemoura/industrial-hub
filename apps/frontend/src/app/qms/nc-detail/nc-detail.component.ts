@@ -3,12 +3,13 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ActionResponse, NcResponse, NcStatus, QmsService } from '../qms.service';
 import { AuthService } from '../../auth/auth.service';
+import { NcRcaComponent } from './nc-rca/nc-rca.component';
 
 @Component({
   selector: 'app-nc-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule],
+  imports: [RouterLink, FormsModule, NcRcaComponent],
   templateUrl: './nc-detail.component.html',
   styleUrl: './nc-detail.component.scss',
 })

@@ -28,11 +28,45 @@ export interface ActionResponse {
   completedBy: string | null;
 }
 
+export interface RcaResponse {
+  id: string;
+  ncId: string;
+  why1: string;
+  answer1: string | null;
+  why2: string | null;
+  answer2: string | null;
+  why3: string | null;
+  answer3: string | null;
+  why4: string | null;
+  answer4: string | null;
+  why5: string | null;
+  answer5: string | null;
+  rootCause: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string | null;
+}
+
+export interface CreateRcaPayload {
+  why1: string;
+  answer1?: string;
+  why2?: string;
+  answer2?: string;
+  why3?: string;
+  answer3?: string;
+  why4?: string;
+  answer4?: string;
+  why5?: string;
+  answer5?: string;
+  rootCause?: string;
+}
+
 export interface NcResponse extends NcSummaryItem {
   description: string | null;
   closedAt: string | null;
   closedBy: string | null;
   actions: ActionResponse[];
+  rca: RcaResponse | null;
 }
 
 export interface NcKpiSummary {
@@ -114,5 +148,17 @@ export class QmsService {
 
   deleteAction(ncId: string, actionId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${ncId}/actions/${actionId}`);
+  }
+
+  createRca(ncId: string, payload: CreateRcaPayload): Observable<RcaResponse> {
+    return this.http.post<RcaResponse>(`${this.baseUrl}/${ncId}/rca`, payload);
+  }
+
+  updateRca(ncId: string, payload: CreateRcaPayload): Observable<RcaResponse> {
+    return this.http.put<RcaResponse>(`${this.baseUrl}/${ncId}/rca`, payload);
+  }
+
+  getRca(ncId: string): Observable<RcaResponse> {
+    return this.http.get<RcaResponse>(`${this.baseUrl}/${ncId}/rca`);
   }
 }
