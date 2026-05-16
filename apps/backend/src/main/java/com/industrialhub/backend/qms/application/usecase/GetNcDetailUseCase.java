@@ -19,7 +19,7 @@ public class GetNcDetailUseCase {
 
     @Transactional(readOnly = true)
     public NcResponse execute(UUID id) {
-        return repository.findWithActionsById(id)
+        return repository.findWithActionsAndRcaById(id)
                 .map(NcResponse::from)
                 .orElseThrow(() -> new NcNotFoundException(id));
     }

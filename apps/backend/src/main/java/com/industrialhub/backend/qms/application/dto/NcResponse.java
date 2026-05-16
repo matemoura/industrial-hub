@@ -20,7 +20,8 @@ public record NcResponse(
     LocalDateTime reportedAt,
     LocalDateTime closedAt,
     String closedBy,
-    List<ActionResponse> actions
+    List<ActionResponse> actions,
+    RcaResponse rca
 ) {
     public static NcResponse from(NonConformance nc) {
         return new NcResponse(
@@ -34,7 +35,8 @@ public record NcResponse(
             nc.getReportedAt(),
             nc.getClosedAt(),
             nc.getClosedBy(),
-            nc.getActions().stream().map(ActionResponse::from).toList()
+            nc.getActions().stream().map(ActionResponse::from).toList(),
+            nc.getRca() != null ? RcaResponse.from(nc.getRca()) : null
         );
     }
 }

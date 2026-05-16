@@ -18,8 +18,11 @@ import java.util.UUID;
 
 public interface NonConformanceRepository extends JpaRepository<NonConformance, UUID> {
 
-    @EntityGraph(attributePaths = {"correctiveActions"})
+    @EntityGraph(attributePaths = {"actions"})
     Optional<NonConformance> findWithActionsById(UUID id);
+
+    @EntityGraph(attributePaths = {"actions", "rca"})
+    Optional<NonConformance> findWithActionsAndRcaById(UUID id);
 
     @Query("""
         SELECT nc FROM NonConformance nc

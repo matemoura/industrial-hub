@@ -57,4 +57,7 @@ public class NonConformance {
     @OneToMany(mappedBy = "nonConformance", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<CorrectiveAction> actions = new ArrayList<>();
+
+    @OneToOne(mappedBy = "nonConformance", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private RootCauseAnalysis rca;
 }

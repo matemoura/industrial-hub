@@ -3,20 +3,25 @@ package com.industrialhub.backend.qms.presentation;
 import com.industrialhub.backend.qms.application.dto.ActionResponse;
 import com.industrialhub.backend.qms.application.dto.CreateActionRequest;
 import com.industrialhub.backend.qms.application.dto.CreateNcRequest;
+import com.industrialhub.backend.qms.application.dto.CreateRcaRequest;
 import com.industrialhub.backend.qms.application.dto.NcKpiSummary;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.application.dto.NcSummaryItem;
+import com.industrialhub.backend.qms.application.dto.RcaResponse;
 import com.industrialhub.backend.qms.application.dto.TransitionStatusRequest;
 import com.industrialhub.backend.qms.application.usecase.CompleteCorrectiveActionUseCase;
 import com.industrialhub.backend.qms.application.usecase.CreateCorrectiveActionUseCase;
 import com.industrialhub.backend.qms.application.usecase.CreateNcUseCase;
+import com.industrialhub.backend.qms.application.usecase.CreateRcaUseCase;
 import com.industrialhub.backend.qms.application.usecase.DeleteCorrectiveActionUseCase;
 import com.industrialhub.backend.qms.application.usecase.ExportNcCsvUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcDetailUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcKpiSummaryUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcListUseCase;
+import com.industrialhub.backend.qms.application.usecase.GetRcaByNcUseCase;
 import com.industrialhub.backend.qms.application.usecase.ListCorrectiveActionsUseCase;
 import com.industrialhub.backend.qms.application.usecase.TransitionNcStatusUseCase;
+import com.industrialhub.backend.qms.application.usecase.UpdateRcaUseCase;
 import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
 import com.industrialhub.backend.qms.domain.NcType;
@@ -49,6 +54,9 @@ public class QmsController {
     private final ListCorrectiveActionsUseCase listActions;
     private final CompleteCorrectiveActionUseCase completeAction;
     private final DeleteCorrectiveActionUseCase deleteAction;
+    private final CreateRcaUseCase createRca;
+    private final UpdateRcaUseCase updateRca;
+    private final GetRcaByNcUseCase getRca;
 
     public QmsController(CreateNcUseCase createNc,
                          TransitionNcStatusUseCase transitionStatus,
@@ -59,7 +67,10 @@ public class QmsController {
                          CreateCorrectiveActionUseCase createAction,
                          ListCorrectiveActionsUseCase listActions,
                          CompleteCorrectiveActionUseCase completeAction,
-                         DeleteCorrectiveActionUseCase deleteAction) {
+                         DeleteCorrectiveActionUseCase deleteAction,
+                         CreateRcaUseCase createRca,
+                         UpdateRcaUseCase updateRca,
+                         GetRcaByNcUseCase getRca) {
         this.createNc = createNc;
         this.transitionStatus = transitionStatus;
         this.getNcList = getNcList;
@@ -70,6 +81,9 @@ public class QmsController {
         this.listActions = listActions;
         this.completeAction = completeAction;
         this.deleteAction = deleteAction;
+        this.createRca = createRca;
+        this.updateRca = updateRca;
+        this.getRca = getRca;
     }
 
     @PostMapping
@@ -145,5 +159,28 @@ public class QmsController {
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
     public void deleteAction(@PathVariable UUID id, @PathVariable UUID aid) {
         deleteAction.execute(id, aid);
+    }
+
+    @PostMapping("/{ncId}/rca")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public RcaResponse createRca(@PathVariable UUID ncId,
+                                 @Valid @RequestBody CreateRcaRequest request,
+                                 Principal principal) {
+        return createRca.execute(ncId, request, principal.getName());
+    }
+
+    @GetMapping("/{ncId}/rca")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public RcaResponse getRca(@PathVariable UUID ncId) {
+        return getRca.execute(ncId);
+    }
+
+    @PutMapping("/{ncId}/rca")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public RcaResponse updateRca(@PathVariable UUID ncId,
+                                 @Valid @RequestBody CreateRcaRequest request,
+                                 Principal principal) {
+        return updateRca.execute(ncId, request, principal.getName());
     }
 }

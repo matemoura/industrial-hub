@@ -18,6 +18,9 @@ import com.industrialhub.backend.qms.domain.ActionNotAllowedException;
 import com.industrialhub.backend.qms.domain.ActionNotFoundException;
 import com.industrialhub.backend.qms.domain.InvalidNcTransitionException;
 import com.industrialhub.backend.qms.domain.NcNotFoundException;
+import com.industrialhub.backend.qms.domain.RcaAlreadyExistsException;
+import com.industrialhub.backend.qms.domain.RcaNotFoundException;
+import com.industrialhub.backend.qms.domain.RcaNotAllowedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -122,6 +125,30 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ActionNotAllowedException.class)
     public ResponseEntity<Map<String, Object>> handleActionNotAllowed(ActionNotAllowedException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(RcaNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleRcaNotFound(RcaNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(RcaAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleRcaAlreadyExists(RcaAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(RcaNotAllowedException.class)
+    public ResponseEntity<Map<String, Object>> handleRcaNotAllowed(RcaNotAllowedException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
