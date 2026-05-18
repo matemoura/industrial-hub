@@ -56,4 +56,11 @@ public interface NonConformanceRepository extends JpaRepository<NonConformance, 
     @Query("SELECT nc FROM NonConformance nc WHERE nc.type = :type AND nc.reportedAt >= :from")
     List<NonConformance> findByTypeAndReportedAtAfter(@Param("type") NcType type,
                                                       @Param("from") LocalDateTime from);
+
+    @Query("SELECT nc FROM NonConformance nc WHERE nc.reportedAt >= :from")
+    List<NonConformance> findAllCreatedAfter(@Param("from") LocalDateTime from);
+
+    @Query("SELECT nc FROM NonConformance nc WHERE nc.reportedAt >= :from AND nc.reportedAt < :to")
+    List<NonConformance> findAllCreatedBetween(@Param("from") LocalDateTime from,
+                                               @Param("to") LocalDateTime to);
 }

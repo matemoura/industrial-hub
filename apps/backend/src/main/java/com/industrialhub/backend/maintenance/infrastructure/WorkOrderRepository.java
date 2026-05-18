@@ -78,4 +78,18 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
         @Param("from") LocalDateTime from,
         @Param("to")   LocalDateTime to
     );
+
+    @Query("""
+        SELECT w FROM WorkOrder w
+        WHERE w.type = com.industrialhub.backend.maintenance.domain.WorkOrderType.CORRECTIVE
+          AND w.status = com.industrialhub.backend.maintenance.domain.WorkOrderStatus.DONE
+          AND w.startedAt IS NOT NULL
+    """)
+    List<WorkOrder> findAllCompletedCorrectiveForMttr();
+
+    @Query("SELECT wo.status, COUNT(wo) FROM WorkOrder wo GROUP BY wo.status")
+    List<Object[]> countByStatus();
+
+    @Query("SELECT wo.type, COUNT(wo) FROM WorkOrder wo GROUP BY wo.type")
+    List<Object[]> countByType();
 }
