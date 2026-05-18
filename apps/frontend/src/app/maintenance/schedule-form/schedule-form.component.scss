@@ -1,0 +1,82 @@
+.page {
+  padding: 1.5rem 2rem;
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  h1 { font-size: 1.4rem; font-weight: 600; }
+}
+
+.form-card {
+  background: var(--msb-surface);
+  border-radius: 12px;
+  padding: 1.75rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-bottom: 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--msb-text);
+
+  input, select, textarea {
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-family: inherit;
+    transition: border-color 0.15s;
+    &:focus { outline: none; border-color: var(--msb-primary); box-shadow: 0 0 0 3px rgba(0,153,184,.12); }
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+}
+
+.required { color: #ef4444; }
+.hint { font-size: 0.78rem; color: var(--msb-text-muted); }
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+.form-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f1f5f9;
+}
+
+.btn {
+  padding: 0.5rem 1.25rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  transition: background 0.15s;
+
+  &--primary {
+    background: var(--msb-primary); color: #fff;
+    &:hover:not(:disabled) { background: var(--msb-primary-dark); }
+    &:disabled { opacity: 0.55; cursor: not-allowed; }
+  }
+  &--secondary { background: transparent; color: var(--msb-primary); border: 1px solid var(--msb-primary); &:hover { background: rgba(0,153,184,.06); } }
+}
+
+.loading { padding: 2rem; text-align: center; color: var(--msb-text-muted); }
+.error-banner { background: #fee2e2; color: #991b1b; padding: 0.75rem 1rem; border-radius: 8px; margin-bottom: 1rem; font-size: 0.875rem; }

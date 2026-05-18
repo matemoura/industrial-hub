@@ -1,0 +1,98 @@
+<div class="page">
+  <header class="page-header">
+    <div class="page-header__title">
+      <h1>Calendário de Manutenção</h1>
+    </div>
+    <div class="page-header__nav">
+      <button class="btn btn--ghost" (click)="prevMonth()" data-testid="btn-prev-month">‹</button>
+      <span class="month-label" data-testid="month-label">{{ monthLabel() }}</span>
+      <button class="btn btn--ghost" (click)="nextMonth()" data-testid="btn-next-month">›</button>
+    </div>
+    <a routerLink="/maintenance/schedules" class="btn btn--secondary">Lista de planos</a>
+  </header>
+
+  @if (loading()) {
+    <div class="loading" data-testid="loading">Carregando calendário…</div>
+  } @else if (errorMsg()) {
+    <div class="error-banner">{{ errorMsg() }}</div>
+  } @else {
+    <div class="calendar-container">
+      <div class="calendar" data-testid="calendar-grid">
+        <!-- Day headers -->
+        <div class="calendar__header">
+          @for (h of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom']; track h) {
+            <div class="calendar__weekday">{{ h }}</div>
+          }
+        </div>
+
+        <!-- Weeks -->
+        @for (week of calendarWeeks(); track $index) {
+          <div class="calendar__week">
+            @for (day of week; track day.date.toISOString()) {
+              <div class="calendar__day"
+                   [class.calendar__day--other-month]="!day.inCurrentMonth"
+                   [class.calendar__day--today]="isToday(day.date)"
+                   data-testid="calendar-day">
+                <span class="calendar__day-number">{{ formatDate(day.date) }}</span>
+
+                <div class="calendar__badges">
+                  @for (s of day.schedules; track s.id) {
+                    <button class="schedule-badge"
+                            (click)="selectSchedule(s)"
+                            [title]="s.title"
+                            data-testid="schedule-badge">
+                      {{ s.equipmentCode }} — {{ s.title }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Detail panel -->
+      @if (selectedSchedule(); as s) {
+        <aside class="detail-panel" data-testid="detail-panel">
+          <button class="detail-panel__close" (click)="closePanel()" data-testid="btn-close-panel">✕</button>
+          <h2>{{ s.title }}</h2>
+          <p class="detail-panel__equipment">{{ s.equipmentCode }} — {{ s.equipmentName }}</p>
+
+          @if (s.description) {
+            <p class="detail-panel__desc">{{ s.description }}</p>
+          }
+
+          <dl class="detail-panel__info">
+            <div>
+              <dt>Recorrência</dt>
+              <dd>{{ s.recurrence }}</dd>
+            </div>
+            <div>
+              <dt>Próxima execução</dt>
+              <dd data-testid="panel-next-run">{{ s.nextRunAt }}</dd>
+            </div>
+            <div>
+              <dt>Prioridade</dt>
+              <dd>{{ s.priority }}</dd>
+            </div>
+            @if (s.lastRunAt) {
+              <div>
+                <dt>Última execução</dt>
+                <dd>{{ s.lastRunAt }}</dd>
+              </div>
+            }
+          </dl>
+
+          @if (isSupervisor && s.active) {
+            <button class="btn btn--danger"
+                    (click)="deactivate(s)"
+                    [disabled]="deactivating()"
+                    data-testid="btn-deactivate">
+              @if (deactivating()) { Desativando… } @else { Desativar plano }
+            </button>
+          }
+        </aside>
+      }
+    </div>
+  }
+</div>

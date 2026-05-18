@@ -1,0 +1,100 @@
+<div class="page">
+  <header class="page-header">
+    <h1>{{ isEditMode ? 'Editar Plano' : 'Novo Plano de Manutenção' }}</h1>
+    <a routerLink="/maintenance/schedules" class="btn btn--secondary">← Voltar</a>
+  </header>
+
+  @if (loading() && isEditMode) {
+    <div class="loading">Carregando…</div>
+  } @else {
+    <div class="form-card">
+      @if (errorMsg()) {
+        <div class="error-banner" data-testid="error">{{ errorMsg() }}</div>
+      }
+
+      <form (ngSubmit)="submit()" #f="ngForm">
+        @if (!isEditMode) {
+          <label class="form-field">
+            Equipamento <span class="required">*</span>
+            <select [ngModel]="equipmentId()" (ngModelChange)="equipmentId.set($event)"
+                    name="equipmentId" data-testid="equipment-select" required>
+              <option value="">Selecione o equipamento…</option>
+              @for (eq of equipment(); track eq.id) {
+                <option [value]="eq.id">{{ eq.code }} — {{ eq.name }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        <label class="form-field">
+          Título <span class="required">*</span>
+          <input type="text" [ngModel]="title()" (ngModelChange)="title.set($event)"
+                 name="title" data-testid="title-input"
+                 placeholder="ex: Lubrificação de rolamentos" maxlength="200" required />
+        </label>
+
+        <label class="form-field">
+          Descrição
+          <textarea [ngModel]="description()" (ngModelChange)="description.set($event)"
+                    name="description" data-testid="description-input"
+                    rows="3" placeholder="Instruções detalhadas (opcional)"></textarea>
+        </label>
+
+        <div class="form-row">
+          <label class="form-field">
+            Prioridade <span class="required">*</span>
+            <select [ngModel]="priority()" (ngModelChange)="priority.set($event)"
+                    name="priority" data-testid="priority-select" required>
+              <option value="">Selecione…</option>
+              @for (p of priorities; track p) {
+                <option [value]="p">{{ p }}</option>
+              }
+            </select>
+          </label>
+
+          <label class="form-field">
+            Recorrência <span class="required">*</span>
+            <select [ngModel]="recurrence()" (ngModelChange)="onRecurrenceChange($event)"
+                    name="recurrence" data-testid="recurrence-select" required>
+              <option value="">Selecione…</option>
+              @for (r of recurrences; track r) {
+                <option [value]="r">{{ r }}</option>
+              }
+            </select>
+          </label>
+        </div>
+
+        @if (showDayOfWeek()) {
+          <label class="form-field">
+            Dia da semana <span class="required">*</span>
+            <select [ngModel]="dayOfWeek()" (ngModelChange)="dayOfWeek.set(+$event)"
+                    name="dayOfWeek" data-testid="day-of-week-select" required>
+              <option value="">Selecione…</option>
+              @for (d of daysOfWeek; track d) {
+                <option [value]="d">{{ dayOfWeekLabels[d] }}</option>
+              }
+            </select>
+          </label>
+        }
+
+        @if (showDayOfMonth()) {
+          <label class="form-field">
+            Dia do mês <span class="required">*</span>
+            <input type="number" [ngModel]="dayOfMonth()" (ngModelChange)="dayOfMonth.set(+$event)"
+                   name="dayOfMonth" data-testid="day-of-month-input"
+                   min="1" max="28" placeholder="1–28" required />
+            <span class="hint">Máximo dia 28 (compatível com todos os meses)</span>
+          </label>
+        }
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn--primary" [disabled]="!isValid || loading()"
+                  data-testid="submit-btn">
+            @if (loading()) { Salvando… } @else { {{ isEditMode ? 'Salvar alterações' : 'Criar plano' }} }
+          </button>
+          <a routerLink="/maintenance/schedules" class="btn btn--secondary">Cancelar</a>
+        </div>
+      </form>
+    </div>
+  }
+</div>

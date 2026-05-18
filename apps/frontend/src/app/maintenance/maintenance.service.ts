@@ -2,6 +2,45 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export type ScheduleRecurrence = 'DAILY' | 'WEEKLY' | 'MONTHLY';
+
+export interface ScheduleResponse {
+  id: string;
+  equipmentId: string;
+  equipmentCode: string;
+  equipmentName: string;
+  title: string;
+  description: string | null;
+  priority: WorkOrderPriority;
+  recurrence: ScheduleRecurrence;
+  dayOfWeek: number | null;
+  dayOfMonth: number | null;
+  nextRunAt: string;
+  lastRunAt: string | null;
+  active: boolean;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface CreateSchedulePayload {
+  equipmentId: string;
+  title: string;
+  description?: string;
+  priority: WorkOrderPriority;
+  recurrence: ScheduleRecurrence;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+}
+
+export interface UpdateSchedulePayload {
+  title: string;
+  description?: string;
+  priority: WorkOrderPriority;
+  recurrence: ScheduleRecurrence;
+  dayOfWeek?: number;
+  dayOfMonth?: number;
+}
+
 export type EquipmentType = 'MACHINE' | 'TOOL' | 'VEHICLE' | 'INFRASTRUCTURE';
 export type EquipmentStatus = 'OPERATIONAL' | 'UNDER_MAINTENANCE' | 'DECOMMISSIONED';
 export type WorkOrderType = 'CORRECTIVE' | 'PREVENTIVE';
@@ -34,6 +73,7 @@ export interface WorkOrderResponse {
   openedAt: string;
   startedAt: string | null;
   closedAt: string | null;
+  scheduleId: string | null;
 }
 
 export interface PageResponse<T> {
@@ -134,5 +174,30 @@ export class MaintenanceService {
     let params = new HttpParams();
     if (equipmentId) params = params.set('equipmentId', equipmentId);
     return this.http.get<WorkOrderMetricsResponse>(`${this.workOrderUrl}/metrics`, { params });
+  }
+
+  // Schedules
+  private readonly scheduleUrl = '/api/v1/maintenance/schedules';
+
+  createSchedule(payload: CreateSchedulePayload): Observable<ScheduleResponse> {
+    return this.http.post<ScheduleResponse>(this.scheduleUrl, payload);
+  }
+
+  listSchedules(equipmentId?: string): Observable<ScheduleResponse[]> {
+    let params = new HttpParams();
+    if (equipmentId) params = params.set('equipmentId', equipmentId);
+    return this.http.get<ScheduleResponse[]>(this.scheduleUrl, { params });
+  }
+
+  getSchedule(id: string): Observable<ScheduleResponse> {
+    return this.http.get<ScheduleResponse>(`${this.scheduleUrl}/${id}`);
+  }
+
+  updateSchedule(id: string, payload: UpdateSchedulePayload): Observable<ScheduleResponse> {
+    return this.http.put<ScheduleResponse>(`${this.scheduleUrl}/${id}`, payload);
+  }
+
+  deactivateSchedule(id: string): Observable<void> {
+    return this.http.put<void>(`${this.scheduleUrl}/${id}/deactivate`, {});
   }
 }

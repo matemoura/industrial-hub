@@ -1,0 +1,78 @@
+<div class="page">
+  <header class="page-header">
+    <div class="page-header__title">
+      <h1>Planos de Manutenção Preventiva</h1>
+      <p class="page-header__subtitle">Planos recorrentes de manutenção por equipamento</p>
+    </div>
+    <div class="page-header__actions">
+      @if (isSupervisor) {
+        <a routerLink="/maintenance/schedules/new" class="btn btn--primary" data-testid="btn-new-schedule">
+          + Novo Plano
+        </a>
+      }
+      <a routerLink="/maintenance/calendar" class="btn btn--secondary" data-testid="btn-calendar">
+        Calendário
+      </a>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading" data-testid="loading">Carregando planos…</div>
+  } @else if (errorMsg()) {
+    <div class="error-banner" data-testid="error">{{ errorMsg() }}</div>
+  } @else if (schedules().length === 0) {
+    <div class="empty-state" data-testid="empty">
+      <p>Nenhum plano de manutenção ativo.</p>
+      @if (isSupervisor) {
+        <a routerLink="/maintenance/schedules/new" class="btn btn--primary">Criar primeiro plano</a>
+      }
+    </div>
+  } @else {
+    <div class="table-container">
+      <table class="data-table" data-testid="schedule-table">
+        <thead>
+          <tr>
+            <th>Equipamento</th>
+            <th>Título</th>
+            <th>Recorrência</th>
+            <th>Próxima execução</th>
+            <th>Prioridade</th>
+            <th>Status</th>
+            @if (isSupervisor) {
+              <th>Ações</th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of schedules(); track s.id) {
+            <tr data-testid="schedule-row">
+              <td>
+                <span class="equipment-code">{{ s.equipmentCode }}</span>
+                <span class="equipment-name">{{ s.equipmentName }}</span>
+              </td>
+              <td>{{ s.title }}</td>
+              <td [attr.data-testid]="'recurrence-' + s.id">{{ recurrenceDetail(s) }}</td>
+              <td [attr.data-testid]="'next-run-' + s.id">{{ s.nextRunAt }}</td>
+              <td><span class="badge badge--priority-{{ s.priority.toLowerCase() }}">{{ s.priority }}</span></td>
+              <td>
+                @if (s.active) {
+                  <span class="badge badge--active" data-testid="status-active">Ativo</span>
+                } @else {
+                  <span class="badge badge--inactive" data-testid="status-inactive">Inativo</span>
+                }
+              </td>
+              @if (isSupervisor) {
+                <td class="actions">
+                  <a [routerLink]="['/maintenance/schedules', s.id, 'edit']"
+                     class="btn btn--sm btn--ghost" data-testid="btn-edit">
+                    Editar
+                  </a>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

@@ -32,4 +32,36 @@ export const MAINTENANCE_ROUTES: Routes = [
     loadComponent: () =>
       import('./work-order-list/work-order-list.component').then((m) => m.WorkOrderListComponent),
   },
+  {
+    path: 'schedules',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./schedule-list/schedule-list.component').then((m) => m.ScheduleListComponent),
+  },
+  {
+    path: 'schedules/new',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./schedule-form/schedule-form.component').then((m) => m.ScheduleFormComponent),
+  },
+  {
+    path: 'schedules/:id/edit',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./schedule-form/schedule-form.component').then((m) => m.ScheduleFormComponent),
+  },
+  {
+    path: 'schedules/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./schedule-list/schedule-list.component').then((m) => m.ScheduleListComponent),
+  },
+  {
+    path: 'calendar',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./maintenance-calendar/maintenance-calendar.component').then(
+        (m) => m.MaintenanceCalendarComponent,
+      ),
+  },
 ];
