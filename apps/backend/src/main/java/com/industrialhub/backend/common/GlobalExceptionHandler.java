@@ -6,6 +6,9 @@ import com.industrialhub.backend.common.auth.domain.LastAdminException;
 import com.industrialhub.backend.common.auth.domain.UserAlreadyExistsException;
 import com.industrialhub.backend.common.auth.domain.UserNotFoundException;
 import com.industrialhub.backend.common.security.TooManyRequestsException;
+import com.industrialhub.backend.maintenance.domain.InactiveEquipmentScheduleException;
+import com.industrialhub.backend.maintenance.domain.InvalidScheduleRecurrenceException;
+import com.industrialhub.backend.maintenance.domain.ScheduleNotFoundException;
 import com.industrialhub.backend.maintenance.domain.EquipmentDuplicateCodeException;
 import com.industrialhub.backend.maintenance.domain.EquipmentHasOpenOrdersException;
 import com.industrialhub.backend.maintenance.domain.EquipmentNotFoundException;
@@ -152,6 +155,30 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(RcaNotAllowedException.class)
     public ResponseEntity<Map<String, Object>> handleRcaNotAllowed(RcaNotAllowedException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InvalidScheduleRecurrenceException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidScheduleRecurrence(InvalidScheduleRecurrenceException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(ScheduleNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleScheduleNotFound(ScheduleNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InactiveEquipmentScheduleException.class)
+    public ResponseEntity<Map<String, Object>> handleInactiveEquipmentSchedule(InactiveEquipmentScheduleException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()

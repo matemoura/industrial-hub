@@ -57,4 +57,8 @@ public class WorkOrder {
     private LocalDateTime startedAt;
 
     private LocalDateTime closedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "schedule_id")
+    private MaintenanceSchedule schedule;
 }

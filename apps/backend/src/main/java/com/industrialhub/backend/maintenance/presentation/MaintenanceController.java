@@ -1,21 +1,29 @@
 package com.industrialhub.backend.maintenance.presentation;
 
 import com.industrialhub.backend.maintenance.application.dto.CreateEquipmentRequest;
+import com.industrialhub.backend.maintenance.application.dto.CreateScheduleRequest;
 import com.industrialhub.backend.maintenance.application.dto.CreateWorkOrderRequest;
 import com.industrialhub.backend.maintenance.application.dto.EquipmentResponse;
+import com.industrialhub.backend.maintenance.application.dto.ScheduleResponse;
 import com.industrialhub.backend.maintenance.application.dto.TransitionWorkOrderStatusRequest;
 import com.industrialhub.backend.maintenance.application.dto.UpdateEquipmentRequest;
+import com.industrialhub.backend.maintenance.application.dto.UpdateScheduleRequest;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderMetricsResponse;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderResponse;
 import com.industrialhub.backend.maintenance.application.usecase.CreateEquipmentUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.CreateScheduleUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.CreateWorkOrderUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.DeactivateScheduleUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.DeleteEquipmentUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetEquipmentDetailUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetEquipmentListUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.GetScheduleDetailUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.GetScheduleListUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderListUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderMetricsUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.TransitionWorkOrderStatusUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.UpdateEquipmentUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.UpdateScheduleUseCase;
 import com.industrialhub.backend.maintenance.domain.EquipmentStatus;
 import com.industrialhub.backend.maintenance.domain.EquipmentType;
 import com.industrialhub.backend.maintenance.domain.WorkOrderPriority;
@@ -47,6 +55,11 @@ public class MaintenanceController {
     private final GetWorkOrderListUseCase getWorkOrderList;
     private final GetWorkOrderMetricsUseCase getWorkOrderMetrics;
     private final TransitionWorkOrderStatusUseCase transitionWorkOrderStatus;
+    private final CreateScheduleUseCase createSchedule;
+    private final GetScheduleListUseCase getScheduleList;
+    private final GetScheduleDetailUseCase getScheduleDetail;
+    private final UpdateScheduleUseCase updateSchedule;
+    private final DeactivateScheduleUseCase deactivateSchedule;
 
     public MaintenanceController(CreateEquipmentUseCase createEquipment,
                                   GetEquipmentListUseCase getEquipmentList,
@@ -56,7 +69,12 @@ public class MaintenanceController {
                                   CreateWorkOrderUseCase createWorkOrder,
                                   GetWorkOrderListUseCase getWorkOrderList,
                                   GetWorkOrderMetricsUseCase getWorkOrderMetrics,
-                                  TransitionWorkOrderStatusUseCase transitionWorkOrderStatus) {
+                                  TransitionWorkOrderStatusUseCase transitionWorkOrderStatus,
+                                  CreateScheduleUseCase createSchedule,
+                                  GetScheduleListUseCase getScheduleList,
+                                  GetScheduleDetailUseCase getScheduleDetail,
+                                  UpdateScheduleUseCase updateSchedule,
+                                  DeactivateScheduleUseCase deactivateSchedule) {
         this.createEquipment = createEquipment;
         this.getEquipmentList = getEquipmentList;
         this.getEquipmentDetail = getEquipmentDetail;
@@ -66,6 +84,11 @@ public class MaintenanceController {
         this.getWorkOrderList = getWorkOrderList;
         this.getWorkOrderMetrics = getWorkOrderMetrics;
         this.transitionWorkOrderStatus = transitionWorkOrderStatus;
+        this.createSchedule = createSchedule;
+        this.getScheduleList = getScheduleList;
+        this.getScheduleDetail = getScheduleDetail;
+        this.updateSchedule = updateSchedule;
+        this.deactivateSchedule = deactivateSchedule;
     }
 
     // --- Equipment endpoints ---
@@ -139,5 +162,41 @@ public class MaintenanceController {
                                                @Valid @RequestBody TransitionWorkOrderStatusRequest request,
                                                Principal principal) {
         return transitionWorkOrderStatus.execute(id, request.status(), principal.getName());
+    }
+
+    // --- Schedule endpoints ---
+
+    @PostMapping("/schedules")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public ScheduleResponse createSchedule(@Valid @RequestBody CreateScheduleRequest request,
+                                            Principal principal) {
+        return createSchedule.execute(request, principal.getName());
+    }
+
+    @GetMapping("/schedules")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public List<ScheduleResponse> listSchedules(@RequestParam(required = false) UUID equipmentId) {
+        return getScheduleList.execute(equipmentId);
+    }
+
+    @GetMapping("/schedules/{id}")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public ScheduleResponse getSchedule(@PathVariable UUID id) {
+        return getScheduleDetail.execute(id);
+    }
+
+    @PutMapping("/schedules/{id}")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public ScheduleResponse updateSchedule(@PathVariable UUID id,
+                                            @Valid @RequestBody UpdateScheduleRequest request) {
+        return updateSchedule.execute(id, request);
+    }
+
+    @PutMapping("/schedules/{id}/deactivate")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public void deactivateSchedule(@PathVariable UUID id, Principal principal) {
+        deactivateSchedule.execute(id, principal.getName());
     }
 }

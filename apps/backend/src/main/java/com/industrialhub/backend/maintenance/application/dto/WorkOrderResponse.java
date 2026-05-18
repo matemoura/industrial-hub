@@ -22,7 +22,8 @@ public record WorkOrderResponse(
     String openedBy,
     LocalDateTime openedAt,
     LocalDateTime startedAt,
-    LocalDateTime closedAt
+    LocalDateTime closedAt,
+    UUID scheduleId
 ) {
     public static WorkOrderResponse from(WorkOrder wo) {
         return new WorkOrderResponse(
@@ -39,7 +40,8 @@ public record WorkOrderResponse(
             wo.getOpenedBy(),
             wo.getOpenedAt(),
             wo.getStartedAt(),
-            wo.getClosedAt()
+            wo.getClosedAt(),
+            wo.getSchedule() != null ? wo.getSchedule().getId() : null
         );
     }
 }
