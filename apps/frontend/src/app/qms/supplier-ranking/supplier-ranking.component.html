@@ -1,0 +1,83 @@
+<div class="ranking-page">
+  <div class="page-header">
+    <div class="header-left">
+      <a routerLink="/qms/suppliers" class="back-link">← Fornecedores</a>
+      <h2>Ranking de Qualidade</h2>
+    </div>
+    <div class="period-selector">
+      @for (d of dayOptions; track d) {
+        <button
+          type="button"
+          [class.period-btn--active]="selectedDays() === d"
+          class="period-btn"
+          (click)="changePeriod(d)"
+        >
+          {{ d }} dias
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (errorMsg()) {
+    <p class="error-msg" role="alert">{{ errorMsg() }}</p>
+  }
+
+  @if (loading()) {
+    <div class="loading-state">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="skeleton-row" aria-hidden="true"></div>
+      }
+    </div>
+  } @else if (ranking().length === 0) {
+    <div class="empty-state">
+      <p>Nenhum fornecedor com NCs no período selecionado.</p>
+    </div>
+  } @else {
+    <table class="ranking-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Fornecedor</th>
+          <th>Score</th>
+          <th>Progresso</th>
+          <th>NCs totais</th>
+          <th>Críticas</th>
+          <th>Altas</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (item of ranking(); track item.supplierId; let idx = $index) {
+          <tr class="ranking-row" data-testid="ranking-row">
+            <td class="rank-pos">{{ idx + 1 }}</td>
+            <td class="supplier-name">
+              <a [routerLink]="['/qms/suppliers', item.supplierId]" class="supplier-link">
+                {{ item.supplierName }}
+              </a>
+            </td>
+            <td>
+              <span [class]="'score-badge score-badge--' + scoreColor(item.qualityScore)"
+                    data-testid="score-badge">
+                {{ formatScore(item.qualityScore) }}
+              </span>
+            </td>
+            <td class="progress-cell">
+              <div class="progress-track">
+                <div
+                  [class]="'progress-fill progress-fill--' + scoreColor(item.qualityScore)"
+                  [style.width.%]="item.qualityScore"
+                  role="progressbar"
+                  [attr.aria-valuenow]="item.qualityScore"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                ></div>
+              </div>
+            </td>
+            <td>{{ item.totalNcs }}</td>
+            <td class="cell-critical">{{ item.criticalNcs }}</td>
+            <td class="cell-high">{{ item.highNcs }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
