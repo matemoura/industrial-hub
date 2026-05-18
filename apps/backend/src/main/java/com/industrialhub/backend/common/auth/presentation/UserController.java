@@ -53,8 +53,9 @@ public class UserController {
     @PutMapping("/api/v1/admin/users/{id}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public UserResponse updateRole(@PathVariable UUID id,
-                                   @Valid @RequestBody UpdateUserRoleRequest request) {
-        return updateUserRole.execute(id, request);
+                                   @Valid @RequestBody UpdateUserRoleRequest request,
+                                   Authentication auth) {
+        return updateUserRole.execute(id, request, auth.getName());
     }
 
     @PutMapping("/api/v1/admin/users/{id}/deactivate")
@@ -67,8 +68,8 @@ public class UserController {
     @PutMapping("/api/v1/admin/users/{id}/reactivate")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void reactivate(@PathVariable UUID id) {
-        reactivateUser.execute(id);
+    public void reactivate(@PathVariable UUID id, Authentication auth) {
+        reactivateUser.execute(id, auth.getName());
     }
 
     @PutMapping("/api/v1/users/me/password")

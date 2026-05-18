@@ -10,14 +10,18 @@ import com.industrialhub.backend.qms.application.usecase.GetSupplierListUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetSupplierQualityUseCase;
 import com.industrialhub.backend.qms.application.usecase.UpdateSupplierUseCase;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
+@Validated
 @RestController
 @RequestMapping("/api/v1/qms/suppliers")
 public class SupplierController {
@@ -58,7 +62,7 @@ public class SupplierController {
 
     @GetMapping("/quality-ranking")
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
-    public List<SupplierQualityScore> ranking(@RequestParam(defaultValue = "90") int days) {
+    public List<SupplierQualityScore> ranking(@RequestParam(defaultValue = "90") @Min(1) @Max(730) int days) {
         return quality.executeRanking(days);
     }
 
@@ -70,8 +74,9 @@ public class SupplierController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public SupplierResponse update(@PathVariable UUID id, @Valid @RequestBody CreateSupplierRequest request) {
-        return update.execute(id, request);
+    public SupplierResponse update(@PathVariable UUID id, @Valid @RequestBody CreateSupplierRequest request,
+                                   Principal principal) {
+        return update.execute(id, request, principal.getName());
     }
 
     @PutMapping("/{id}/deactivate")
@@ -84,7 +89,7 @@ public class SupplierController {
     @GetMapping("/{id}/quality-score")
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
     public SupplierQualityScore qualityScore(@PathVariable UUID id,
-                                             @RequestParam(defaultValue = "90") int days) {
+                                             @RequestParam(defaultValue = "90") @Min(1) @Max(730) int days) {
         return quality.executeForSupplier(id, days);
     }
 }

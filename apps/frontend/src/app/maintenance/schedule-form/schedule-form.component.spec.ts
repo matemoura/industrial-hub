@@ -106,4 +106,32 @@ describe('ScheduleFormComponent — Create', () => {
     component.recurrence.set('WEEKLY');
     expect(component.isValid).toBe(false);
   });
+
+  it('should navigate to /maintenance/schedules after successful create', () => {
+    const service = TestBed.inject(MaintenanceService) as any;
+    service.createSchedule.mockReturnValue(of({ id: 'sched-1' }));
+
+    component.equipmentId.set('eq-1');
+    component.title.set('Lubrificação');
+    component.priority.set('MEDIUM');
+    component.recurrence.set('DAILY');
+
+    const navigateSpy = vi.fn();
+    (component as any).router = { navigate: navigateSpy };
+
+    component.submit();
+
+    expect(service.createSchedule).toHaveBeenCalledWith(
+      expect.objectContaining({
+        equipmentId: 'eq-1',
+        title: 'Lubrificação',
+        priority: 'MEDIUM',
+        recurrence: 'DAILY',
+      }),
+    );
+    expect(navigateSpy).toHaveBeenCalledWith(
+      ['/maintenance/schedules'],
+      expect.objectContaining({ state: expect.objectContaining({ toast: expect.any(String) }) }),
+    );
+  });
 });

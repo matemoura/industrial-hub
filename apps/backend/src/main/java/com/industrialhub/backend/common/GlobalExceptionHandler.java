@@ -36,6 +36,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import jakarta.validation.ConstraintViolationException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.time.Instant;
@@ -276,6 +277,25 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(SupplierRequiredForNcException.class)
     public ResponseEntity<Map<String, Object>> handleSupplierRequired(SupplierRequiredForNcException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Map<String, Object>> handleConstraintViolation(ConstraintViolationException ex) {
+        String message = ex.getConstraintViolations().stream()
+                .map(cv -> cv.getPropertyPath() + ": " + cv.getMessage())
+                .collect(Collectors.joining("; "));
+        return ResponseEntity.badRequest().body(Map.of(
+                "message", message.isBlank() ? "Parâmetro inválido" : message,
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()

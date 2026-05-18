@@ -189,8 +189,9 @@ public class MaintenanceController {
     @PutMapping("/schedules/{id}")
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
     public ScheduleResponse updateSchedule(@PathVariable UUID id,
-                                            @Valid @RequestBody UpdateScheduleRequest request) {
-        return updateSchedule.execute(id, request);
+                                            @Valid @RequestBody UpdateScheduleRequest request,
+                                            Principal principal) {
+        return updateSchedule.execute(id, request, principal.getName());
     }
 
     @PutMapping("/schedules/{id}/deactivate")

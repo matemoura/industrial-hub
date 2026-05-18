@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, computed } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MaintenanceService, ScheduleRecurrence, ScheduleResponse } from '../maintenance.service';
 import { AuthService } from '../../auth/auth.service';
@@ -21,9 +21,7 @@ export class ScheduleListComponent implements OnInit {
   loading = signal(false);
   errorMsg = signal<string | null>(null);
 
-  get isSupervisor(): boolean {
-    return this.role() === 'SUPERVISOR' || this.role() === 'ADMIN';
-  }
+  readonly isSupervisor = computed(() => this.role() === 'SUPERVISOR' || this.role() === 'ADMIN');
 
   readonly recurrenceLabels: Record<ScheduleRecurrence, string> = {
     DAILY: 'Diária',

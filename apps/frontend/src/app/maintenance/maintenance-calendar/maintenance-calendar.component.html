@@ -83,7 +83,7 @@
             }
           </dl>
 
-          @if (isSupervisor && s.active) {
+          @if (isSupervisor() && s.active) {
             <button class="btn btn--danger"
                     (click)="deactivate(s)"
                     [disabled]="deactivating()"

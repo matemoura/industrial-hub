@@ -48,9 +48,7 @@ export class MaintenanceCalendarComponent implements OnInit {
 
   readonly calendarWeeks = computed(() => this.buildCalendar());
 
-  get isSupervisor(): boolean {
-    return this.role() === 'SUPERVISOR' || this.role() === 'ADMIN';
-  }
+  readonly isSupervisor = computed(() => this.role() === 'SUPERVISOR' || this.role() === 'ADMIN');
 
   ngOnInit(): void {
     this.loadSchedules();

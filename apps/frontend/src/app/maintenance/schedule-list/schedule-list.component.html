@@ -5,7 +5,7 @@
       <p class="page-header__subtitle">Planos recorrentes de manutenção por equipamento</p>
     </div>
     <div class="page-header__actions">
-      @if (isSupervisor) {
+      @if (isSupervisor()) {
         <a routerLink="/maintenance/schedules/new" class="btn btn--primary" data-testid="btn-new-schedule">
           + Novo Plano
         </a>
@@ -23,7 +23,7 @@
   } @else if (schedules().length === 0) {
     <div class="empty-state" data-testid="empty">
       <p>Nenhum plano de manutenção ativo.</p>
-      @if (isSupervisor) {
+      @if (isSupervisor()) {
         <a routerLink="/maintenance/schedules/new" class="btn btn--primary">Criar primeiro plano</a>
       }
     </div>
@@ -38,7 +38,7 @@
             <th>Próxima execução</th>
             <th>Prioridade</th>
             <th>Status</th>
-            @if (isSupervisor) {
+            @if (isSupervisor()) {
               <th>Ações</th>
             }
           </tr>
@@ -61,7 +61,7 @@
                   <span class="badge badge--inactive" data-testid="status-inactive">Inativo</span>
                 }
               </td>
-              @if (isSupervisor) {
+              @if (isSupervisor()) {
                 <td class="actions">
                   <a [routerLink]="['/maintenance/schedules', s.id, 'edit']"
                      class="btn btn--sm btn--ghost" data-testid="btn-edit">
