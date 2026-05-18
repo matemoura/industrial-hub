@@ -1,5 +1,46 @@
 # Log Aisha
 
+## [2026-05-19] Status geral do projeto — leitura de estado
+
+Fontes lidas:
+- `.claude/sprint-atual.md` (completo, Sprints 4–32)
+- `.claude/logs/log-maite.md` (pipeline Sprint 13 — ready-to-deploy)
+- `.claude/logs/log-athos.md` (planejamento Sprints 11–32)
+- `git log --oneline -10`
+
+Mudanças feitas:
+- Nenhuma (docs já sincronizados pela sessão anterior de 2026-05-15)
+
+Observações:
+- Sprint 13 está ✅ concluída e pronta para deploy (Maitê: 149 backend + 109 frontend passando)
+- Próxima sprint a ser executada: **Sprint 14** (Suppliers + score de qualidade — ADR-017)
+- Sprints 4–13 todas ✅ concluídas; Sprints 14–32 ⬜ pendentes
+- Nenhuma inconsistência identificada entre ADRs e sprint-atual.md
+
+---
+
+## [2026-05-15] Sincronização Sprint 13 — US-052, US-053
+
+Fontes lidas:
+- `.claude/sprint-atual.md`
+- `.claude/logs/log-mateus.md` (US-052 backend concluído, fix answer1)
+- `.claude/logs/log-tadeu.md` (US-053 frontend concluído + fix MF-2/SH-29/30/31/32)
+- `.claude/logs/log-maiana.md` (QA aprovado após fix)
+- `.claude/logs/log-beatriz.md` (Security aprovado)
+- `.claude/logs/log-helena.md` (Code review — MF-2 + 4 SHOULD FIX corrigidos)
+- `.claude/logs/log-maite.md` (pipeline: 149 backend + 109 frontend, 0 falhas)
+- `docs/adr/ADR-015-root-cause-analysis.md`
+
+Mudanças feitas:
+- `sprint-atual.md` — Sprint 13 `⬜ pendente` → `✅ concluída`
+- `sprint-atual.md` — US-052 e US-053 `⬜ pendente` → `✅ concluído`
+- `sprint-atual.md` — AC-3 de US-053 atualizado: botão "+ Adicionar próximo Por quê" agora exige tanto "Por quê" quanto "Resposta" do par atual preenchidos (implementação Tadeu SH-30)
+- `sprint-atual.md` — Roadmap: Sprints 7–13 corrigidos de `🔄`/`⬜` para `✅` (estavam desatualizados desde Sprint 7)
+
+Sem inconsistências entre ADR-015 e sprint-atual.md após as correções (Decisão 2 e 4 do ADR foram atualizadas por Tadeu para refletir answer1 obrigatório).
+
+---
+
 ## [2026-05-11] Atualização sprint-atual.md — Sprints 3–10
 
 **Tarefa**: Sincronizar docs/sprint-atual.md com planejamento do Athos e ADRs do Atlas

@@ -21,6 +21,9 @@ import com.industrialhub.backend.qms.domain.NcNotFoundException;
 import com.industrialhub.backend.qms.domain.RcaAlreadyExistsException;
 import com.industrialhub.backend.qms.domain.RcaNotFoundException;
 import com.industrialhub.backend.qms.domain.RcaNotAllowedException;
+import com.industrialhub.backend.qms.domain.SupplierDuplicateCodeException;
+import com.industrialhub.backend.qms.domain.SupplierNotFoundException;
+import com.industrialhub.backend.qms.domain.SupplierRequiredForNcException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -222,6 +225,30 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(InvalidPasswordException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidPassword(InvalidPasswordException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(SupplierNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleSupplierNotFound(SupplierNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(SupplierDuplicateCodeException.class)
+    public ResponseEntity<Map<String, Object>> handleSupplierDuplicateCode(SupplierDuplicateCodeException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(SupplierRequiredForNcException.class)
+    public ResponseEntity<Map<String, Object>> handleSupplierRequired(SupplierRequiredForNcException ex) {
         return ResponseEntity.badRequest().body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()

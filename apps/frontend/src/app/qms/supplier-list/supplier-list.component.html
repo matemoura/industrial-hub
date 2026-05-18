@@ -1,0 +1,58 @@
+<div class="supplier-list-page">
+
+  @if (toast()) {
+    <div class="toast toast--success" role="status">{{ toast() }}</div>
+  }
+
+  <div class="page-header">
+    <h2>Fornecedores</h2>
+    <div class="header-actions">
+      @if (isSupervisor) {
+        <a routerLink="/qms/suppliers/ranking" class="btn btn--outline">Ranking de Qualidade</a>
+      }
+      @if (isAdmin) {
+        <a routerLink="/qms/suppliers/new" class="btn btn--primary">+ Novo Fornecedor</a>
+      }
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="skeleton-row" aria-hidden="true"></div>
+      <div class="skeleton-row" aria-hidden="true"></div>
+      <div class="skeleton-row" aria-hidden="true"></div>
+    </div>
+  } @else if (suppliers().length === 0) {
+    <div class="empty-state">
+      <p>Nenhum fornecedor cadastrado.</p>
+      @if (isAdmin) {
+        <a routerLink="/qms/suppliers/new" class="btn btn--primary">Cadastrar primeiro fornecedor</a>
+      }
+    </div>
+  } @else {
+    <table class="supplier-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>E-mail de contato</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (s of suppliers(); track s.id) {
+          <tr class="supplier-row" data-testid="supplier-row" (click)="openDetail(s.id)">
+            <td class="supplier-code">{{ s.code }}</td>
+            <td class="supplier-name">{{ s.name }}</td>
+            <td class="supplier-email">{{ s.contactEmail ?? '—' }}</td>
+            <td>
+              <span [class.status-badge--active]="s.active" [class.status-badge--inactive]="!s.active" class="status-badge">
+                {{ s.active ? 'Ativo' : 'Inativo' }}
+              </span>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>

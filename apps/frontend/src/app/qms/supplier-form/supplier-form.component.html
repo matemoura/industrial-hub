@@ -1,0 +1,108 @@
+<div class="supplier-form-page">
+  <div class="page-header">
+    <a routerLink="/qms/suppliers" class="back-link">← Fornecedores</a>
+    <h2>{{ isEditMode ? 'Editar Fornecedor' : 'Novo Fornecedor' }}</h2>
+  </div>
+
+  @if (fetchLoading()) {
+    <p class="loading-msg">Carregando…</p>
+  } @else {
+    <form class="supplier-form" (ngSubmit)="submit()">
+
+      <div class="form-row">
+        <label class="form-field">
+          Código <span class="required">*</span>
+          <input
+            type="text"
+            [ngModel]="code()"
+            (ngModelChange)="code.set($event)"
+            name="code"
+            maxlength="50"
+            placeholder="ex: FORN-001"
+            [attr.disabled]="isEditMode ? true : null"
+            [class.field--readonly]="isEditMode"
+            data-testid="supplier-code"
+            required
+          />
+          @if (isEditMode) {
+            <span class="field-hint">O código não pode ser alterado</span>
+          }
+        </label>
+
+        <label class="form-field">
+          Nome <span class="required">*</span>
+          <input
+            type="text"
+            [ngModel]="name()"
+            (ngModelChange)="name.set($event)"
+            name="name"
+            maxlength="200"
+            placeholder="Razão social ou nome fantasia"
+            data-testid="supplier-name"
+            required
+          />
+        </label>
+      </div>
+
+      <div class="form-row">
+        <label class="form-field">
+          E-mail de contato
+          <input
+            type="email"
+            [ngModel]="contactEmail()"
+            (ngModelChange)="contactEmail.set($event)"
+            name="contactEmail"
+            maxlength="100"
+            placeholder="contato@fornecedor.com.br"
+          />
+        </label>
+
+        <label class="form-field">
+          Telefone de contato
+          <input
+            type="text"
+            [ngModel]="contactPhone()"
+            (ngModelChange)="contactPhone.set($event)"
+            name="contactPhone"
+            maxlength="20"
+            placeholder="(11) 99999-9999"
+          />
+        </label>
+      </div>
+
+      <label class="form-field">
+        Endereço
+        <input
+          type="text"
+          [ngModel]="address()"
+          (ngModelChange)="address.set($event)"
+          name="address"
+          maxlength="200"
+          placeholder="Rua, número, cidade — opcional"
+        />
+      </label>
+
+      <label class="form-field form-field--short">
+        Data de homologação
+        <input
+          type="date"
+          [ngModel]="onboardedAt()"
+          (ngModelChange)="onboardedAt.set($event)"
+          name="onboardedAt"
+        />
+      </label>
+
+      @if (errorMsg()) {
+        <p class="msg msg--error" role="alert">{{ errorMsg() }}</p>
+      }
+
+      <div class="form-actions">
+        <a routerLink="/qms/suppliers" class="btn btn--secondary">Cancelar</a>
+        <button type="submit" class="btn btn--primary" [disabled]="!isValid || loading()" data-testid="supplier-submit">
+          {{ loading() ? 'Salvando…' : (isEditMode ? 'Salvar alterações' : 'Cadastrar fornecedor') }}
+        </button>
+      </div>
+
+    </form>
+  }
+</div>

@@ -58,6 +58,10 @@ public class NonConformance {
     @Builder.Default
     private List<CorrectiveAction> actions = new ArrayList<>();
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id")
+    private Supplier supplier;
+
     @OneToOne(mappedBy = "nonConformance", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private RootCauseAnalysis rca;
 }

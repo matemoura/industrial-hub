@@ -1,7 +1,7 @@
-import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, inject, signal, computed } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { NcType, NcSeverity, QmsService } from '../qms.service';
+import { NcType, NcSeverity, QmsService, SupplierResponse } from '../qms.service';
 
 @Component({
   selector: 'app-nc-form',
@@ -11,7 +11,7 @@ import { NcType, NcSeverity, QmsService } from '../qms.service';
   templateUrl: './nc-form.component.html',
   styleUrl: './nc-form.component.scss',
 })
-export class NcFormComponent {
+export class NcFormComponent implements OnInit {
   private readonly qmsService = inject(QmsService);
   private readonly router = inject(Router);
 
@@ -19,8 +19,13 @@ export class NcFormComponent {
   type = signal<NcType | ''>('');
   severity = signal<NcSeverity | ''>('');
   description = signal('');
+  supplierId = signal('');
   loading = signal(false);
   errorMsg = signal<string | null>(null);
+
+  suppliers = signal<SupplierResponse[]>([]);
+
+  readonly isSupplierType = computed(() => this.type() === 'SUPPLIER');
 
   readonly ncTypes: NcType[] = ['PROCESS', 'PRODUCT', 'SUPPLIER', 'EQUIPMENT', 'OTHER'];
   readonly ncSeverities: NcSeverity[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -41,7 +46,24 @@ export class NcFormComponent {
   };
 
   get isValid(): boolean {
-    return this.title().trim().length > 0 && this.type() !== '' && this.severity() !== '';
+    const baseValid = this.title().trim().length > 0 && this.type() !== '' && this.severity() !== '';
+    if (this.isSupplierType()) {
+      return baseValid && this.supplierId() !== '';
+    }
+    return baseValid;
+  }
+
+  ngOnInit(): void {
+    this.qmsService.listSuppliers().subscribe({
+      next: (list) => this.suppliers.set(list),
+    });
+  }
+
+  onTypeChange(value: NcType | ''): void {
+    this.type.set(value);
+    if (value !== 'SUPPLIER') {
+      this.supplierId.set('');
+    }
   }
 
   submit(): void {
@@ -56,6 +78,7 @@ export class NcFormComponent {
         type: this.type() as NcType,
         severity: this.severity() as NcSeverity,
         description: this.description().trim() || undefined,
+        supplierId: this.isSupplierType() ? this.supplierId() : undefined,
       })
       .subscribe({
         next: () => {

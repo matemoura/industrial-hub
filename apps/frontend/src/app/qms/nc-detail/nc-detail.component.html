@@ -50,6 +50,16 @@
           <dt>Tipo</dt>
           <dd>{{ nc.type }}</dd>
         </div>
+        @if (nc.supplierId) {
+          <div class="nc-field">
+            <dt>Fornecedor</dt>
+            <dd>
+              <a [routerLink]="['/qms/suppliers', nc.supplierId]" class="supplier-link" data-testid="nc-supplier-link">
+                {{ nc.supplierName }}
+              </a>
+            </dd>
+          </div>
+        }
         <div class="nc-field">
           <dt>Severidade</dt>
           <dd>

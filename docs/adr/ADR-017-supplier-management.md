@@ -70,11 +70,17 @@ public record SupplierQualityScore(
     long totalNcs,             // NCs tipo SUPPLIER no período
     long criticalNcs,          // NCs com severity=CRITICAL
     long highNcs,
-    double qualityScore        // 100 - (criticalNcs*5 + highNcs*2 + otherNcs*1) / max(totalNcs,1) * 100
+    double qualityScore        // veja fórmula abaixo
 ) {}
 ```
 
-Formula de score é opinativa e pode ser ajustada via configuração futura. A lógica fica em `GetSupplierQualityUseCase` e é calculada em Java sobre lista de NCs do período.
+**Fórmula de score** (calculada em Java, não persistida):
+```
+score = 100 - (criticalNcs*5 + highNcs*2 + mediumNcs*1 + lowNcs*0.5) / max(totalNcs, 1) * 100
+score = max(0, min(100, score))   // limitado ao intervalo 0–100
+```
+
+`mediumNcs` e `lowNcs` são variáveis internas do use case (`GetSupplierQualityUseCase`), não expostas no DTO de resposta. Formula é opinativa e pode ser configurável em sprint futura via `AlertThreshold`.
 
 ---
 

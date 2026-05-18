@@ -8,8 +8,11 @@ import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
 import com.industrialhub.backend.qms.domain.NcType;
 import com.industrialhub.backend.qms.domain.NonConformance;
+import com.industrialhub.backend.qms.domain.Supplier;
+import com.industrialhub.backend.qms.domain.SupplierRequiredForNcException;
 import com.industrialhub.backend.qms.application.usecase.QmsEmailService;
 import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
+import com.industrialhub.backend.qms.infrastructure.SupplierRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,9 +21,11 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,6 +37,9 @@ class CreateNcUseCaseTest {
     private NonConformanceRepository repository;
 
     @Mock
+    private SupplierRepository supplierRepository;
+
+    @Mock
     private QmsEmailService emailService;
 
     @Mock
@@ -41,7 +49,7 @@ class CreateNcUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new CreateNcUseCase(repository, emailService, auditService);
+        useCase = new CreateNcUseCase(repository, supplierRepository, emailService, auditService);
     }
 
     @Test
@@ -50,7 +58,8 @@ class CreateNcUseCaseTest {
             "Peça fora de tolerância",
             "Diâmetro 2mm acima do especificado",
             NcType.PRODUCT,
-            NcSeverity.HIGH
+            NcSeverity.HIGH,
+            null
         );
 
         NonConformance saved = NonConformance.builder()
@@ -88,7 +97,8 @@ class CreateNcUseCaseTest {
             "Falha no processo",
             null,
             NcType.PROCESS,
-            NcSeverity.LOW
+            NcSeverity.LOW,
+            null
         );
 
         NonConformance saved = NonConformance.builder()
@@ -108,5 +118,88 @@ class CreateNcUseCaseTest {
         ArgumentCaptor<NonConformance> captor = ArgumentCaptor.forClass(NonConformance.class);
         verify(repository).save(captor.capture());
         assertThat(captor.getValue().getDescription()).isNull();
+    }
+
+    @Test
+    void shouldThrow400_whenTypeIsSupplierAndSupplierIdIsAbsent() {
+        CreateNcRequest request = new CreateNcRequest(
+            "Peça defeituosa do fornecedor",
+            null,
+            NcType.SUPPLIER,
+            NcSeverity.HIGH,
+            null
+        );
+
+        assertThatThrownBy(() -> useCase.execute(request, "operator1"))
+                .isInstanceOf(SupplierRequiredForNcException.class)
+                .hasMessageContaining("supplierId é obrigatório");
+    }
+
+    @Test
+    void shouldAssociateSupplier_whenTypeIsSupplierAndSupplierIdProvided() {
+        UUID supplierId = UUID.randomUUID();
+        Supplier supplier = Supplier.builder().id(supplierId).name("Acme Ltda").active(true).build();
+
+        CreateNcRequest request = new CreateNcRequest(
+            "Peça defeituosa",
+            null,
+            NcType.SUPPLIER,
+            NcSeverity.MEDIUM,
+            supplierId
+        );
+
+        NonConformance saved = NonConformance.builder()
+                .id(UUID.randomUUID())
+                .title(request.title())
+                .type(request.type())
+                .severity(request.severity())
+                .status(NcStatus.OPEN)
+                .reportedBy("operator1")
+                .reportedAt(LocalDateTime.now())
+                .supplier(supplier)
+                .build();
+
+        when(supplierRepository.findById(supplierId)).thenReturn(Optional.of(supplier));
+        when(repository.save(any(NonConformance.class))).thenReturn(saved);
+
+        NcResponse response = useCase.execute(request, "operator1");
+
+        ArgumentCaptor<NonConformance> captor = ArgumentCaptor.forClass(NonConformance.class);
+        verify(repository).save(captor.capture());
+
+        assertThat(captor.getValue().getSupplier()).isNotNull();
+        assertThat(captor.getValue().getSupplier().getId()).isEqualTo(supplierId);
+        assertThat(response.supplierId()).isEqualTo(supplierId);
+    }
+
+    @Test
+    void shouldIgnoreSupplierIdForNonSupplierTypes() {
+        UUID supplierId = UUID.randomUUID();
+
+        CreateNcRequest request = new CreateNcRequest(
+            "Falha de processo",
+            null,
+            NcType.PROCESS,
+            NcSeverity.LOW,
+            supplierId
+        );
+
+        NonConformance saved = NonConformance.builder()
+                .id(UUID.randomUUID())
+                .title(request.title())
+                .type(request.type())
+                .severity(request.severity())
+                .status(NcStatus.OPEN)
+                .reportedBy("operator1")
+                .reportedAt(LocalDateTime.now())
+                .build();
+
+        when(repository.save(any(NonConformance.class))).thenReturn(saved);
+
+        useCase.execute(request, "operator1");
+
+        ArgumentCaptor<NonConformance> captor = ArgumentCaptor.forClass(NonConformance.class);
+        verify(repository).save(captor.capture());
+        assertThat(captor.getValue().getSupplier()).isNull();
     }
 }

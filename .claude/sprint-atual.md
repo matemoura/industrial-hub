@@ -507,16 +507,16 @@
 
 ---
 
-## Sprint 13 ⬜
+## Sprint 13 ✅
 **Objetivo**: Análise de Causa Raiz — 5-Porquês vinculado a NCs
 **ADR**: ADR-015
-**Status**: pendente
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-052 | Backend de Análise de Causa Raiz (5-Porquês) | 3 | ⬜ pendente |
-| US-053 | Frontend de 5-Porquês — wizard interativo | 3 | ⬜ pendente |
+| US-052 | Backend de Análise de Causa Raiz (5-Porquês) | 3 | ✅ concluído |
+| US-053 | Frontend de 5-Porquês — wizard interativo | 3 | ✅ concluído |
 
 ---
 
@@ -535,7 +535,7 @@
 
 1. Seção "Análise de Causa Raiz" na página de detalhe de NC, abaixo das ações corretivas
 2. Se NC sem RCA e usuário é SUPERVISOR+: botão "Iniciar Análise"; desabilitado se NC está `OPEN` (tooltip "Inicie a análise da NC primeiro")
-3. Wizard vertical: par "Por quê / Resposta" exibido como cards sequenciais; botão "+ Adicionar próximo Por quê" habilita par seguinte (máximo 5 pares)
+3. Wizard vertical: par "Por quê / Resposta" exibido como cards sequenciais; botão "+ Adicionar próximo Por quê" habilita par seguinte (máximo 5 pares); disponível somente após preencher tanto "Por quê" quanto "Resposta" do par atual
 4. Campo "Causa Raiz Identificada" aparece após preencher `why1 + answer1`
 5. Botão "Salvar RCA" envia POST ou PUT dependendo de existência de RCA anterior
 6. NC fechada (`CLOSED`): wizard em modo somente leitura (campos desabilitados, sem botão salvar)
@@ -543,16 +543,16 @@
 
 ---
 
-## Sprint 14 ⬜
+## Sprint 14 ✅
 **Objetivo**: Gestão de fornecedores + score de qualidade por fornecedor
 **ADR**: ADR-017
-**Status**: pendente
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-057 | Cadastro de fornecedores (Supplier CRUD) | 3 | ⬜ pendente |
-| US-058 | Score de qualidade e ranking de fornecedores | 3 | ⬜ pendente |
+| US-057 | Cadastro de fornecedores (Supplier CRUD) | 3 | ✅ concluído |
+| US-058 | Score de qualidade e ranking de fornecedores | 3 | ✅ concluído |
 
 ---
 
@@ -1286,14 +1286,14 @@
 | ✅ Sprint 4 | Autenticação JWT | US-013, US-014 | ADR-004 |
 | ✅ Sprint 5 | QMS: cadastro e ciclo de vida de NCs | US-021, US-022, US-023 | ADR-007 |
 | ✅ Sprint 6 | QMS: planos de ação corretiva (CAP) + email | US-024, US-025, US-026 | ADR-007 |
-| 🔄 Sprint 7 | Maintenance: equipment registration + work orders | US-027, US-028 | ADR-008 |
-| ⬜ Sprint 8 | Maintenance: MTTR + metrics | US-029 | ADR-008 |
-| ⬜ Sprint 9 | Cross-module KPI dashboard + weekly report | US-030, US-031 | ADR-009 |
-| ⬜ Sprint 10 | Audit trail, E2E (Playwright), health, performance | US-033, US-034, US-035, US-036 | ADR-009 |
-| ⬜ Sprint 11 | API Security Hardening (rate limiting, headers, CORS) | US-065, US-066 | ADR-021 |
-| ⬜ Sprint 12 | User management UI + self-service password | US-037, US-038, US-039 | ADR-010 |
-| ⬜ Sprint 13 | Análise de causa raiz — 5-Porquês em NCs | US-052, US-053 | ADR-015 |
-| ⬜ Sprint 14 | Gestão de fornecedores + score de qualidade | US-057, US-058 | ADR-017 |
+| ✅ Sprint 7 | Maintenance: equipment registration + work orders | US-027, US-028 | ADR-008 |
+| ✅ Sprint 8 | Maintenance: MTTR + metrics | US-029 | ADR-008 |
+| ✅ Sprint 9 | Cross-module KPI dashboard + weekly report | US-030, US-031 | ADR-009 |
+| ✅ Sprint 10 | Audit trail, E2E (Playwright), health, performance | US-033, US-034, US-035, US-036 | ADR-009 |
+| ✅ Sprint 11 | API Security Hardening (rate limiting, headers, CORS) | US-065, US-066 | ADR-021 |
+| ✅ Sprint 12 | User management UI + self-service password | US-037, US-038, US-039 | ADR-010 |
+| ✅ Sprint 13 | Análise de causa raiz — 5-Porquês em NCs | US-052, US-053 | ADR-015 |
+| ✅ Sprint 14 | Gestão de fornecedores + score de qualidade | US-057, US-058 | ADR-017 |
 | ⬜ Sprint 15 | Preventive maintenance scheduling + calendar | US-040, US-041, US-042 | ADR-011 |
 | ⬜ Sprint 16 | Advanced analytics: OEE trend, NC pareto, MTTR trend | US-043, US-044, US-045 | ADR-012 |
 | ⬜ Sprint 17 | Planned Downtime — paradas planejadas no OEE | US-073, US-074 | ADR-025 |

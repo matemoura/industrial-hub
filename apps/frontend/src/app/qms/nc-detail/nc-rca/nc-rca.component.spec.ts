@@ -15,6 +15,8 @@ const BASE_NC: NcResponse = {
   description: null,
   closedAt: null,
   closedBy: null,
+  supplierId: null,
+  supplierName: null,
   actions: [],
   rca: null,
 };

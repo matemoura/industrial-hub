@@ -7,6 +7,37 @@ export type NcType = 'PROCESS' | 'PRODUCT' | 'SUPPLIER' | 'EQUIPMENT' | 'OTHER';
 export type NcSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type ActionStatus = 'PENDING' | 'DONE';
 
+// ── Supplier ──────────────────────────────────────────────────────────────────
+
+export interface SupplierResponse {
+  id: string;
+  code: string;
+  name: string;
+  contactEmail: string | null;
+  contactPhone: string | null;
+  address: string | null;
+  active: boolean;
+  onboardedAt: string | null;
+}
+
+export interface CreateSupplierPayload {
+  code: string;
+  name: string;
+  contactEmail?: string;
+  contactPhone?: string;
+  address?: string;
+  onboardedAt?: string;
+}
+
+export interface SupplierQualityScore {
+  supplierId: string;
+  supplierName: string;
+  totalNcs: number;
+  criticalNcs: number;
+  highNcs: number;
+  qualityScore: number;
+}
+
 export interface NcSummaryItem {
   id: string;
   title: string;
@@ -65,6 +96,8 @@ export interface NcResponse extends NcSummaryItem {
   description: string | null;
   closedAt: string | null;
   closedBy: string | null;
+  supplierId: string | null;
+  supplierName: string | null;
   actions: ActionResponse[];
   rca: RcaResponse | null;
 }
@@ -90,6 +123,7 @@ export interface CreateNcPayload {
   type: NcType;
   severity: NcSeverity;
   description?: string;
+  supplierId?: string;
 }
 
 export interface CreateActionPayload {
@@ -160,5 +194,41 @@ export class QmsService {
 
   getRca(ncId: string): Observable<RcaResponse> {
     return this.http.get<RcaResponse>(`${this.baseUrl}/${ncId}/rca`);
+  }
+
+  // ── Suppliers ───────────────────────────────────────────────────────────────
+
+  private readonly suppliersUrl = '/api/v1/qms/suppliers';
+
+  listSuppliers(): Observable<SupplierResponse[]> {
+    return this.http.get<SupplierResponse[]>(this.suppliersUrl);
+  }
+
+  getSupplier(id: string): Observable<SupplierResponse> {
+    return this.http.get<SupplierResponse>(`${this.suppliersUrl}/${id}`);
+  }
+
+  createSupplier(payload: CreateSupplierPayload): Observable<SupplierResponse> {
+    return this.http.post<SupplierResponse>(this.suppliersUrl, payload);
+  }
+
+  updateSupplier(id: string, payload: CreateSupplierPayload): Observable<SupplierResponse> {
+    return this.http.put<SupplierResponse>(`${this.suppliersUrl}/${id}`, payload);
+  }
+
+  deactivateSupplier(id: string): Observable<void> {
+    return this.http.put<void>(`${this.suppliersUrl}/${id}/deactivate`, {});
+  }
+
+  getSupplierQualityScore(id: string, days = 90): Observable<SupplierQualityScore> {
+    return this.http.get<SupplierQualityScore>(`${this.suppliersUrl}/${id}/quality-score`, {
+      params: new HttpParams().set('days', days.toString()),
+    });
+  }
+
+  getSupplierQualityRanking(days = 90): Observable<SupplierQualityScore[]> {
+    return this.http.get<SupplierQualityScore[]>(`${this.suppliersUrl}/quality-ranking`, {
+      params: new HttpParams().set('days', days.toString()),
+    });
   }
 }

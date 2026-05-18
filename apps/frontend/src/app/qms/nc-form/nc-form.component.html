@@ -25,7 +25,7 @@
         Tipo <span class="required">*</span>
         <select
           [ngModel]="type()"
-          (ngModelChange)="type.set($event)"
+          (ngModelChange)="onTypeChange($event)"
           name="type"
           data-testid="nc-type"
           required
@@ -53,6 +53,24 @@
         </select>
       </label>
     </div>
+
+    @if (isSupplierType()) {
+      <label class="form-field">
+        Fornecedor <span class="required">*</span>
+        <select
+          [ngModel]="supplierId()"
+          (ngModelChange)="supplierId.set($event)"
+          name="supplierId"
+          data-testid="nc-supplier"
+          required
+        >
+          <option value="">Selecione o fornecedor…</option>
+          @for (s of suppliers(); track s.id) {
+            <option [value]="s.id">{{ s.name }} ({{ s.code }})</option>
+          }
+        </select>
+      </label>
+    }
 
     <label class="form-field">
       Descrição

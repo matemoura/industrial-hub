@@ -7,7 +7,12 @@ import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.domain.NonConformance;
 import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
+import com.industrialhub.backend.qms.domain.NcType;
+import com.industrialhub.backend.qms.domain.Supplier;
+import com.industrialhub.backend.qms.domain.SupplierNotFoundException;
+import com.industrialhub.backend.qms.domain.SupplierRequiredForNcException;
 import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
+import com.industrialhub.backend.qms.infrastructure.SupplierRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,18 +23,31 @@ import java.util.Map;
 public class CreateNcUseCase {
 
     private final NonConformanceRepository repository;
+    private final SupplierRepository supplierRepository;
     private final QmsEmailService emailService;
     private final AuditService auditService;
 
-    public CreateNcUseCase(NonConformanceRepository repository, QmsEmailService emailService,
+    public CreateNcUseCase(NonConformanceRepository repository,
+                           SupplierRepository supplierRepository,
+                           QmsEmailService emailService,
                            AuditService auditService) {
         this.repository = repository;
+        this.supplierRepository = supplierRepository;
         this.emailService = emailService;
         this.auditService = auditService;
     }
 
     @Transactional
     public NcResponse execute(CreateNcRequest request, String reportedBy) {
+        Supplier supplier = null;
+        if (request.type() == NcType.SUPPLIER) {
+            if (request.supplierId() == null) {
+                throw new SupplierRequiredForNcException();
+            }
+            supplier = supplierRepository.findById(request.supplierId())
+                    .orElseThrow(() -> new SupplierNotFoundException(request.supplierId()));
+        }
+
         NonConformance nc = NonConformance.builder()
                 .title(request.title())
                 .description(request.description())
@@ -38,6 +56,7 @@ public class CreateNcUseCase {
                 .status(NcStatus.OPEN)
                 .reportedBy(reportedBy)
                 .reportedAt(LocalDateTime.now())
+                .supplier(supplier)
                 .build();
 
         NonConformance saved = repository.save(nc);

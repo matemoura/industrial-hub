@@ -20,6 +20,8 @@ public record NcResponse(
     LocalDateTime reportedAt,
     LocalDateTime closedAt,
     String closedBy,
+    UUID supplierId,
+    String supplierName,
     List<ActionResponse> actions,
     RcaResponse rca
 ) {
@@ -35,6 +37,8 @@ public record NcResponse(
             nc.getReportedAt(),
             nc.getClosedAt(),
             nc.getClosedBy(),
+            nc.getSupplier() != null ? nc.getSupplier().getId() : null,
+            nc.getSupplier() != null ? nc.getSupplier().getName() : null,
             nc.getActions().stream().map(ActionResponse::from).toList(),
             nc.getRca() != null ? RcaResponse.from(nc.getRca()) : null
         );

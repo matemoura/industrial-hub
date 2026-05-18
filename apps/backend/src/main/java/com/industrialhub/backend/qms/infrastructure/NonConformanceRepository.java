@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+
 public interface NonConformanceRepository extends JpaRepository<NonConformance, UUID> {
 
     @EntityGraph(attributePaths = {"actions"})
@@ -47,4 +48,12 @@ public interface NonConformanceRepository extends JpaRepository<NonConformance, 
 
     @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.reportedAt >= :start AND nc.reportedAt < :end")
     long countInPeriod(@Param("start") LocalDateTime start, @Param("end") LocalDateTime end);
+
+    @Query("SELECT nc FROM NonConformance nc WHERE nc.supplier.id = :supplierId AND nc.reportedAt >= :from")
+    List<NonConformance> findBySupplierIdAndReportedAtAfter(@Param("supplierId") UUID supplierId,
+                                                            @Param("from") LocalDateTime from);
+
+    @Query("SELECT nc FROM NonConformance nc WHERE nc.type = :type AND nc.reportedAt >= :from")
+    List<NonConformance> findByTypeAndReportedAtAfter(@Param("type") NcType type,
+                                                      @Param("from") LocalDateTime from);
 }

@@ -1,0 +1,141 @@
+<div class="supplier-detail-page">
+  <div class="page-header">
+    <a routerLink="/qms/suppliers" class="back-link">← Fornecedores</a>
+  </div>
+
+  @if (toast()) {
+    <div class="toast toast--success" role="status">{{ toast() }}</div>
+  }
+
+  @if (loading()) {
+    <p class="loading-msg">Carregando…</p>
+  }
+
+  @if (errorMsg() && !supplier()) {
+    <p class="error-msg" role="alert">{{ errorMsg() }}</p>
+  }
+
+  @if (supplier(); as s) {
+    <div class="detail-layout">
+
+      <!-- Info card -->
+      <div class="info-card">
+        <div class="info-card__header">
+          <div class="info-card__title-row">
+            <h2>{{ s.name }}</h2>
+            <span [class.status-badge--active]="s.active" [class.status-badge--inactive]="!s.active" class="status-badge">
+              {{ s.active ? 'Ativo' : 'Inativo' }}
+            </span>
+          </div>
+          <p class="supplier-code">{{ s.code }}</p>
+        </div>
+
+        @if (errorMsg()) {
+          <p class="msg msg--error" role="alert">{{ errorMsg() }}</p>
+        }
+
+        <dl class="fields-grid">
+          @if (s.contactEmail) {
+            <div class="field-item">
+              <dt>E-mail</dt>
+              <dd><a [href]="'mailto:' + s.contactEmail" class="link">{{ s.contactEmail }}</a></dd>
+            </div>
+          }
+          @if (s.contactPhone) {
+            <div class="field-item">
+              <dt>Telefone</dt>
+              <dd>{{ s.contactPhone }}</dd>
+            </div>
+          }
+          @if (s.address) {
+            <div class="field-item field-item--full">
+              <dt>Endereço</dt>
+              <dd>{{ s.address }}</dd>
+            </div>
+          }
+          @if (s.onboardedAt) {
+            <div class="field-item">
+              <dt>Homologado em</dt>
+              <dd>{{ s.onboardedAt }}</dd>
+            </div>
+          }
+        </dl>
+
+        @if (isAdmin && s.active) {
+          <div class="card-actions">
+            <a [routerLink]="['/qms/suppliers', s.id, 'edit']" class="btn btn--secondary">Editar</a>
+            <button type="button" class="btn btn--danger" [disabled]="deactivating()" (click)="deactivate()">
+              {{ deactivating() ? 'Desativando…' : 'Desativar' }}
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Quality Score card (SUPERVISOR+) -->
+      @if (isSupervisor) {
+        <div class="score-card" data-testid="score-card">
+          <div class="score-card__header">
+            <h3>Score de Qualidade</h3>
+            <div class="period-selector">
+              @for (d of scoreDayOptions; track d) {
+                <button
+                  type="button"
+                  [class.period-btn--active]="scoreDays() === d"
+                  class="period-btn"
+                  (click)="changeScorePeriod(d)"
+                >
+                  {{ d }}d
+                </button>
+              }
+            </div>
+          </div>
+
+          @if (scoreLoading()) {
+            <div class="score-skeleton" aria-hidden="true"></div>
+          } @else if (score(); as sc) {
+            <div class="score-content">
+              <div class="score-gauge" [class.score-gauge--green]="scoreColor() === 'green'"
+                                       [class.score-gauge--amber]="scoreColor() === 'amber'"
+                                       [class.score-gauge--red]="scoreColor() === 'red'"
+                   data-testid="score-gauge">
+                <span class="score-value">{{ formatScore(sc.qualityScore) }}</span>
+                <span class="score-unit">/ 100</span>
+              </div>
+
+              <div class="score-metrics">
+                <div class="metric">
+                  <span class="metric__label">Total de NCs</span>
+                  <span class="metric__value">{{ sc.totalNcs }}</span>
+                </div>
+                <div class="metric metric--red">
+                  <span class="metric__label">Críticas</span>
+                  <span class="metric__value">{{ sc.criticalNcs }}</span>
+                </div>
+                <div class="metric metric--orange">
+                  <span class="metric__label">Altas</span>
+                  <span class="metric__value">{{ sc.highNcs }}</span>
+                </div>
+              </div>
+
+              <div class="score-bar-wrap">
+                <div class="score-bar"
+                     [class.score-bar--green]="scoreColor() === 'green'"
+                     [class.score-bar--amber]="scoreColor() === 'amber'"
+                     [class.score-bar--red]="scoreColor() === 'red'"
+                     [style.width.%]="sc.qualityScore"
+                     role="progressbar"
+                     [attr.aria-valuenow]="sc.qualityScore"
+                     aria-valuemin="0"
+                     aria-valuemax="100">
+                </div>
+              </div>
+            </div>
+          } @else {
+            <p class="score-empty">Não foi possível carregar o score.</p>
+          }
+        </div>
+      }
+
+    </div>
+  }
+</div>
