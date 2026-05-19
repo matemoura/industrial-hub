@@ -185,6 +185,56 @@ describe('MaintenanceCalendarComponent', () => {
     });
   });
 
+  describe('SH-40 — DAILY schedule não aparece em dias fora do mês (padding)', () => {
+    it('dia de padding anterior deve retornar array vazio', () => {
+      setup('OPERATOR', [DAILY_SCHEDULE]);
+      // Forçar o calendário para Junho 2026; o padding anterior inclui dias de Maio
+      component.currentYear.set(2026);
+      component.currentMonth.set(5); // Junho
+      fixture.detectChanges();
+      const weeks = component.calendarWeeks();
+      // O primeiro dia do grid para Junho 2026 (1ª = segunda) começa em Junho — sem padding.
+      // Usar Julho 2026 (1ª = quarta): padding inclui 29, 30 e 31 de Junho
+      component.currentMonth.set(6); // Julho
+      fixture.detectChanges();
+      const weeksJuly = component.calendarWeeks();
+      const paddingDayBefore = weeksJuly[0][0]; // 29 de junho (padding anterior)
+      expect(paddingDayBefore.inCurrentMonth).toBe(false);
+      expect(paddingDayBefore.schedules).toEqual([]);
+    });
+
+    it('dia de padding posterior deve retornar array vazio', () => {
+      setup('OPERATOR', [DAILY_SCHEDULE]);
+      // Maio 2026: 1ª = sexta. Grid começa segunda 27/04.
+      // Padding posterior: 1 e 2 de Junho
+      component.currentYear.set(2026);
+      component.currentMonth.set(4); // Maio
+      fixture.detectChanges();
+      const weeks = component.calendarWeeks();
+      const lastWeek = weeks[weeks.length - 1];
+      const paddingDayAfter = lastWeek.find((d) => !d.inCurrentMonth && d.date.getMonth() === 5);
+      expect(paddingDayAfter).toBeDefined();
+      if (paddingDayAfter) {
+        expect(paddingDayAfter.schedules).toEqual([]);
+      }
+    });
+
+    it('dia do mês corrente deve exibir schedule DAILY', () => {
+      setup('OPERATOR', [DAILY_SCHEDULE]);
+      component.currentYear.set(2026);
+      component.currentMonth.set(4); // Maio
+      fixture.detectChanges();
+      const weeks = component.calendarWeeks();
+      const may15 = weeks.flat().find(
+        (d) => d.inCurrentMonth && d.date.getDate() === 15 && d.date.getMonth() === 4,
+      );
+      expect(may15).toBeDefined();
+      if (may15) {
+        expect(may15.schedules.length).toBeGreaterThan(0);
+      }
+    });
+  });
+
   describe('AC-7 — detail panel', () => {
     it('should open detail panel on badge click', () => {
       setup('OPERATOR', [DAILY_SCHEDULE]);

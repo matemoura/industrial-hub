@@ -60,14 +60,16 @@ public class PlannedDowntimeController {
     @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
     public ResponseEntity<PlannedDowntimeResponse> update(
             @PathVariable UUID id,
-            @Valid @RequestBody UpdatePlannedDowntimeRequest request) {
-        return ResponseEntity.ok(updateUseCase.execute(id, request));
+            @Valid @RequestBody UpdatePlannedDowntimeRequest request,
+            Principal principal) {
+        return ResponseEntity.ok(updateUseCase.execute(id, request,
+                principal != null ? principal.getName() : "system"));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
-    public ResponseEntity<Void> delete(@PathVariable UUID id) {
-        deleteUseCase.execute(id);
+    public ResponseEntity<Void> delete(@PathVariable UUID id, Principal principal) {
+        deleteUseCase.execute(id, principal != null ? principal.getName() : "system");
         return ResponseEntity.noContent().build();
     }
 }

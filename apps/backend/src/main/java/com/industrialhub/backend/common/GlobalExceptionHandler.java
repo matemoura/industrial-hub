@@ -1,5 +1,7 @@
 package com.industrialhub.backend.common;
 
+import com.industrialhub.backend.common.domain.AlertThresholdNotFoundException;
+import com.industrialhub.backend.common.domain.NotificationNotFoundException;
 import com.industrialhub.backend.common.auth.application.usecase.InvalidCredentialsException;
 import com.industrialhub.backend.common.auth.domain.InvalidPasswordException;
 import com.industrialhub.backend.common.auth.domain.LastAdminException;
@@ -306,6 +308,30 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(IllegalStateException.class)
+    public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(AlertThresholdNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleAlertThresholdNotFound(AlertThresholdNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(NotificationNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleNotificationNotFound(NotificationNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));

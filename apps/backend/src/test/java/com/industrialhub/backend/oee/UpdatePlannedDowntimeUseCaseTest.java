@@ -1,5 +1,7 @@
 package com.industrialhub.backend.oee;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.maintenance.domain.Equipment;
 import com.industrialhub.backend.maintenance.domain.EquipmentNotFoundException;
 import com.industrialhub.backend.maintenance.infrastructure.EquipmentRepository;
@@ -24,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +38,9 @@ class UpdatePlannedDowntimeUseCaseTest {
     @Mock
     private EquipmentRepository equipmentRepository;
 
+    @Mock
+    private AuditService auditService;
+
     private UpdatePlannedDowntimeUseCase useCase;
 
     private static final LocalDateTime START_AT = LocalDateTime.of(2026, 5, 20, 8, 0);
@@ -42,7 +48,7 @@ class UpdatePlannedDowntimeUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new UpdatePlannedDowntimeUseCase(plannedDowntimeRepository, equipmentRepository);
+        useCase = new UpdatePlannedDowntimeUseCase(plannedDowntimeRepository, equipmentRepository, auditService);
     }
 
     // ─── Cenário 1: Atualização bem-sucedida null → null (planta inteira) ───────
@@ -78,7 +84,7 @@ class UpdatePlannedDowntimeUseCaseTest {
         when(plannedDowntimeRepository.findById(id)).thenReturn(Optional.of(existing));
         when(plannedDowntimeRepository.save(any(PlannedDowntime.class))).thenReturn(saved);
 
-        PlannedDowntimeResponse response = useCase.execute(id, request);
+        PlannedDowntimeResponse response = useCase.execute(id, request, "supervisor");
 
         assertThat(response.equipmentId()).isNull();
         assertThat(response.startAt()).isEqualTo(START_AT);
@@ -88,6 +94,9 @@ class UpdatePlannedDowntimeUseCaseTest {
         assertThat(response.description()).isEqualTo("Feriado nacional");
 
         verify(equipmentRepository, never()).findByIdAndActiveTrue(any());
+
+        verify(auditService).log(eq("supervisor"), eq(AuditAction.DOWNTIME_UPDATED),
+                eq("PlannedDowntime"), any(String.class), any());
     }
 
     // ─── Cenário 2: Atualização bem-sucedida null → equipment ────────────────────
@@ -131,7 +140,7 @@ class UpdatePlannedDowntimeUseCaseTest {
         when(equipmentRepository.findByIdAndActiveTrue(equipmentId)).thenReturn(Optional.of(equipment));
         when(plannedDowntimeRepository.save(any(PlannedDowntime.class))).thenReturn(saved);
 
-        PlannedDowntimeResponse response = useCase.execute(id, request);
+        PlannedDowntimeResponse response = useCase.execute(id, request, "supervisor");
 
         assertThat(response.equipmentId()).isEqualTo(equipmentId);
         assertThat(response.equipmentCode()).isEqualTo("EQ-001");
@@ -154,7 +163,7 @@ class UpdatePlannedDowntimeUseCaseTest {
 
         when(plannedDowntimeRepository.findById(unknownId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.execute(unknownId, request))
+        assertThatThrownBy(() -> useCase.execute(unknownId, request, "supervisor"))
                 .isInstanceOf(PlannedDowntimeNotFoundException.class);
 
         verify(plannedDowntimeRepository, never()).save(any());
@@ -183,7 +192,7 @@ class UpdatePlannedDowntimeUseCaseTest {
 
         when(plannedDowntimeRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> useCase.execute(id, request))
+        assertThatThrownBy(() -> useCase.execute(id, request, "admin"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("endAt deve ser posterior a startAt");
 
@@ -213,7 +222,7 @@ class UpdatePlannedDowntimeUseCaseTest {
 
         when(plannedDowntimeRepository.findById(id)).thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> useCase.execute(id, request))
+        assertThatThrownBy(() -> useCase.execute(id, request, "admin"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("1440 minutos");
 
@@ -244,7 +253,7 @@ class UpdatePlannedDowntimeUseCaseTest {
         when(plannedDowntimeRepository.findById(id)).thenReturn(Optional.of(existing));
         when(equipmentRepository.findByIdAndActiveTrue(unknownEquipmentId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> useCase.execute(id, request))
+        assertThatThrownBy(() -> useCase.execute(id, request, "admin"))
                 .isInstanceOf(EquipmentNotFoundException.class);
 
         verify(plannedDowntimeRepository, never()).save(any());

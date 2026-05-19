@@ -1,5 +1,7 @@
 package com.industrialhub.backend.oee.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.maintenance.domain.Equipment;
 import com.industrialhub.backend.maintenance.infrastructure.EquipmentRepository;
 import com.industrialhub.backend.maintenance.domain.EquipmentNotFoundException;
@@ -11,6 +13,7 @@ import com.industrialhub.backend.oee.infrastructure.PlannedDowntimeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -18,15 +21,18 @@ public class UpdatePlannedDowntimeUseCase {
 
     private final PlannedDowntimeRepository plannedDowntimeRepository;
     private final EquipmentRepository equipmentRepository;
+    private final AuditService auditService;
 
     public UpdatePlannedDowntimeUseCase(PlannedDowntimeRepository plannedDowntimeRepository,
-                                        EquipmentRepository equipmentRepository) {
+                                        EquipmentRepository equipmentRepository,
+                                        AuditService auditService) {
         this.plannedDowntimeRepository = plannedDowntimeRepository;
         this.equipmentRepository = equipmentRepository;
+        this.auditService = auditService;
     }
 
     @Transactional
-    public PlannedDowntimeResponse execute(UUID id, UpdatePlannedDowntimeRequest request) {
+    public PlannedDowntimeResponse execute(UUID id, UpdatePlannedDowntimeRequest request, String username) {
         PlannedDowntime downtime = plannedDowntimeRepository.findById(id)
                 .orElseThrow(() -> new PlannedDowntimeNotFoundException(id));
 
@@ -51,6 +57,18 @@ public class UpdatePlannedDowntimeUseCase {
         downtime.setDescription(request.description());
 
         PlannedDowntime saved = plannedDowntimeRepository.save(downtime);
+
+        auditService.log(username, AuditAction.DOWNTIME_UPDATED, "PlannedDowntime",
+                saved.getId().toString(),
+                Map.of(
+                        "date", saved.getDate() != null ? saved.getDate().toString() : "",
+                        "durationMinutes", String.valueOf(saved.getDurationMinutes()),
+                        "reason", saved.getReason().name(),
+                        "equipmentId", saved.getEquipment() != null
+                                ? saved.getEquipment().getId().toString()
+                                : "plant-wide"
+                ));
+
         return PlannedDowntimeResponse.from(saved);
     }
 }

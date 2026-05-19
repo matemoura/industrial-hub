@@ -7,6 +7,7 @@ import { signal } from '@angular/core';
 import { PlannedDowntimeCalendarComponent } from './planned-downtime-calendar.component';
 import { OeeService, PlannedDowntimeResponse } from '../oee.service';
 import { AuthService } from '../../auth/auth.service';
+import { MaintenanceService } from '../../maintenance/maintenance.service';
 
 const MOCK_DOWNTIME: PlannedDowntimeResponse = {
   id: 'dt-001',
@@ -36,11 +37,23 @@ const MOCK_DOWNTIME_HOLIDAY: PlannedDowntimeResponse = {
   registeredAt: '2026-05-10T09:00:00',
 };
 
+const MOCK_EQUIPMENT = [
+  { id: 'eq-1', code: 'EQ-001', name: 'Torno CNC', location: null, type: 'MACHINE', status: 'OPERATIONAL', acquiredAt: null, active: true },
+  { id: 'eq-2', code: 'EQ-002', name: 'Fresadora', location: null, type: 'MACHINE', status: 'OPERATIONAL', acquiredAt: null, active: true },
+  { id: 'eq-3', code: 'EQ-003', name: 'Torno Vertical', location: null, type: 'MACHINE', status: 'OPERATIONAL', acquiredAt: null, active: true },
+];
+
 function makeOeeService(downtimes: PlannedDowntimeResponse[] = [MOCK_DOWNTIME]) {
   return {
     listDowntimes: vi.fn().mockReturnValue(of(downtimes)),
     createDowntime: vi.fn().mockReturnValue(of(MOCK_DOWNTIME)),
     deleteDowntime: vi.fn().mockReturnValue(of(undefined)),
+  };
+}
+
+function makeMaintenanceService(equipment = MOCK_EQUIPMENT) {
+  return {
+    listEquipment: vi.fn().mockReturnValue(of(equipment)),
   };
 }
 
@@ -54,6 +67,7 @@ describe('PlannedDowntimeCalendarComponent', () => {
 
   function setup(role = 'OPERATOR', downtimes: PlannedDowntimeResponse[] = [MOCK_DOWNTIME]) {
     const oeeService = makeOeeService(downtimes);
+    const maintenanceService = makeMaintenanceService();
     TestBed.configureTestingModule({
       imports: [PlannedDowntimeCalendarComponent],
       providers: [
@@ -61,6 +75,7 @@ describe('PlannedDowntimeCalendarComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: OeeService, useValue: oeeService },
+        { provide: MaintenanceService, useValue: maintenanceService },
         { provide: AuthService, useValue: makeAuthService(role) },
       ],
     }).compileComponents();
@@ -285,6 +300,7 @@ describe('PlannedDowntimeCalendarComponent', () => {
           provideHttpClient(),
           provideHttpClientTesting(),
           { provide: OeeService, useValue: oeeService },
+          { provide: MaintenanceService, useValue: makeMaintenanceService() },
           { provide: AuthService, useValue: makeAuthService('OPERATOR') },
         ],
       }).compileComponents();
@@ -300,6 +316,9 @@ describe('PlannedDowntimeCalendarComponent', () => {
         createDowntime: vi.fn(),
         deleteDowntime: vi.fn(),
       };
+      const failMaintenanceService = {
+        listEquipment: vi.fn().mockReturnValue(throwError(() => new Error())),
+      };
       await TestBed.resetTestingModule();
       await TestBed.configureTestingModule({
         imports: [PlannedDowntimeCalendarComponent],
@@ -308,6 +327,7 @@ describe('PlannedDowntimeCalendarComponent', () => {
           provideHttpClient(),
           provideHttpClientTesting(),
           { provide: OeeService, useValue: failService },
+          { provide: MaintenanceService, useValue: failMaintenanceService },
           { provide: AuthService, useValue: makeAuthService('OPERATOR') },
         ],
       }).compileComponents();
@@ -340,6 +360,50 @@ describe('PlannedDowntimeCalendarComponent', () => {
       vi.spyOn(window, 'confirm').mockReturnValue(false);
       component.deleteDowntime(MOCK_DOWNTIME);
       expect(oeeService.deleteDowntime).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('SUG-30 — equipmentOptions populados via API independente de paradas', () => {
+    it('deve exibir 3 equipamentos no select mesmo sem paradas', () => {
+      // Sem downtimes, mas com 3 equipamentos via API
+      setup('SUPERVISOR', []);
+      fixture.detectChanges();
+      const options = component.equipmentOptions();
+      expect(options.length).toBe(3);
+      expect(options[0].code).toBe('EQ-001');
+      expect(options[1].code).toBe('EQ-002');
+      expect(options[2].code).toBe('EQ-003');
+    });
+
+    it('equipmentOptions é signal (não computed)', () => {
+      setup('OPERATOR', []);
+      // Verificar que o signal pode ser definido diretamente
+      component.equipmentOptions.set([{ id: 'x', code: 'X', name: 'Test' }]);
+      expect(component.equipmentOptions().length).toBe(1);
+    });
+
+    it('deve manter equipamentOptions vazio quando listEquipment falha mas exibir paradas', () => {
+      const oeeService = makeOeeService([MOCK_DOWNTIME]);
+      const failMaintenanceService = {
+        listEquipment: vi.fn().mockReturnValue(throwError(() => new Error('Network error'))),
+      };
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        imports: [PlannedDowntimeCalendarComponent],
+        providers: [
+          provideRouter([]),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          { provide: OeeService, useValue: oeeService },
+          { provide: MaintenanceService, useValue: failMaintenanceService },
+          { provide: AuthService, useValue: makeAuthService('OPERATOR') },
+        ],
+      }).compileComponents();
+      const f = TestBed.createComponent(PlannedDowntimeCalendarComponent);
+      const c = f.componentInstance;
+      f.detectChanges();
+      // equipmentOptions fica vazio mas sem bloquear o carregamento
+      expect(c.equipmentOptions()).toEqual([]);
     });
   });
 

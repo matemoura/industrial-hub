@@ -50,6 +50,11 @@ public class SecurityConfig {
                 // OEE writes: SUPERVISOR and above
                 .requestMatchers(HttpMethod.POST, "/api/v1/oee/**")
                     .hasAnyRole("SUPERVISOR", "ADMIN")
+                // OEE Planned Downtime updates/deletes: SUPERVISOR and above
+                .requestMatchers(HttpMethod.PUT, "/api/v1/oee/planned-downtimes/**")
+                    .hasAnyRole("SUPERVISOR", "ADMIN")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/oee/planned-downtimes/**")
+                    .hasAnyRole("SUPERVISOR", "ADMIN")
                 // QMS reads: OPERATOR and above
                 .requestMatchers(HttpMethod.GET, "/api/v1/qms/**")
                     .hasAnyRole("OPERATOR", "SUPERVISOR", "ADMIN")

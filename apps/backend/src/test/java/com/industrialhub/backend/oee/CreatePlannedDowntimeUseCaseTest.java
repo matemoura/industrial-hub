@@ -1,5 +1,7 @@
 package com.industrialhub.backend.oee;
 
+import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.maintenance.domain.Equipment;
 import com.industrialhub.backend.maintenance.domain.EquipmentNotFoundException;
 import com.industrialhub.backend.maintenance.infrastructure.EquipmentRepository;
@@ -23,6 +25,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -34,6 +37,9 @@ class CreatePlannedDowntimeUseCaseTest {
     @Mock
     private EquipmentRepository equipmentRepository;
 
+    @Mock
+    private AuditService auditService;
+
     private CreatePlannedDowntimeUseCase useCase;
 
     private static final LocalDateTime START_AT = LocalDateTime.of(2026, 5, 20, 8, 0);
@@ -41,7 +47,7 @@ class CreatePlannedDowntimeUseCaseTest {
 
     @BeforeEach
     void setUp() {
-        useCase = new CreatePlannedDowntimeUseCase(plannedDowntimeRepository, equipmentRepository);
+        useCase = new CreatePlannedDowntimeUseCase(plannedDowntimeRepository, equipmentRepository, auditService);
     }
 
     @Test
@@ -79,6 +85,10 @@ class CreatePlannedDowntimeUseCaseTest {
         assertThat(response.registeredBy()).isEqualTo("supervisor");
 
         verify(equipmentRepository, never()).findByIdAndActiveTrue(any());
+
+        // Auditoria deve ser chamada no happy path
+        verify(auditService).log(eq("supervisor"), eq(AuditAction.DOWNTIME_CREATED),
+                eq("PlannedDowntime"), any(String.class), any());
     }
 
     @Test
@@ -125,6 +135,9 @@ class CreatePlannedDowntimeUseCaseTest {
         ArgumentCaptor<PlannedDowntime> captor = ArgumentCaptor.forClass(PlannedDowntime.class);
         verify(plannedDowntimeRepository).save(captor.capture());
         assertThat(captor.getValue().getEquipment()).isEqualTo(equipment);
+
+        verify(auditService).log(eq("supervisor"), eq(AuditAction.DOWNTIME_CREATED),
+                eq("PlannedDowntime"), any(String.class), any());
     }
 
     @Test
@@ -142,6 +155,8 @@ class CreatePlannedDowntimeUseCaseTest {
                 .isInstanceOf(EquipmentNotFoundException.class);
 
         verify(plannedDowntimeRepository, never()).save(any());
+        // Auditoria NÃO deve ser chamada quando equipamento não é encontrado
+        verify(auditService, never()).log(any(), any(), any(), any(String.class), any());
     }
 
     @Test
@@ -177,7 +192,7 @@ class CreatePlannedDowntimeUseCaseTest {
     }
 
     @Test
-    void shouldThrow404_whenEquipmentIsInactive() {
+    void shouldThrow404_whenEquipmentIsInactive_andNotCallAudit() {
         // Arrange
         UUID inactiveEquipmentId = UUID.randomUUID();
         CreatePlannedDowntimeRequest request = new CreatePlannedDowntimeRequest(
@@ -190,6 +205,9 @@ class CreatePlannedDowntimeUseCaseTest {
         // Act & Assert
         assertThatThrownBy(() -> useCase.execute(request, "admin"))
                 .isInstanceOf(EquipmentNotFoundException.class);
+
+        // Auditoria NÃO deve ser chamada quando equipamento está inativo
+        verify(auditService, never()).log(any(), any(), any(), any(String.class), any());
     }
 
     @Test

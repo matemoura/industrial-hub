@@ -136,10 +136,13 @@ export class MaintenanceCalendarComponent implements OnInit {
       const week: CalendarDay[] = [];
       for (let d = 0; d < 7; d++) {
         const day = new Date(current);
+        const inCurrentMonth = day.getMonth() === month;
         week.push({
           date: day,
-          inCurrentMonth: day.getMonth() === month,
-          schedules: allSchedules.filter((s) => this.scheduleFallsOnDate(s, day)),
+          inCurrentMonth,
+          schedules: inCurrentMonth
+            ? allSchedules.filter((s) => this.scheduleFallsOnDate(s, day, true))
+            : [],
         });
         current.setDate(current.getDate() + 1);
       }
@@ -151,8 +154,10 @@ export class MaintenanceCalendarComponent implements OnInit {
 
   /**
    * Determines if a schedule would execute on a given date, based on recurrence.
+   * Days outside the current displayed month always return false (no badges on padding cells).
    */
-  scheduleFallsOnDate(schedule: ScheduleResponse, date: Date): boolean {
+  scheduleFallsOnDate(schedule: ScheduleResponse, date: Date, inCurrentMonth = true): boolean {
+    if (!inCurrentMonth) return false;
     if (!schedule.active) return false;
 
     const nextRun = new Date(schedule.nextRunAt + 'T00:00:00');

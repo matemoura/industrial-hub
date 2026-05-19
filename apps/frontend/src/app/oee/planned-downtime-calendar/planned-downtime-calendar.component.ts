@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
+import { forkJoin } from 'rxjs';
 import {
   CreateDowntimePayload,
   DowntimeReason,
@@ -15,6 +16,7 @@ import {
   PlannedDowntimeResponse,
 } from '../oee.service';
 import { AuthService } from '../../auth/auth.service';
+import { MaintenanceService } from '../../maintenance/maintenance.service';
 
 interface CalendarDay {
   date: Date;
@@ -39,6 +41,7 @@ interface EquipmentOption {
 export class PlannedDowntimeCalendarComponent implements OnInit {
   private readonly oeeService = inject(OeeService);
   private readonly authService = inject(AuthService);
+  private readonly maintenanceService = inject(MaintenanceService);
 
   readonly role = this.authService.role;
   readonly isSupervisor = computed(
@@ -88,23 +91,52 @@ export class PlannedDowntimeCalendarComponent implements OnInit {
     OTHER: 'Outro',
   };
 
-  // Derives unique equipment options from loaded downtimes
-  readonly equipmentOptions = computed<EquipmentOption[]>(() => {
-    const map = new Map<string, EquipmentOption>();
-    for (const d of this.downtimes()) {
-      if (d.equipmentId && !map.has(d.equipmentId)) {
-        map.set(d.equipmentId, {
-          id: d.equipmentId,
-          code: d.equipmentCode ?? d.equipmentId,
-          name: d.equipmentName ?? d.equipmentId,
-        });
-      }
-    }
-    return Array.from(map.values());
-  });
+  // Populated on init via API; not derived from downtimes
+  readonly equipmentOptions = signal<EquipmentOption[]>([]);
+  equipmentOptionsError = signal(false);
 
   ngOnInit(): void {
-    this.loadDowntimes();
+    this.loadAll();
+  }
+
+  loadAll(): void {
+    this.loading.set(true);
+    this.errorMsg.set(null);
+    forkJoin([
+      this.oeeService.listDowntimes(),
+      this.maintenanceService.listEquipment(),
+    ]).subscribe({
+      next: ([downtimes, equipment]) => {
+        this.downtimes.set(downtimes);
+        this.equipmentOptions.set(
+          equipment.map((eq) => ({ id: eq.id, code: eq.code, name: eq.name })),
+        );
+        this.loading.set(false);
+      },
+      error: () => {
+        // Try loading only downtimes if joint call fails
+        this.maintenanceService.listEquipment().subscribe({
+          next: (equipment) =>
+            this.equipmentOptions.set(
+              equipment.map((eq) => ({ id: eq.id, code: eq.code, name: eq.name })),
+            ),
+          error: () => {
+            this.equipmentOptions.set([]);
+            this.equipmentOptionsError.set(true);
+          },
+        });
+        this.oeeService.listDowntimes().subscribe({
+          next: (list) => {
+            this.downtimes.set(list);
+            this.loading.set(false);
+          },
+          error: () => {
+            this.errorMsg.set('Erro ao carregar paradas planejadas.');
+            this.loading.set(false);
+          },
+        });
+      },
+    });
   }
 
   loadDowntimes(): void {

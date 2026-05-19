@@ -2,6 +2,7 @@ package com.industrialhub.backend.oee.application.dto;
 
 import com.industrialhub.backend.oee.domain.DowntimeReason;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -18,5 +19,6 @@ public record UpdatePlannedDowntimeRequest(
         @NotNull(message = "reason é obrigatório")
         DowntimeReason reason,
 
+        @Size(max = 500, message = "Descrição não pode exceder 500 caracteres")
         String description
 ) {}
