@@ -1,5 +1,6 @@
 package com.industrialhub.backend.common.presentation;
 
+import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.common.application.dto.AlertThresholdResponse;
 import com.industrialhub.backend.common.application.dto.CreateAlertThresholdRequest;
 import com.industrialhub.backend.common.application.dto.UpdateAlertThresholdRequest;
@@ -8,6 +9,8 @@ import com.industrialhub.backend.common.application.usecase.CreateAlertThreshold
 import com.industrialhub.backend.common.application.usecase.DeleteAlertThresholdUseCase;
 import com.industrialhub.backend.common.application.usecase.GetAlertThresholdsUseCase;
 import com.industrialhub.backend.common.application.usecase.UpdateAlertThresholdUseCase;
+import com.industrialhub.backend.common.domain.AuditAction;
+import com.industrialhub.backend.common.domain.EvaluateNowCooldownException;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,8 +19,12 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 @RestController
 @RequestMapping("/api/v1/admin/alert-thresholds")
@@ -25,22 +32,29 @@ import java.util.UUID;
 @Validated
 public class AlertThresholdController {
 
+    private static final Duration EVALUATE_NOW_COOLDOWN = Duration.ofMinutes(5);
+
+    private final AtomicReference<Instant> lastManualEvaluation = new AtomicReference<>(Instant.EPOCH);
+
     private final CreateAlertThresholdUseCase createUseCase;
     private final GetAlertThresholdsUseCase getUseCase;
     private final UpdateAlertThresholdUseCase updateUseCase;
     private final DeleteAlertThresholdUseCase deleteUseCase;
     private final AlertEvaluatorUseCase alertEvaluatorUseCase;
+    private final AuditService auditService;
 
     public AlertThresholdController(CreateAlertThresholdUseCase createUseCase,
                                     GetAlertThresholdsUseCase getUseCase,
                                     UpdateAlertThresholdUseCase updateUseCase,
                                     DeleteAlertThresholdUseCase deleteUseCase,
-                                    AlertEvaluatorUseCase alertEvaluatorUseCase) {
+                                    AlertEvaluatorUseCase alertEvaluatorUseCase,
+                                    AuditService auditService) {
         this.createUseCase = createUseCase;
         this.getUseCase = getUseCase;
         this.updateUseCase = updateUseCase;
         this.deleteUseCase = deleteUseCase;
         this.alertEvaluatorUseCase = alertEvaluatorUseCase;
+        this.auditService = auditService;
     }
 
     @PostMapping
@@ -71,8 +85,21 @@ public class AlertThresholdController {
     }
 
     @PostMapping("/evaluate-now")
-    public ResponseEntity<java.util.Map<String, Integer>> evaluateNow() {
+    public ResponseEntity<Map<String, Integer>> evaluateNow(Principal principal) {
+        Instant now = Instant.now();
+        Instant last = lastManualEvaluation.get();
+        if (Duration.between(last, now).compareTo(EVALUATE_NOW_COOLDOWN) < 0) {
+            long remaining = EVALUATE_NOW_COOLDOWN.toSeconds() - Duration.between(last, now).toSeconds();
+            throw new EvaluateNowCooldownException(remaining);
+        }
+        lastManualEvaluation.set(now);
         int evaluated = alertEvaluatorUseCase.execute();
-        return ResponseEntity.ok(java.util.Map.of("evaluated", evaluated));
+        auditService.log(
+                principal != null ? principal.getName() : "system",
+                AuditAction.ALERT_EVALUATED_MANUAL,
+                "AlertThreshold",
+                "all",
+                Map.of("evaluated", String.valueOf(evaluated)));
+        return ResponseEntity.ok(Map.of("evaluated", evaluated));
     }
 }

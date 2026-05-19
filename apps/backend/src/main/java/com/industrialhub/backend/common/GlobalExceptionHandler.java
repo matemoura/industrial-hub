@@ -2,6 +2,7 @@ package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.common.domain.AlertThresholdNotFoundException;
 import com.industrialhub.backend.common.domain.NotificationNotFoundException;
+import com.industrialhub.backend.common.domain.ShiftNotFoundException;
 import com.industrialhub.backend.common.auth.application.usecase.InvalidCredentialsException;
 import com.industrialhub.backend.common.auth.domain.InvalidPasswordException;
 import com.industrialhub.backend.common.auth.domain.LastAdminException;
@@ -30,10 +31,12 @@ import com.industrialhub.backend.qms.domain.RcaNotAllowedException;
 import com.industrialhub.backend.qms.domain.SupplierDuplicateCodeException;
 import com.industrialhub.backend.qms.domain.SupplierNotFoundException;
 import com.industrialhub.backend.qms.domain.SupplierRequiredForNcException;
+import com.industrialhub.backend.common.domain.EvaluateNowCooldownException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -317,6 +320,31 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleIllegalState(IllegalStateException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                 "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(ShiftNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleShiftNotFound(ShiftNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(EvaluateNowCooldownException.class)
+    public ResponseEntity<Map<String, Object>> handleEvaluateNowCooldown(EvaluateNowCooldownException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
+                "message", ex.getMessage(),
+                "secondsRemaining", ex.getSecondsRemaining(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<Map<String, Object>> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "message", "shiftId inválido",
                 "timestamp", Instant.now().toString()
         ));
     }
