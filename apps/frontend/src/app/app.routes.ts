@@ -23,6 +23,14 @@ export const routes: Routes = [
       import('./admin/user-list/user-list.component').then((m) => m.UserListComponent),
   },
   {
+    path: 'admin/alert-thresholds',
+    canActivate: [adminGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./admin/alert-thresholds/alert-thresholds.component').then(
+        (m) => m.AlertThresholdsComponent,
+      ),
+  },
+  {
     path: 'dashboard',
     canActivate: [authGuard, mustChangePasswordGuard],
     loadComponent: () =>
@@ -94,6 +102,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./analytics/maintenance-analytics/maintenance-analytics.component').then(
         (m) => m.MaintenanceAnalyticsComponent,
+      ),
+  },
+  {
+    path: 'notifications',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./notifications/notifications-page/notifications-page.component').then(
+        (m) => m.NotificationsPageComponent,
       ),
   },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
