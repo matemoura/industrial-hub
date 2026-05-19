@@ -23,7 +23,7 @@ Adicionalmente, `UpdateUserRoleUseCase` (SEC-045) e `ReactivateUserUseCase` (SEC
 // common/domain/AuditAction.java — adicionar:
 SCHEDULE_UPDATED,
 SUPPLIER_UPDATED,
-USER_ROLE_UPDATED,
+ROLE_CHANGED,
 USER_REACTIVATED
 ```
 
@@ -41,7 +41,7 @@ auditService.log(AuditAction.SUPPLIER_UPDATED, username, supplier.getId().toStri
     Map.of("name", supplier.getName(), "contactEmail", supplier.getContactEmail()));
 
 // UpdateUserRoleUseCase.execute(UUID id, Role newRole, String username)
-auditService.log(AuditAction.USER_ROLE_UPDATED, username, id.toString(),
+auditService.log(AuditAction.ROLE_CHANGED, username, id.toString(),
     Map.of("newRole", newRole.name()));
 
 // ReactivateUserUseCase.execute(UUID id, String username)

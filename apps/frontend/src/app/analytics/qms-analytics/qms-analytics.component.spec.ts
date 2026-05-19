@@ -84,8 +84,8 @@ describe('QmsAnalyticsComponent', () => {
 
   it('should map severity colors correctly', () => {
     const colors = component.severityColors();
-    expect(colors[0]).toBe('#E53E3E'); // CRITICAL
-    expect(colors[1]).toBe('#DD6B20'); // HIGH
+    expect(colors[0]).toBe('#EF4444'); // CRITICAL
+    expect(colors[1]).toBe('#F97316'); // HIGH
   });
 
   it('should reload pareto when days selection changes', () => {

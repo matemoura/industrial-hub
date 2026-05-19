@@ -104,10 +104,10 @@ export class QmsAnalyticsComponent implements OnInit {
 
   private severityColor(severity: string): string {
     const map: Record<string, string> = {
-      CRITICAL: '#E53E3E',
-      HIGH: '#DD6B20',
-      MEDIUM: '#D69E2E',
-      LOW: '#38A169',
+      CRITICAL: '#EF4444',
+      HIGH: '#F97316',
+      MEDIUM: '#EAB308',
+      LOW: '#22C55E',
     };
     return map[severity] ?? '#0099B8';
   }

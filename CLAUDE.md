@@ -95,7 +95,7 @@ Font: Inter (sans-serif), professional industrial look
 | Authentication | `common/auth/` | 4 | ✅ done |
 | QMS (Quality Management System) | `qms/` | 5–6, 13–14 | ✅ done |
 | Maintenance (TPM) | `maintenance/` | 7–8, 15 | ✅ done |
-| Cross-module KPI + Reports | `common/kpi/` | 9–10 | ✅ done |
+| Cross-module KPI + Reports + Analytics | `common/kpi/`, `common/presentation/` | 9–10, 16 | ✅ done |
 | Security Hardening | `common/security/` | 11 | ✅ done |
 | User Management | `common/auth/` | 12 | ✅ done |
 
@@ -105,4 +105,5 @@ Font: Inter (sans-serif), professional industrial look
 - **Date params**: `@DateTimeFormat(iso = DateTimeFormat.ISO.DATE)`
 - **Pagination**: `Page<T>` with `@PageableDefault(size = 20)` for lists > 50 items
 - **Auth**: JWT Bearer, roles checked via `@PreAuthorize("hasRole('SUPERVISOR')")`
+- **`@RequestParam` validation**: controllers with `@Min`/`@Max`/`@NotNull` on `@RequestParam` **must** have `@Validated` on the class; violations throw `ConstraintViolationException` (not `MethodArgumentNotValidException`) — handled by `GlobalExceptionHandler` returning 400 (ADR-031)
 - **No CLAUDE/agent references** in committed code or docs
