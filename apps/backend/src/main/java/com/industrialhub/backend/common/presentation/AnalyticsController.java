@@ -34,8 +34,10 @@ public class AnalyticsController {
     }
 
     @GetMapping("/oee/trend")
-    public OeeTrendResponse oeeTrend(@RequestParam(defaultValue = "12") int weeks) {
-        return getOeeTrend.execute(weeks);
+    public OeeTrendResponse oeeTrend(
+            @RequestParam(defaultValue = "12") int weeks,
+            @RequestParam(defaultValue = "false") boolean excludePlannedDowntime) {
+        return getOeeTrend.execute(weeks, excludePlannedDowntime);
     }
 
     @GetMapping("/nc/pareto")

@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Comparator;
 import java.util.List;
@@ -17,13 +18,23 @@ import java.util.stream.Collectors;
 public class OeeCalculator {
 
     public Double computeAvg(List<TimeRecord> records) {
+        return computeAvg(records, Map.of());
+    }
+
+    /**
+     * Computa OEE médio com suporte a subtração de paradas planejadas.
+     *
+     * @param records            registros de tempo
+     * @param plannedMinutesByDate mapa de LocalDate → minutos de parada planejada (planta inteira)
+     */
+    public Double computeAvg(List<TimeRecord> records, Map<LocalDate, Integer> plannedMinutesByDate) {
         if (records.isEmpty()) return null;
 
         Map<String, List<TimeRecord>> byWorkerDay = records.stream()
                 .collect(Collectors.groupingBy(r -> r.getWorkerId() + "|" + r.getProfileDate()));
 
         List<Double> availabilities = byWorkerDay.values().stream()
-                .map(this::availabilityForDay)
+                .map(dayRecords -> availabilityForDay(dayRecords, plannedMinutesByDate))
                 .filter(Objects::nonNull)
                 .toList();
 
@@ -31,7 +42,8 @@ public class OeeCalculator {
         return availabilities.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
     }
 
-    private Double availabilityForDay(List<TimeRecord> dayRecords) {
+    private Double availabilityForDay(List<TimeRecord> dayRecords,
+                                       Map<LocalDate, Integer> plannedMinutesByDate) {
         double productive = dayRecords.stream()
                 .filter(r -> r.getRecordType() == RecordType.PROCESSO)
                 .map(r -> r.getHours() != null ? r.getHours() : BigDecimal.ZERO)
@@ -53,8 +65,20 @@ public class OeeCalculator {
                 .orElse(null);
 
         if (entry == null || exit == null || !exit.isAfter(entry)) return null;
-        double shiftHours = Duration.between(entry, exit).toMinutes() / 60.0;
-        if (shiftHours == 0) return null;
-        return productive / shiftHours;
+        double shiftMinutes = Duration.between(entry, exit).toMinutes();
+        if (shiftMinutes == 0) return null;
+
+        // Subtrair paradas planejadas do denominador (fallback se resultado <= 0)
+        LocalDate date = dayRecords.getFirst().getProfileDate();
+        int plannedMinutes = plannedMinutesByDate.getOrDefault(date, 0);
+        double effectiveMinutes = shiftMinutes - plannedMinutes;
+        if (effectiveMinutes <= 0) {
+            effectiveMinutes = shiftMinutes;
+        }
+
+        double shiftHours = effectiveMinutes / 60.0;
+        double availability = productive / shiftHours;
+        // Cap de 1.0
+        return Math.min(availability, 1.0);
     }
 }

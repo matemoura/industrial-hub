@@ -74,8 +74,9 @@ public class OeeController {
     public ResponseEntity<List<WorkerOeeDto>> getDashboard(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate,
-            @RequestParam(required = false) Long workerId) {
-        return ResponseEntity.ok(dashboardUseCase.execute(startDate, endDate, workerId));
+            @RequestParam(required = false) Long workerId,
+            @RequestParam(defaultValue = "false") boolean excludePlannedDowntime) {
+        return ResponseEntity.ok(dashboardUseCase.execute(startDate, endDate, workerId, excludePlannedDowntime));
     }
 
     @GetMapping("/dashboard/export")

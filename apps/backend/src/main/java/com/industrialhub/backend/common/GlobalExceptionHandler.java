@@ -15,6 +15,7 @@ import com.industrialhub.backend.maintenance.domain.EquipmentNotFoundException;
 import com.industrialhub.backend.maintenance.domain.InvalidWorkOrderTransitionException;
 import com.industrialhub.backend.maintenance.domain.WorkOrderNotFoundException;
 import com.industrialhub.backend.oee.application.usecase.DuplicateImportException;
+import com.industrialhub.backend.oee.domain.PlannedDowntimeNotFoundException;
 import com.industrialhub.backend.oee.application.usecase.InvalidExcelFormatException;
 import com.industrialhub.backend.oee.application.validation.InvalidDateRangeException;
 import com.industrialhub.backend.qms.domain.ActionNotAllowedException;
@@ -181,6 +182,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InactiveEquipmentScheduleException.class)
     public ResponseEntity<Map<String, Object>> handleInactiveEquipmentSchedule(InactiveEquipmentScheduleException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(PlannedDowntimeNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handlePlannedDowntimeNotFound(PlannedDowntimeNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));

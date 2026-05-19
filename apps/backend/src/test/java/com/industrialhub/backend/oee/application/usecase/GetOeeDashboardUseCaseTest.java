@@ -5,11 +5,11 @@ import com.industrialhub.backend.oee.domain.ImportBatch;
 import com.industrialhub.backend.oee.domain.RecordType;
 import com.industrialhub.backend.oee.domain.TimeRecord;
 import com.industrialhub.backend.oee.application.validation.DateRangeValidator;
+import com.industrialhub.backend.oee.infrastructure.PlannedDowntimeRepository;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -19,7 +19,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.within;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,7 +30,9 @@ class GetOeeDashboardUseCaseTest {
     @Mock
     private DateRangeValidator dateRangeValidator;
 
-    @InjectMocks
+    @Mock
+    private PlannedDowntimeRepository plannedDowntimeRepository;
+
     private GetOeeDashboardUseCase useCase;
 
     private static final LocalDate DATE = LocalDate.of(2026, 4, 28);
@@ -43,6 +44,7 @@ class GetOeeDashboardUseCaseTest {
     @BeforeEach
     void setUp() {
         batch = ImportBatch.builder().build();
+        useCase = new GetOeeDashboardUseCase(timeRecordRepository, dateRangeValidator, plannedDowntimeRepository);
     }
 
     @Test

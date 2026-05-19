@@ -5,6 +5,7 @@ import com.industrialhub.backend.oee.application.dto.OeeTrendResponse;
 import com.industrialhub.backend.oee.domain.ImportBatch;
 import com.industrialhub.backend.oee.domain.RecordType;
 import com.industrialhub.backend.oee.domain.TimeRecord;
+import com.industrialhub.backend.oee.infrastructure.PlannedDowntimeRepository;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,13 +31,15 @@ class GetOeeTrendUseCaseTest {
 
     @Mock private TimeRecordRepository timeRecordRepository;
 
+    @Mock private PlannedDowntimeRepository plannedDowntimeRepository;
+
     private OeeCalculator oeeCalculator;
     private GetOeeTrendUseCase useCase;
 
     @BeforeEach
     void setUp() {
         oeeCalculator = new OeeCalculator();
-        useCase = new GetOeeTrendUseCase(timeRecordRepository, oeeCalculator);
+        useCase = new GetOeeTrendUseCase(timeRecordRepository, oeeCalculator, plannedDowntimeRepository);
     }
 
     @Test
