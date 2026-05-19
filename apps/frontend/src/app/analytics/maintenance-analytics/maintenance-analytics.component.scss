@@ -1,0 +1,133 @@
+.analytics-page {
+  padding: 24px;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.page-header {
+  margin-bottom: 24px;
+
+  h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--msb-text);
+  }
+}
+
+.section {
+  margin-bottom: 32px;
+}
+
+.section-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  h2 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--msb-text);
+  }
+}
+
+h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--msb-text);
+  margin-bottom: 16px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 0.75rem;
+    color: var(--msb-text-muted);
+    font-weight: 500;
+  }
+
+  select {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background: var(--msb-surface);
+    color: var(--msb-text);
+    cursor: pointer;
+    &:focus {
+      outline: 2px solid var(--msb-primary);
+    }
+  }
+}
+
+.chart-card {
+  background: var(--msb-surface);
+  border-radius: 8px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  h3 {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--msb-text-muted);
+    margin-bottom: 16px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+}
+
+.doughnut-row,
+.skeleton-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.skeleton-chart {
+  height: 280px;
+}
+
+.skeleton-doughnut {
+  height: 300px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.error-msg {
+  background: #fff5f5;
+  color: #e53e3e;
+  border: 1px solid #fed7d7;
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 48px 24px;
+  color: var(--msb-text-muted);
+  background: var(--msb-surface);
+  border-radius: 8px;
+
+  p {
+    font-size: 1rem;
+  }
+}

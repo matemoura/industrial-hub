@@ -1,0 +1,94 @@
+<div class="analytics-page">
+  <div class="page-header">
+    <h1>Analytics — QMS</h1>
+  </div>
+
+  <!-- Pareto Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Distribuição de Não-Conformidades</h2>
+      <div class="field-group">
+        <label for="days-select">Período</label>
+        <select
+          id="days-select"
+          (change)="onDaysChange($event)"
+          data-testid="days-select"
+        >
+          @for (d of paretoPeriodOptions; track d) {
+            <option [value]="d" [selected]="d === selectedDays()">Últimos {{ d }} dias</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (loadingPareto()) {
+      <div class="skeleton-wrap" data-testid="loading-pareto">
+        <div class="skeleton skeleton-chart"></div>
+        <div class="skeleton skeleton-chart"></div>
+      </div>
+    } @else if (errorPareto()) {
+      <div class="error-msg">{{ errorPareto() }}</div>
+    } @else if (!hasPareto()) {
+      <div class="empty-state" data-testid="empty-pareto">
+        <p>Nenhum dado disponível para o período selecionado.</p>
+      </div>
+    } @else {
+      <div class="charts-row">
+        <div class="chart-card" data-testid="type-chart">
+          <h3>NCs por Tipo</h3>
+          <app-bar-chart
+            [labels]="typeLabels()"
+            [values]="typeValues()"
+            yLabel="Quantidade"
+          />
+        </div>
+        <div class="chart-card" data-testid="severity-chart">
+          <h3>NCs por Severidade</h3>
+          <app-bar-chart
+            [labels]="severityLabels()"
+            [values]="severityValues()"
+            [colors]="severityColors()"
+            yLabel="Quantidade"
+          />
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Trend Section -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Tendência Semanal de NCs</h2>
+      <div class="field-group">
+        <label for="weeks-select">Período</label>
+        <select
+          id="weeks-select"
+          (change)="onWeeksChange($event)"
+          data-testid="weeks-select"
+        >
+          @for (w of trendWeekOptions; track w) {
+            <option [value]="w" [selected]="w === selectedWeeks()">{{ w }} semanas</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (loadingTrend()) {
+      <div class="skeleton skeleton-chart" data-testid="loading-trend"></div>
+    } @else if (errorTrend()) {
+      <div class="error-msg">{{ errorTrend() }}</div>
+    } @else if (!hasTrend()) {
+      <div class="empty-state" data-testid="empty-trend">
+        <p>Nenhum dado disponível para o período selecionado.</p>
+      </div>
+    } @else {
+      <div class="chart-card" data-testid="trend-chart">
+        <app-line-chart
+          [labels]="trendLabels()"
+          [values]="trendValues()"
+          yLabel="NCs abertas"
+        />
+      </div>
+    }
+  </div>
+</div>

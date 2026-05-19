@@ -12,6 +12,9 @@
     <a routerLink="/summary" routerLinkActive="active">Resumo</a>
     <a routerLink="/qms/non-conformances" routerLinkActive="active">Não-Conformidades</a>
     <a routerLink="/maintenance/equipment" routerLinkActive="active">Manutenção</a>
+    @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+      <a routerLink="/analytics/oee" routerLinkActive="active">Analytics</a>
+    }
     @if (role() === 'ADMIN') {
       <a routerLink="/admin/users" routerLinkActive="active">Usuários</a>
     }

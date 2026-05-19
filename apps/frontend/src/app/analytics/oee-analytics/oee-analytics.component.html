@@ -1,0 +1,67 @@
+<div class="analytics-page">
+  <div class="page-header">
+    <h1>Analytics — OEE</h1>
+    <div class="header-actions">
+      <div class="field-group">
+        <label for="period-select">Período</label>
+        <select
+          id="period-select"
+          (change)="onPeriodChange($event)"
+          data-testid="period-select"
+        >
+          @for (w of periodOptions; track w) {
+            <option [value]="w" [selected]="w === selectedWeeks()">{{ w }} semanas</option>
+          }
+        </select>
+      </div>
+      <button class="btn-print" (click)="print()" type="button" data-testid="print-btn">
+        Imprimir
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="skeleton-wrap" data-testid="loading-skeleton">
+      <div class="skeleton skeleton-chart"></div>
+      <div class="skeleton skeleton-table"></div>
+    </div>
+  } @else if (errorMsg()) {
+    <div class="error-msg" data-testid="error-msg">{{ errorMsg() }}</div>
+  } @else if (!hasData()) {
+    <div class="empty-state" data-testid="empty-state">
+      <p>Nenhum dado disponível para o período selecionado.</p>
+    </div>
+  } @else {
+    <div class="chart-card" data-testid="chart-area">
+      <h2>Tendência de OEE ({{ selectedWeeks() }} semanas)</h2>
+      <app-line-chart
+        [labels]="chartLabels()"
+        [values]="chartValues()"
+        [referenceValue]="65"
+        yLabel="OEE (%)"
+      />
+    </div>
+
+    <div class="table-card" data-testid="data-table">
+      <h2>Dados por semana</h2>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Semana</th>
+            <th>OEE (%)</th>
+            <th>Amostras</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of tableRows(); track row.label) {
+            <tr [class.below-ref]="row.oee !== null && row.oee < 65">
+              <td>{{ row.label }}</td>
+              <td>{{ row.oee !== null ? row.oee + '%' : '—' }}</td>
+              <td>{{ row.samples }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

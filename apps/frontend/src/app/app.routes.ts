@@ -64,5 +64,29 @@ export const routes: Routes = [
     canActivate: [authGuard, mustChangePasswordGuard],
     loadChildren: () => import('./maintenance/maintenance.routes').then((m) => m.MAINTENANCE_ROUTES),
   },
+  {
+    path: 'analytics/oee',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./analytics/oee-analytics/oee-analytics.component').then(
+        (m) => m.OeeAnalyticsComponent,
+      ),
+  },
+  {
+    path: 'analytics/qms',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./analytics/qms-analytics/qms-analytics.component').then(
+        (m) => m.QmsAnalyticsComponent,
+      ),
+  },
+  {
+    path: 'analytics/maintenance',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./analytics/maintenance-analytics/maintenance-analytics.component').then(
+        (m) => m.MaintenanceAnalyticsComponent,
+      ),
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];

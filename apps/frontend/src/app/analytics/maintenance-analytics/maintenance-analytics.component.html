@@ -1,0 +1,79 @@
+<div class="analytics-page">
+  <div class="page-header">
+    <h1>Analytics — Manutenção</h1>
+  </div>
+
+  <!-- MTTR Trend -->
+  <div class="section">
+    <div class="section-header">
+      <h2>MTTR por Mês (horas)</h2>
+      <div class="field-group">
+        <label for="months-select">Período</label>
+        <select
+          id="months-select"
+          (change)="onMonthsChange($event)"
+          data-testid="months-select"
+        >
+          @for (m of monthOptions; track m) {
+            <option [value]="m" [selected]="m === selectedMonths()">{{ m }} meses</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    @if (loadingMttr()) {
+      <div class="skeleton skeleton-chart" data-testid="loading-mttr"></div>
+    } @else if (errorMttr()) {
+      <div class="error-msg">{{ errorMttr() }}</div>
+    } @else if (!hasMttr()) {
+      <div class="empty-state" data-testid="empty-mttr">
+        <p>Nenhum dado de MTTR disponível para o período selecionado.</p>
+      </div>
+    } @else {
+      <div class="chart-card" data-testid="mttr-chart">
+        <app-line-chart
+          [labels]="mttrLabels()"
+          [values]="mttrValues()"
+          yLabel="MTTR (h)"
+        />
+      </div>
+    }
+  </div>
+
+  <!-- WO Distribution -->
+  <div class="section">
+    <h2>Distribuição de Ordens de Serviço</h2>
+
+    @if (loadingWo()) {
+      <div class="skeleton-row" data-testid="loading-wo">
+        <div class="skeleton skeleton-doughnut"></div>
+        <div class="skeleton skeleton-doughnut"></div>
+      </div>
+    } @else if (errorWo()) {
+      <div class="error-msg">{{ errorWo() }}</div>
+    } @else if (!hasWo()) {
+      <div class="empty-state" data-testid="empty-wo">
+        <p>Nenhum dado de ordens de serviço disponível.</p>
+      </div>
+    } @else {
+      <div class="doughnut-row">
+        <div class="chart-card" data-testid="status-chart">
+          <h3>Por Status</h3>
+          <app-doughnut-chart
+            [labels]="statusLabels()"
+            [values]="statusValues()"
+            [colors]="statusColors()"
+          />
+        </div>
+        <div class="chart-card" data-testid="type-chart">
+          <h3>Por Tipo</h3>
+          <app-doughnut-chart
+            [labels]="typeLabels()"
+            [values]="typeValues()"
+            [colors]="typeColors()"
+          />
+        </div>
+      </div>
+    }
+  </div>
+</div>
