@@ -92,4 +92,15 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
 
     @Query("SELECT wo.type, COUNT(wo) FROM WorkOrder wo GROUP BY wo.type")
     List<Object[]> countByType();
+
+    @Query("""
+        SELECT COUNT(w) FROM WorkOrder w
+        WHERE w.priority = :priority
+          AND w.status IN :statuses
+          AND w.openedAt < :cutoff
+    """)
+    long countUrgentOpenOlderThan(
+        @Param("priority") WorkOrderPriority priority,
+        @Param("statuses") List<WorkOrderStatus> statuses,
+        @Param("cutoff") LocalDateTime cutoff);
 }
