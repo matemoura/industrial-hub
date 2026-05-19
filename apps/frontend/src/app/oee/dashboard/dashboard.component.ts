@@ -1,11 +1,13 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { OeeService, WorkerDto, WorkerOeeDto } from '../oee.service';
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  imports: [FormsModule, RouterLink],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -24,6 +26,9 @@ export class DashboardComponent implements OnInit {
   searchWorkerId = signal<number | null>(null);
   /** Worker selected for local post-result filtering */
   selectedWorkerId = signal<number | null>(null);
+
+  /** Toggle: exclude planned downtimes from OEE calculation */
+  excludePlannedDowntime = signal(false);
 
   /** Unique workers derived from loaded rows — used by the local result filter */
   workers = computed(() =>
@@ -65,7 +70,8 @@ export class DashboardComponent implements OnInit {
     this.error.set(null);
     this.selectedWorkerId.set(null);
     const wid = this.searchWorkerId() ?? undefined;
-    this.oeeService.getDashboard(this.startDate(), this.endDate(), wid).subscribe({
+    const excludePD = this.excludePlannedDowntime() || undefined;
+    this.oeeService.getDashboard(this.startDate(), this.endDate(), wid, excludePD).subscribe({
       next: (data) => {
         this.rows.set(data);
         this.loading.set(false);

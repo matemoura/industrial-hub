@@ -33,10 +33,10 @@ export class AnalyticsService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/analytics';
 
-  getOeeTrend(weeks: number): Observable<OeeTrendResponse> {
-    return this.http.get<OeeTrendResponse>(`${this.base}/oee/trend`, {
-      params: { weeks: weeks.toString() },
-    });
+  getOeeTrend(weeks: number, excludePlannedDowntime = false): Observable<OeeTrendResponse> {
+    const params: Record<string, string> = { weeks: weeks.toString() };
+    if (excludePlannedDowntime) params['excludePlannedDowntime'] = 'true';
+    return this.http.get<OeeTrendResponse>(`${this.base}/oee/trend`, { params });
   }
 
   getNcPareto(days: number): Observable<NcParetoResponse> {

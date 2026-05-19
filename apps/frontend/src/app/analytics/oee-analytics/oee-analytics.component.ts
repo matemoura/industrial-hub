@@ -22,6 +22,7 @@ export class OeeAnalyticsComponent implements OnInit {
 
   readonly periodOptions = [4, 8, 12, 26, 52];
   selectedWeeks = signal(12);
+  excludeDowntime = signal(false);
   loading = signal(false);
   errorMsg = signal<string | null>(null);
   data = signal<OeeTrendResponse | null>(null);
@@ -52,6 +53,11 @@ export class OeeAnalyticsComponent implements OnInit {
     this.load();
   }
 
+  onToggleExcludeDowntime(): void {
+    this.excludeDowntime.set(!this.excludeDowntime());
+    this.load();
+  }
+
   print(): void {
     window.print();
   }
@@ -59,7 +65,7 @@ export class OeeAnalyticsComponent implements OnInit {
   private load(): void {
     this.loading.set(true);
     this.errorMsg.set(null);
-    this.analyticsService.getOeeTrend(this.selectedWeeks()).subscribe({
+    this.analyticsService.getOeeTrend(this.selectedWeeks(), this.excludeDowntime()).subscribe({
       next: (res) => {
         this.data.set(res);
         this.loading.set(false);

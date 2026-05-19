@@ -1,0 +1,229 @@
+<div class="page">
+  <header class="page-header">
+    <div class="page-header__title">
+      <h1>Paradas Planejadas</h1>
+    </div>
+    <div class="page-header__nav">
+      <button class="btn btn--ghost" (click)="prevMonth()" data-testid="btn-prev-month">‹</button>
+      <span class="month-label" data-testid="month-label">{{ monthLabel() }}</span>
+      <button class="btn btn--ghost" (click)="nextMonth()" data-testid="btn-next-month">›</button>
+    </div>
+    <div class="page-header__actions">
+      @if (isSupervisor()) {
+        <button
+          class="btn btn--primary"
+          (click)="openForm()"
+          data-testid="btn-add-downtime"
+        >
+          + Registrar Parada
+        </button>
+      }
+      <a routerLink="/oee/efficiency" class="btn btn--secondary">Dashboard OEE</a>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <div class="loading" data-testid="loading-state">Carregando paradas planejadas…</div>
+  } @else if (errorMsg()) {
+    <div class="error-banner" data-testid="error-state">{{ errorMsg() }}</div>
+  } @else {
+    <div class="calendar-container">
+      <div class="calendar" data-testid="calendar-grid">
+        <!-- Day headers -->
+        <div class="calendar__header">
+          @for (h of ['Seg','Ter','Qua','Qui','Sex','Sáb','Dom']; track h) {
+            <div class="calendar__weekday">{{ h }}</div>
+          }
+        </div>
+
+        <!-- Weeks -->
+        @for (week of calendarWeeks(); track $index) {
+          <div class="calendar__week">
+            @for (day of week; track day.date.toISOString()) {
+              <div
+                class="calendar__day"
+                [class.calendar__day--other-month]="!day.inCurrentMonth"
+                [class.calendar__day--today]="isToday(day.date)"
+                data-testid="calendar-day"
+              >
+                <span class="calendar__day-number">{{ formatDate(day.date) }}</span>
+                <div class="calendar__badges">
+                  @for (dt of day.downtimes; track dt.id) {
+                    <button
+                      class="downtime-badge"
+                      [style.background-color]="reasonBadgeColor(dt.reason)"
+                      (click)="selectDowntime(dt)"
+                      [title]="reasonLabels[dt.reason] + (dt.equipmentCode ? ' — ' + dt.equipmentCode : ' (planta)')"
+                      data-testid="downtime-badge"
+                    >
+                      {{ dt.equipmentCode ?? 'Planta' }} — {{ reasonLabels[dt.reason] }}
+                    </button>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Detail panel -->
+      @if (selectedDowntime(); as dt) {
+        <aside class="detail-panel" data-testid="detail-panel">
+          <button
+            class="detail-panel__close"
+            (click)="closePanel()"
+            data-testid="btn-close-panel"
+          >✕</button>
+          <h2>{{ reasonLabels[dt.reason] }}</h2>
+          <p class="detail-panel__equipment">
+            @if (dt.equipmentCode) {
+              {{ dt.equipmentCode }} — {{ dt.equipmentName }}
+            } @else {
+              Parada de planta inteira
+            }
+          </p>
+
+          @if (dt.description) {
+            <p class="detail-panel__desc">{{ dt.description }}</p>
+          }
+
+          <dl class="detail-panel__info">
+            <div>
+              <dt>Início</dt>
+              <dd data-testid="panel-start-at">{{ formatDateTime(dt.startAt) }}</dd>
+            </div>
+            <div>
+              <dt>Fim</dt>
+              <dd data-testid="panel-end-at">{{ formatDateTime(dt.endAt) }}</dd>
+            </div>
+            <div>
+              <dt>Duração</dt>
+              <dd>{{ dt.durationMinutes }} min</dd>
+            </div>
+            <div>
+              <dt>Registrado por</dt>
+              <dd>{{ dt.registeredBy }}</dd>
+            </div>
+          </dl>
+
+          @if (isSupervisor()) {
+            <button
+              class="btn btn--danger"
+              (click)="deleteDowntime(dt)"
+              [disabled]="deleting()"
+              data-testid="btn-delete-downtime"
+            >
+              @if (deleting()) { Excluindo… } @else { Excluir }
+            </button>
+          }
+        </aside>
+      }
+
+      <!-- Create form panel -->
+      @if (showForm()) {
+        <aside class="detail-panel form-panel" data-testid="form-panel">
+          <button
+            class="detail-panel__close"
+            (click)="closeForm()"
+            data-testid="btn-close-form"
+          >✕</button>
+          <h2>Registrar Parada Planejada</h2>
+
+          @if (formError()) {
+            <p class="form-error" data-testid="form-error">{{ formError() }}</p>
+          }
+
+          <form (ngSubmit)="submitForm()" data-testid="downtime-form">
+            <div class="form-group">
+              <label for="equipmentId">Equipamento (opcional — vazio = planta inteira)</label>
+              <select
+                id="equipmentId"
+                [ngModel]="formEquipmentId()"
+                (ngModelChange)="formEquipmentId.set($event)"
+                name="equipmentId"
+                data-testid="form-equipment-select"
+              >
+                <option value="">Planta inteira</option>
+                @for (eq of equipmentOptions(); track eq.id) {
+                  <option [value]="eq.id">{{ eq.code }} — {{ eq.name }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="reason">Motivo *</label>
+              <select
+                id="reason"
+                [ngModel]="formReason()"
+                (ngModelChange)="formReason.set($event)"
+                name="reason"
+                required
+                data-testid="form-reason-select"
+              >
+                @for (r of reasonOptions; track r) {
+                  <option [value]="r">{{ reasonLabels[r] }}</option>
+                }
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="startAt">Início *</label>
+              <input
+                id="startAt"
+                type="datetime-local"
+                [ngModel]="formStartAt()"
+                (ngModelChange)="formStartAt.set($event)"
+                name="startAt"
+                required
+                data-testid="form-start-at"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="endAt">Fim *</label>
+              <input
+                id="endAt"
+                type="datetime-local"
+                [ngModel]="formEndAt()"
+                (ngModelChange)="formEndAt.set($event)"
+                name="endAt"
+                required
+                data-testid="form-end-at"
+              />
+            </div>
+
+            <div class="form-group">
+              <label for="description">Descrição (opcional)</label>
+              <textarea
+                id="description"
+                [ngModel]="formDescription()"
+                (ngModelChange)="formDescription.set($event)"
+                name="description"
+                rows="3"
+                data-testid="form-description"
+              ></textarea>
+            </div>
+
+            <div class="form-actions">
+              <button
+                type="submit"
+                class="btn btn--primary"
+                [disabled]="submitting() || !formStartAt() || !formEndAt()"
+                data-testid="btn-submit-form"
+              >
+                @if (submitting()) { Salvando… } @else { Salvar }
+              </button>
+              <button type="button" class="btn btn--ghost" (click)="closeForm()">Cancelar</button>
+            </div>
+          </form>
+        </aside>
+      }
+
+      @if (!loading() && downtimes().length === 0) {
+        <div class="empty-state" data-testid="empty-state">
+          <p>Nenhuma parada planejada registrada.</p>
+        </div>
+      }
+    </div>
+  }
+</div>

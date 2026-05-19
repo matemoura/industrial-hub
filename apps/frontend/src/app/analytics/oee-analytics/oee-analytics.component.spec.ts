@@ -130,12 +130,26 @@ describe('OeeAnalyticsComponent', () => {
     const select = fixture.nativeElement.querySelector('[data-testid="period-select"]');
     select.value = '26';
     select.dispatchEvent(new Event('change'));
-    expect(service.getOeeTrend).toHaveBeenCalledWith(26);
+    expect(service.getOeeTrend).toHaveBeenCalledWith(26, false);
   });
 
   it('should compute table rows correctly', () => {
     const rows = component.tableRows();
     expect(rows.length).toBe(3);
     expect(rows[0]).toEqual({ label: '2026-W01', oee: 72, samples: 5 });
+  });
+
+  it('should render toggle-exclude-downtime checkbox', () => {
+    const toggle = fixture.nativeElement.querySelector('[data-testid="toggle-exclude-downtime"]');
+    expect(toggle).toBeTruthy();
+    expect(toggle.type).toBe('checkbox');
+  });
+
+  it('should reload data when toggle-exclude-downtime is changed', () => {
+    const service = TestBed.inject(AnalyticsService) as any;
+    const callsBefore = service.getOeeTrend.mock.calls.length;
+    const toggle = fixture.nativeElement.querySelector('[data-testid="toggle-exclude-downtime"]');
+    toggle.dispatchEvent(new Event('change'));
+    expect(service.getOeeTrend.mock.calls.length).toBe(callsBefore + 1);
   });
 });

@@ -1,5 +1,10 @@
 <div class="dashboard" data-testid="oee-dashboard">
-  <h2>Worker Efficiency Dashboard</h2>
+  <div class="dashboard-header">
+    <h2>Worker Efficiency Dashboard</h2>
+    <a routerLink="/oee/planned-downtimes" class="nav-link-downtimes">
+      Calendário de Paradas Planejadas
+    </a>
+  </div>
 
   <form class="filters" (ngSubmit)="search()">
     <label>
@@ -41,6 +46,19 @@
       {{ loading() ? 'Loading…' : 'Search' }}
     </button>
   </form>
+
+  <div class="toggle-exclude-downtime">
+    <label class="toggle-label">
+      <input
+        type="checkbox"
+        [ngModel]="excludePlannedDowntime()"
+        (ngModelChange)="excludePlannedDowntime.set($event)"
+        name="excludePlannedDowntime"
+        data-testid="toggle-exclude-downtime"
+      />
+      Excluir paradas planejadas do cálculo de OEE
+    </label>
+  </div>
 
   @if (error()) {
     <p class="error">{{ error() }}</p>

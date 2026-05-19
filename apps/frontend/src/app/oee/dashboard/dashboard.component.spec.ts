@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting, HttpTestingController } from '@angular/common/http/testing';
+import { provideRouter } from '@angular/router';
 import { DashboardComponent } from './dashboard.component';
 import { WorkerDto, WorkerOeeDto } from '../oee.service';
 
@@ -18,7 +19,7 @@ describe('DashboardComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [DashboardComponent],
-      providers: [provideHttpClient(), provideHttpClientTesting()],
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()],
     }).compileComponents();
   });
 
@@ -98,5 +99,27 @@ describe('DashboardComponent', () => {
     const { componentInstance: comp } = TestBed.createComponent(DashboardComponent);
     // should not throw — just guards and returns
     expect(() => comp.exportCsv()).not.toThrow();
+  });
+
+  it('excludePlannedDowntime starts as false', () => {
+    const { componentInstance: comp } = TestBed.createComponent(DashboardComponent);
+    expect(comp.excludePlannedDowntime()).toBe(false);
+  });
+
+  it('should render toggle-exclude-downtime checkbox', () => {
+    const fixture = TestBed.createComponent(DashboardComponent);
+    fixture.detectChanges();
+    const httpTesting = TestBed.inject(HttpTestingController);
+    httpTesting.expectOne('/api/v1/workers').flush([]);
+    const toggle = fixture.nativeElement.querySelector('[data-testid="toggle-exclude-downtime"]');
+    expect(toggle).toBeTruthy();
+    httpTesting.verify();
+  });
+
+  it('toggle-exclude-downtime signal starts false and can be set to true', () => {
+    const { componentInstance: comp } = TestBed.createComponent(DashboardComponent);
+    expect(comp.excludePlannedDowntime()).toBe(false);
+    comp.excludePlannedDowntime.set(true);
+    expect(comp.excludePlannedDowntime()).toBe(true);
   });
 });

@@ -2,6 +2,30 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+export type DowntimeReason = 'PREVENTIVE_MAINTENANCE' | 'SCHEDULED_SETUP' | 'HOLIDAY' | 'OTHER';
+
+export interface PlannedDowntimeResponse {
+  id: string;
+  equipmentId: string | null;
+  equipmentCode: string | null;
+  equipmentName: string | null;
+  reason: DowntimeReason;
+  startAt: string;
+  endAt: string;
+  durationMinutes: number;
+  description: string | null;
+  registeredBy: string;
+  registeredAt: string;
+}
+
+export interface CreateDowntimePayload {
+  equipmentId: string | null;
+  reason: DowntimeReason;
+  startAt: string;
+  endAt: string;
+  description?: string;
+}
+
 export interface ImportResultDto {
   batchId: string;
   periodDate: string;
@@ -55,10 +79,43 @@ export class OeeService {
     return this.http.get<WorkerDto[]>('/api/v1/workers');
   }
 
-  getDashboard(startDate: string, endDate: string, workerId?: number): Observable<WorkerOeeDto[]> {
+  getDashboard(
+    startDate: string,
+    endDate: string,
+    workerId?: number,
+    excludePlannedDowntime?: boolean,
+  ): Observable<WorkerOeeDto[]> {
     let params = new HttpParams().set('startDate', startDate).set('endDate', endDate);
     if (workerId != null) params = params.set('workerId', workerId.toString());
+    if (excludePlannedDowntime) params = params.set('excludePlannedDowntime', 'true');
     return this.http.get<WorkerOeeDto[]>(`${this.baseUrl}/dashboard`, { params });
+  }
+
+  createDowntime(payload: CreateDowntimePayload): Observable<PlannedDowntimeResponse> {
+    return this.http.post<PlannedDowntimeResponse>(`${this.baseUrl}/planned-downtimes`, payload);
+  }
+
+  listDowntimes(
+    equipmentId?: string | null,
+    from?: string,
+    to?: string,
+  ): Observable<PlannedDowntimeResponse[]> {
+    let params = new HttpParams();
+    if (equipmentId) params = params.set('equipmentId', equipmentId);
+    if (from) params = params.set('from', from);
+    if (to) params = params.set('to', to);
+    return this.http.get<PlannedDowntimeResponse[]>(`${this.baseUrl}/planned-downtimes`, { params });
+  }
+
+  updateDowntime(id: string, payload: CreateDowntimePayload): Observable<PlannedDowntimeResponse> {
+    return this.http.put<PlannedDowntimeResponse>(
+      `${this.baseUrl}/planned-downtimes/${id}`,
+      payload,
+    );
+  }
+
+  deleteDowntime(id: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/planned-downtimes/${id}`);
   }
 
   getIndirectActivities(

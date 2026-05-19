@@ -35,6 +35,14 @@ export const routes: Routes = [
       import('./oee/dashboard/dashboard.component').then((m) => m.DashboardComponent),
   },
   {
+    path: 'oee/planned-downtimes',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./oee/planned-downtime-calendar/planned-downtime-calendar.component').then(
+        (m) => m.PlannedDowntimeCalendarComponent,
+      ),
+  },
+  {
     path: 'indirect-activities',
     canActivate: [authGuard, mustChangePasswordGuard],
     loadComponent: () =>
