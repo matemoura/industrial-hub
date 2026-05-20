@@ -2,6 +2,28 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+// ─── Shift ────────────────────────────────────────────────────────────────────
+
+export interface Shift {
+  id: string;
+  name: string;
+  startTime: string; // 'HH:mm'
+  endTime: string;   // 'HH:mm'
+  overnight: boolean;
+  active: boolean;
+}
+
+export interface CreateShiftPayload {
+  name: string;
+  startTime: string;
+  endTime: string;
+  overnight: boolean;
+}
+
+export type UpdateShiftPayload = CreateShiftPayload;
+
+// ─── AlertThreshold ──────────────────────────────────────────────────────────
+
 export type AlertMetric =
   | 'OEE_AVG_BELOW'
   | 'NC_CRITICAL_ABOVE'
@@ -33,11 +55,32 @@ export interface UpdateAlertThresholdPayload {
   emailEnabled: boolean;
 }
 
+const SHIFTS_BASE = '/api/v1/admin/shifts';
 const BASE = '/api/v1/admin/alert-thresholds';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
   private readonly http = inject(HttpClient);
+
+  // ─── Shifts ────────────────────────────────────────────────────────────────
+
+  getShifts(): Observable<Shift[]> {
+    return this.http.get<Shift[]>(SHIFTS_BASE);
+  }
+
+  createShift(payload: CreateShiftPayload): Observable<Shift> {
+    return this.http.post<Shift>(SHIFTS_BASE, payload);
+  }
+
+  updateShift(id: string, payload: UpdateShiftPayload): Observable<Shift> {
+    return this.http.put<Shift>(`${SHIFTS_BASE}/${id}`, payload);
+  }
+
+  deactivateShift(id: string): Observable<void> {
+    return this.http.put<void>(`${SHIFTS_BASE}/${id}/deactivate`, {});
+  }
+
+  // ─── AlertThresholds ───────────────────────────────────────────────────────
 
   getThresholds(): Observable<AlertThreshold[]> {
     return this.http.get<AlertThreshold[]>(BASE);

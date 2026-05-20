@@ -1,0 +1,190 @@
+<div class="shifts-page">
+
+  <div class="page-header">
+    <h2>Turnos</h2>
+    <button class="btn btn--primary" type="button" (click)="openCreateForm()">
+      + Novo Turno
+    </button>
+  </div>
+
+  <!-- Snackbar -->
+  @if (snackbar(); as sb) {
+    <div
+      class="snackbar"
+      [class.snackbar--success]="sb.type === 'success'"
+      [class.snackbar--error]="sb.type === 'error'"
+      role="status"
+      aria-live="polite"
+      data-testid="snackbar"
+    >
+      {{ sb.message }}
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading()) {
+    <p class="loading-msg" aria-live="polite">Carregando turnos…</p>
+  } @else if (shifts().length === 0) {
+    <p class="empty-msg" data-testid="empty-state">Nenhum turno cadastrado.</p>
+  } @else {
+    <table class="shifts-table" aria-label="Lista de turnos">
+      <thead>
+        <tr>
+          <th scope="col">Nome</th>
+          <th scope="col">Início</th>
+          <th scope="col">Fim</th>
+          <th scope="col">Horário</th>
+          <th scope="col">Tipo</th>
+          <th scope="col">Ações</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (shift of shifts(); track shift.id) {
+          <tr>
+            <td>{{ shift.name }}</td>
+            <td>{{ shift.startTime }}</td>
+            <td>{{ shift.endTime }}</td>
+            <td>
+              <span class="time-range">{{ formatTimeRange(shift) }}</span>
+            </td>
+            <td>
+              @if (shift.overnight) {
+                <span class="chip chip--night" [attr.data-testid]="'chip-noturno-' + shift.id">
+                  Noturno 🌙
+                </span>
+              } @else {
+                <span class="chip chip--day">
+                  Diurno ☀️
+                </span>
+              }
+            </td>
+            <td>
+              <button
+                class="btn btn--danger btn--sm"
+                type="button"
+                (click)="openDeactivateDialog(shift)"
+                aria-label="Desativar turno {{ shift.name }}"
+              >
+                Desativar
+              </button>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+
+  <!-- Create Form Modal -->
+  @if (dialogMode() === 'create') {
+    <div class="modal-backdrop" role="presentation" (click)="closeForm()"></div>
+    <div
+      class="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="create-shift-title"
+      data-testid="create-shift-modal"
+    >
+      <div class="modal__header">
+        <h3 id="create-shift-title">Novo Turno</h3>
+        <button class="modal__close" type="button" (click)="closeForm()" aria-label="Fechar">✕</button>
+      </div>
+
+      <form [formGroup]="form" (ngSubmit)="submitCreate()" class="shift-form" novalidate>
+
+        <label class="form-field">
+          Nome
+          <input
+            formControlName="name"
+            type="text"
+            placeholder="Ex: Manhã"
+            data-testid="input-name"
+            autocomplete="off"
+          />
+          @if (form.get('name')?.invalid && form.get('name')?.touched) {
+            <span class="field-error">Nome é obrigatório.</span>
+          }
+        </label>
+
+        <label class="form-field">
+          Início
+          <input
+            formControlName="startTime"
+            type="time"
+            data-testid="input-start-time"
+          />
+        </label>
+
+        <label class="form-field">
+          Fim
+          <input
+            formControlName="endTime"
+            type="time"
+            data-testid="input-end-time"
+          />
+          @if (form.errors?.['endBeforeStart'] && form.get('endTime')?.touched) {
+            <span class="field-error">Fim deve ser posterior ao início (turno diurno).</span>
+          }
+        </label>
+
+        <label class="form-field form-field--toggle">
+          <input
+            formControlName="overnight"
+            type="checkbox"
+            data-testid="toggle-overnight"
+          />
+          Turno noturno (passa meia-noite)
+        </label>
+
+        @if (overnightCtrl?.value) {
+          <p class="overnight-note" data-testid="overnight-note">
+            O turno se estende além da meia-noite (ex: 22:00–06:00)
+          </p>
+        }
+
+        <div class="form-actions">
+          <button type="button" class="btn btn--secondary" (click)="closeForm()">Cancelar</button>
+          <button
+            type="submit"
+            class="btn btn--primary"
+            [disabled]="form.invalid || submitting()"
+            data-testid="btn-save"
+          >
+            {{ submitting() ? 'Salvando…' : 'Salvar' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  }
+
+  <!-- Deactivate Confirm Dialog -->
+  @if (dialogMode() === 'deactivate') {
+    <div class="modal-backdrop" role="presentation" (click)="cancelDeactivate()"></div>
+    <div
+      class="modal modal--sm"
+      role="alertdialog"
+      aria-modal="true"
+      aria-labelledby="deactivate-title"
+      data-testid="deactivate-dialog"
+    >
+      <h3 id="deactivate-title">Desativar turno</h3>
+      <p>
+        Confirma a desativação do turno
+        <strong>{{ selectedShift()?.name }}</strong>?
+      </p>
+      <div class="form-actions">
+        <button type="button" class="btn btn--secondary" (click)="cancelDeactivate()">Cancelar</button>
+        <button
+          type="button"
+          class="btn btn--danger"
+          [disabled]="submitting()"
+          (click)="confirmDeactivate()"
+          data-testid="btn-confirm-deactivate"
+        >
+          {{ submitting() ? 'Desativando…' : 'Desativar' }}
+        </button>
+      </div>
+    </div>
+  }
+
+</div>

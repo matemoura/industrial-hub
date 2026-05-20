@@ -31,6 +31,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'admin/shifts',
+    canActivate: [adminGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./admin/shifts/shift-list.component').then((m) => m.ShiftListComponent),
+  },
+  {
     path: 'dashboard',
     canActivate: [authGuard, mustChangePasswordGuard],
     loadComponent: () =>
