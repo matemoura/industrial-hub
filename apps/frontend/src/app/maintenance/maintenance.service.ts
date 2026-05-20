@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 export type ScheduleRecurrence = 'DAILY' | 'WEEKLY' | 'MONTHLY';
 
@@ -116,6 +117,58 @@ export interface WorkOrderMetricsResponse {
   openOrders: number;
 }
 
+// ─── Spare Parts ──────────────────────────────────────────────────────────────
+
+export interface SparePartResponse {
+  id: string;
+  code: string;
+  name: string;
+  category: string | null;
+  unit: string | null;
+  stockQty: number;
+  minStockQty: number;
+  active: boolean;
+  belowMin: boolean;
+}
+
+export interface CreateSparePartPayload {
+  code: string;
+  name: string;
+  category?: string;
+  unit?: string;
+  stockQty: number;
+  minStockQty: number;
+}
+
+export interface UpdateSparePartPayload {
+  name: string;
+  category?: string;
+  unit?: string;
+  minStockQty: number;
+}
+
+export interface UpdateSparePartStockPayload {
+  quantity: number;
+  reason: string;
+}
+
+// ─── Work Order Parts ─────────────────────────────────────────────────────────
+
+export interface WorkOrderPartResponse {
+  id: string;
+  sparePartId: string;
+  sparePartCode: string;
+  sparePartName: string;
+  quantity: number;
+  addedBy: string;
+  addedAt: string;
+}
+
+export interface AddWorkOrderPartPayload {
+  sparePartId: string;
+  quantity: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class MaintenanceService {
   private readonly http = inject(HttpClient);
@@ -203,5 +256,54 @@ export class MaintenanceService {
 
   deactivateSchedule(id: string): Observable<void> {
     return this.http.put<void>(`${this.scheduleUrl}/${id}/deactivate`, {});
+  }
+
+  // ─── Spare Parts ───────────────────────────────────────────────────────────
+
+  private readonly sparePartUrl = '/api/v1/maintenance/spare-parts';
+
+  listSpareParts(filters?: { category?: string; belowMin?: boolean }): Observable<SparePartResponse[]> {
+    let params = new HttpParams();
+    if (filters?.category) params = params.set('category', filters.category);
+    if (filters?.belowMin) params = params.set('belowMin', 'true');
+    return this.http.get<SparePartResponse[]>(this.sparePartUrl, { params });
+  }
+
+  getSparePart(id: string): Observable<SparePartResponse> {
+    return this.http.get<SparePartResponse>(`${this.sparePartUrl}/${id}`);
+  }
+
+  createSparePart(payload: CreateSparePartPayload): Observable<SparePartResponse> {
+    return this.http.post<SparePartResponse>(this.sparePartUrl, payload);
+  }
+
+  updateSparePart(id: string, payload: UpdateSparePartPayload): Observable<SparePartResponse> {
+    return this.http.put<SparePartResponse>(`${this.sparePartUrl}/${id}`, payload);
+  }
+
+  adjustStock(id: string, payload: UpdateSparePartStockPayload): Observable<SparePartResponse> {
+    return this.http.put<SparePartResponse>(`${this.sparePartUrl}/${id}/stock`, payload);
+  }
+
+  listBelowMin(): Observable<SparePartResponse[]> {
+    return this.listSpareParts({ belowMin: true });
+  }
+
+  countBelowMin(): Observable<number> {
+    return this.listBelowMin().pipe(map((arr) => arr.length));
+  }
+
+  // ─── Work Order Parts ──────────────────────────────────────────────────────
+
+  listWorkOrderParts(workOrderId: string): Observable<WorkOrderPartResponse[]> {
+    return this.http.get<WorkOrderPartResponse[]>(`${this.workOrderUrl}/${workOrderId}/parts`);
+  }
+
+  addWorkOrderPart(workOrderId: string, payload: AddWorkOrderPartPayload): Observable<WorkOrderPartResponse> {
+    return this.http.post<WorkOrderPartResponse>(`${this.workOrderUrl}/${workOrderId}/parts`, payload);
+  }
+
+  removeWorkOrderPart(workOrderId: string, partId: string): Observable<void> {
+    return this.http.delete<void>(`${this.workOrderUrl}/${workOrderId}/parts/${partId}`);
   }
 }

@@ -15,6 +15,8 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     boolean existsByMetricAndCreatedAtAfter(String metric, LocalDateTime since);
 
+    boolean existsByTitleAndCreatedAtAfter(String title, LocalDateTime since);
+
     @Query("""
         SELECT n FROM Notification n
         WHERE n.username = :username OR n.username IS NULL

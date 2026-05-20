@@ -10,13 +10,18 @@ import com.industrialhub.backend.common.auth.domain.UserAlreadyExistsException;
 import com.industrialhub.backend.common.auth.domain.UserNotFoundException;
 import com.industrialhub.backend.common.security.TooManyRequestsException;
 import com.industrialhub.backend.maintenance.domain.InactiveEquipmentScheduleException;
+import com.industrialhub.backend.maintenance.domain.InactiveSparePartException;
+import com.industrialhub.backend.maintenance.domain.InsufficientStockException;
 import com.industrialhub.backend.maintenance.domain.InvalidScheduleRecurrenceException;
 import com.industrialhub.backend.maintenance.domain.ScheduleNotFoundException;
 import com.industrialhub.backend.maintenance.domain.EquipmentDuplicateCodeException;
 import com.industrialhub.backend.maintenance.domain.EquipmentHasOpenOrdersException;
 import com.industrialhub.backend.maintenance.domain.EquipmentNotFoundException;
 import com.industrialhub.backend.maintenance.domain.InvalidWorkOrderTransitionException;
+import com.industrialhub.backend.maintenance.domain.SparePartDuplicateCodeException;
+import com.industrialhub.backend.maintenance.domain.SparePartNotFoundException;
 import com.industrialhub.backend.maintenance.domain.WorkOrderNotFoundException;
+import com.industrialhub.backend.maintenance.domain.WorkOrderPartNotFoundException;
 import com.industrialhub.backend.oee.application.usecase.DuplicateImportException;
 import com.industrialhub.backend.oee.domain.PlannedDowntimeNotFoundException;
 import com.industrialhub.backend.oee.application.usecase.InvalidExcelFormatException;
@@ -359,6 +364,46 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(NotificationNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotificationNotFound(NotificationNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(SparePartNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleSparePartNotFound(SparePartNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(SparePartDuplicateCodeException.class)
+    public ResponseEntity<Map<String, Object>> handleSparePartDuplicateCode(SparePartDuplicateCodeException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InactiveSparePartException.class)
+    public ResponseEntity<Map<String, Object>> handleInactiveSparePart(InactiveSparePartException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InsufficientStockException.class)
+    public ResponseEntity<Map<String, Object>> handleInsufficientStock(InsufficientStockException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(WorkOrderPartNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleWorkOrderPartNotFound(WorkOrderPartNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()

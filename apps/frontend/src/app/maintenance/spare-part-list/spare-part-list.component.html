@@ -1,0 +1,197 @@
+<div class="spare-part-page">
+
+  <div class="page-header">
+    <h2>Catálogo de Peças de Reposição</h2>
+    @if (isAdmin()) {
+      <button
+        type="button"
+        class="btn btn--primary"
+        data-testid="btn-new-part"
+        (click)="openCreateDialog()"
+      >
+        + Nova Peça
+      </button>
+    }
+  </div>
+
+  <!-- Filters -->
+  <div class="filters">
+    <label class="filter-field">
+      Categoria
+      <input
+        type="text"
+        [value]="filterCategory()"
+        (input)="filterCategory.set($any($event.target).value)"
+        placeholder="Ex: Rolamentos"
+      />
+    </label>
+
+    <label class="filter-field filter-checkbox">
+      <input
+        type="checkbox"
+        [checked]="filterBelowMin()"
+        (change)="filterBelowMin.set($any($event.target).checked)"
+      />
+      Apenas abaixo do mínimo
+    </label>
+
+    <div class="filter-actions">
+      <button type="button" class="btn btn--primary" (click)="applyFilters()">Filtrar</button>
+      <button type="button" class="btn btn--secondary" (click)="clearFilters()">Limpar</button>
+    </div>
+  </div>
+
+  <!-- Snackbar -->
+  @if (snackbar()) {
+    <div
+      class="snackbar"
+      [class.snackbar--error]="snackbar()!.type === 'error'"
+      data-testid="snackbar"
+      role="alert"
+    >
+      {{ snackbar()!.message }}
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="loading-msg" aria-label="Carregando…">Carregando…</p>
+  } @else if (parts().length === 0) {
+    <div class="empty-state" data-testid="empty">
+      <p>Nenhuma peça encontrada com os filtros aplicados.</p>
+    </div>
+  } @else {
+    <table class="part-table" data-testid="part-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Nome</th>
+          <th>Categoria</th>
+          <th>Unidade</th>
+          <th>Estoque</th>
+          <th>Mín.</th>
+          @if (isAdmin()) {
+            <th>Ações</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (part of parts(); track part.id) {
+          <tr
+            class="part-row"
+            [class.part-row--below-min]="part.belowMin"
+            data-testid="part-row"
+          >
+            <td class="part-code">{{ part.code }}</td>
+            <td class="part-name">{{ part.name }}</td>
+            <td>{{ part.category ?? '—' }}</td>
+            <td>{{ part.unit ?? '—' }}</td>
+            <td [class.stock-critical]="part.belowMin">
+              {{ part.stockQty }}
+              @if (part.belowMin) {
+                <span class="below-min-badge" aria-label="Abaixo do mínimo">⚠</span>
+              }
+            </td>
+            <td>{{ part.minStockQty }}</td>
+            @if (isAdmin()) {
+              <td class="part-actions">
+                <button
+                  type="button"
+                  class="btn btn--secondary btn--sm"
+                  data-testid="btn-edit-part"
+                  (click)="openEditDialog(part)"
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  class="btn btn--secondary btn--sm"
+                  data-testid="btn-stock-part"
+                  (click)="openStockDialog(part)"
+                >
+                  Estoque
+                </button>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</div>
+
+<!-- Create / Edit Dialog -->
+@if (dialogMode() === 'create' || dialogMode() === 'edit') {
+  <div class="dialog-overlay" role="dialog" aria-modal="true">
+    <div class="dialog">
+      <h3>{{ dialogMode() === 'create' ? 'Nova Peça' : 'Editar Peça' }}</h3>
+      <form [formGroup]="form" (ngSubmit)="dialogMode() === 'create' ? submitCreate() : submitEdit()">
+        <div class="form-field">
+          <label>Código *</label>
+          <input formControlName="code" type="text" [attr.readonly]="dialogMode() === 'edit' ? '' : null" />
+          @if (form.get('code')?.touched && form.get('code')?.invalid) {
+            <span class="field-error">Código é obrigatório.</span>
+          }
+        </div>
+        <div class="form-field">
+          <label>Nome *</label>
+          <input formControlName="name" type="text" />
+          @if (form.get('name')?.touched && form.get('name')?.invalid) {
+            <span class="field-error">Nome é obrigatório.</span>
+          }
+        </div>
+        <div class="form-field">
+          <label>Categoria</label>
+          <input formControlName="category" type="text" />
+        </div>
+        <div class="form-field">
+          <label>Unidade</label>
+          <input formControlName="unit" type="text" placeholder="Ex: un, kg, m" />
+        </div>
+        @if (dialogMode() === 'create') {
+          <div class="form-field">
+            <label>Qtd. Inicial *</label>
+            <input formControlName="stockQty" type="number" min="0" />
+          </div>
+        }
+        <div class="form-field">
+          <label>Qtd. Mínima *</label>
+          <input formControlName="minStockQty" type="number" min="0" />
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn--secondary" (click)="closeDialog()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="form.invalid || submitting()">
+            {{ submitting() ? 'Salvando…' : 'Salvar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Stock Adjust Dialog -->
+@if (dialogMode() === 'stock') {
+  <div class="dialog-overlay" role="dialog" aria-modal="true" aria-label="Ajustar estoque">
+    <div class="dialog">
+      <h3>Ajustar Estoque — {{ selectedPart()?.name }}</h3>
+      <p class="dialog-hint">
+        Estoque atual: <strong>{{ selectedPart()?.stockQty }}</strong> {{ selectedPart()?.unit ?? '' }}
+      </p>
+      <form [formGroup]="stockForm" (ngSubmit)="submitStock()">
+        <div class="form-field">
+          <label>Quantidade * <small>(positivo = entrada, negativo = saída)</small></label>
+          <input formControlName="quantity" type="number" />
+        </div>
+        <div class="form-field">
+          <label>Motivo *</label>
+          <input formControlName="reason" type="text" placeholder="Ex: Reposição de fornecedor" />
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn--secondary" (click)="closeDialog()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="stockForm.invalid || submitting()">
+            {{ submitting() ? 'Ajustando…' : 'Confirmar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}

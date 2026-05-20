@@ -1,17 +1,25 @@
 package com.industrialhub.backend.maintenance.presentation;
 
+import com.industrialhub.backend.maintenance.application.dto.AddWorkOrderPartRequest;
 import com.industrialhub.backend.maintenance.application.dto.CreateEquipmentRequest;
 import com.industrialhub.backend.maintenance.application.dto.CreateScheduleRequest;
+import com.industrialhub.backend.maintenance.application.dto.CreateSparePartRequest;
 import com.industrialhub.backend.maintenance.application.dto.CreateWorkOrderRequest;
 import com.industrialhub.backend.maintenance.application.dto.EquipmentResponse;
 import com.industrialhub.backend.maintenance.application.dto.ScheduleResponse;
+import com.industrialhub.backend.maintenance.application.dto.SparePartResponse;
 import com.industrialhub.backend.maintenance.application.dto.TransitionWorkOrderStatusRequest;
 import com.industrialhub.backend.maintenance.application.dto.UpdateEquipmentRequest;
 import com.industrialhub.backend.maintenance.application.dto.UpdateScheduleRequest;
+import com.industrialhub.backend.maintenance.application.dto.UpdateSparePartRequest;
+import com.industrialhub.backend.maintenance.application.dto.UpdateSparePartStockRequest;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderMetricsResponse;
+import com.industrialhub.backend.maintenance.application.dto.WorkOrderPartResponse;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderResponse;
+import com.industrialhub.backend.maintenance.application.usecase.AddWorkOrderPartUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.CreateEquipmentUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.CreateScheduleUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.CreateSparePartUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.CreateWorkOrderUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.DeactivateScheduleUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.DeleteEquipmentUseCase;
@@ -19,11 +27,16 @@ import com.industrialhub.backend.maintenance.application.usecase.GetEquipmentDet
 import com.industrialhub.backend.maintenance.application.usecase.GetEquipmentListUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetScheduleDetailUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetScheduleListUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.GetSparePartListUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderListUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderMetricsUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderPartsUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.RemoveWorkOrderPartUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.TransitionWorkOrderStatusUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.UpdateEquipmentUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.UpdateScheduleUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.UpdateSparePartStockUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.UpdateSparePartUseCase;
 import com.industrialhub.backend.maintenance.domain.EquipmentStatus;
 import com.industrialhub.backend.maintenance.domain.EquipmentType;
 import com.industrialhub.backend.maintenance.domain.WorkOrderPriority;
@@ -60,6 +73,13 @@ public class MaintenanceController {
     private final GetScheduleDetailUseCase getScheduleDetail;
     private final UpdateScheduleUseCase updateSchedule;
     private final DeactivateScheduleUseCase deactivateSchedule;
+    private final CreateSparePartUseCase createSparePart;
+    private final GetSparePartListUseCase getSparePartList;
+    private final UpdateSparePartUseCase updateSparePart;
+    private final UpdateSparePartStockUseCase updateSparePartStock;
+    private final AddWorkOrderPartUseCase addWorkOrderPart;
+    private final GetWorkOrderPartsUseCase getWorkOrderParts;
+    private final RemoveWorkOrderPartUseCase removeWorkOrderPart;
 
     public MaintenanceController(CreateEquipmentUseCase createEquipment,
                                   GetEquipmentListUseCase getEquipmentList,
@@ -74,7 +94,14 @@ public class MaintenanceController {
                                   GetScheduleListUseCase getScheduleList,
                                   GetScheduleDetailUseCase getScheduleDetail,
                                   UpdateScheduleUseCase updateSchedule,
-                                  DeactivateScheduleUseCase deactivateSchedule) {
+                                  DeactivateScheduleUseCase deactivateSchedule,
+                                  CreateSparePartUseCase createSparePart,
+                                  GetSparePartListUseCase getSparePartList,
+                                  UpdateSparePartUseCase updateSparePart,
+                                  UpdateSparePartStockUseCase updateSparePartStock,
+                                  AddWorkOrderPartUseCase addWorkOrderPart,
+                                  GetWorkOrderPartsUseCase getWorkOrderParts,
+                                  RemoveWorkOrderPartUseCase removeWorkOrderPart) {
         this.createEquipment = createEquipment;
         this.getEquipmentList = getEquipmentList;
         this.getEquipmentDetail = getEquipmentDetail;
@@ -89,6 +116,13 @@ public class MaintenanceController {
         this.getScheduleDetail = getScheduleDetail;
         this.updateSchedule = updateSchedule;
         this.deactivateSchedule = deactivateSchedule;
+        this.createSparePart = createSparePart;
+        this.getSparePartList = getSparePartList;
+        this.updateSparePart = updateSparePart;
+        this.updateSparePartStock = updateSparePartStock;
+        this.addWorkOrderPart = addWorkOrderPart;
+        this.getWorkOrderParts = getWorkOrderParts;
+        this.removeWorkOrderPart = removeWorkOrderPart;
     }
 
     // --- Equipment endpoints ---
@@ -165,6 +199,34 @@ public class MaintenanceController {
         return transitionWorkOrderStatus.execute(id, request.status(), principal.getName());
     }
 
+    // --- Work order parts endpoints (US-050) ---
+
+    @GetMapping("/work-orders/{id}/parts")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public List<WorkOrderPartResponse> listWorkOrderParts(@PathVariable UUID id) {
+        return getWorkOrderParts.execute(id);
+    }
+
+    @PostMapping("/work-orders/{id}/parts")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public WorkOrderPartResponse addWorkOrderPart(@PathVariable UUID id,
+                                                   @Valid @RequestBody AddWorkOrderPartRequest request,
+                                                   Principal principal) {
+        return addWorkOrderPart.execute(id, request,
+                principal != null ? principal.getName() : "system");
+    }
+
+    @DeleteMapping("/work-orders/{workOrderId}/parts/{partId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public void removeWorkOrderPart(@PathVariable UUID workOrderId,
+                                     @PathVariable UUID partId,
+                                     Principal principal) {
+        removeWorkOrderPart.execute(workOrderId, partId,
+                principal != null ? principal.getName() : "system");
+    }
+
     // --- Schedule endpoints ---
 
     @PostMapping("/schedules")
@@ -200,5 +262,46 @@ public class MaintenanceController {
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
     public void deactivateSchedule(@PathVariable UUID id, Principal principal) {
         deactivateSchedule.execute(id, principal.getName());
+    }
+
+    // --- Spare parts endpoints (US-049) ---
+
+    @PostMapping("/spare-parts")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
+    public SparePartResponse createSparePart(@Valid @RequestBody CreateSparePartRequest request,
+                                              Principal principal) {
+        return createSparePart.execute(request,
+                principal != null ? principal.getName() : "system");
+    }
+
+    @GetMapping("/spare-parts")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public List<SparePartResponse> listSpareParts(
+            @RequestParam(required = false) String category,
+            @RequestParam(defaultValue = "false") boolean belowMin) {
+        return getSparePartList.execute(category, belowMin);
+    }
+
+    @GetMapping("/spare-parts/{id}")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public SparePartResponse getSparePart(@PathVariable UUID id) {
+        return getSparePartList.executeById(id);
+    }
+
+    @PutMapping("/spare-parts/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public SparePartResponse updateSparePart(@PathVariable UUID id,
+                                              @Valid @RequestBody UpdateSparePartRequest request) {
+        return updateSparePart.execute(id, request);
+    }
+
+    @PutMapping("/spare-parts/{id}/stock")
+    @PreAuthorize("hasRole('ADMIN')")
+    public SparePartResponse updateSparePartStock(@PathVariable UUID id,
+                                                   @Valid @RequestBody UpdateSparePartStockRequest request,
+                                                   Principal principal) {
+        return updateSparePartStock.execute(id, request,
+                principal != null ? principal.getName() : "system");
     }
 }

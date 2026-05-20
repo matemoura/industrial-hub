@@ -1,0 +1,253 @@
+.spare-part-page {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+
+  h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1.25rem;
+  background: #f8fafc;
+  padding: 1rem;
+  border-radius: 6px;
+  border: 1px solid #e5e7eb;
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.78rem;
+  font-weight: 500;
+  color: #374151;
+  gap: 0.3rem;
+
+  input[type='text'] {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #111827;
+    background: #fff;
+
+    &:focus { outline: 2px solid #0099B8; outline-offset: 1px; }
+  }
+
+  &.filter-checkbox {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+}
+
+.filter-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-end;
+}
+
+.part-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th {
+    background: #f8fafc;
+    padding: 0.6rem 0.9rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+    color: #374151;
+    white-space: nowrap;
+  }
+
+  td {
+    padding: 0.6rem 0.9rem;
+    border-bottom: 1px solid #f1f5f9;
+    color: #1f2937;
+  }
+}
+
+.part-row {
+  &:hover td { background: #f0f9ff; }
+
+  &--below-min td {
+    background: #FEE2E2;
+  }
+
+  &--below-min:hover td {
+    background: #FECACA;
+  }
+}
+
+.part-code {
+  font-family: 'Courier New', monospace;
+  font-size: 0.8rem;
+  color: #374151;
+  font-weight: 600;
+}
+
+.part-name { font-weight: 500; }
+
+.stock-critical {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.below-min-badge {
+  margin-left: 0.3rem;
+  color: #dc2626;
+  font-size: 0.8rem;
+}
+
+.part-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.loading-msg,
+.empty-state {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-top: 1.5rem;
+}
+
+.snackbar {
+  background: #166534;
+  color: #fff;
+  padding: 0.75rem 1.25rem;
+  border-radius: 6px;
+  margin-bottom: 1rem;
+  font-size: 0.875rem;
+  font-weight: 500;
+
+  &--error {
+    background: #dc2626;
+  }
+}
+
+.btn {
+  padding: 0.45rem 1rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  transition: background 0.15s;
+
+  &--primary {
+    background: #0099B8;
+    color: #fff;
+    &:hover { background: #006B82; }
+    &:disabled { background: #9ca3af; cursor: not-allowed; }
+  }
+
+  &--secondary {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+    &:hover { background: #e5e7eb; }
+  }
+
+  &--sm {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.8rem;
+  }
+}
+
+/* ── Dialogs ── */
+.dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+}
+
+.dialog {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.75rem;
+  width: 100%;
+  max-width: 480px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.18);
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 1.25rem;
+  }
+}
+
+.dialog-hint {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-bottom: 1rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+
+  label {
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: #374151;
+
+    small {
+      font-weight: 400;
+      color: #9ca3af;
+    }
+  }
+
+  input {
+    padding: 0.45rem 0.7rem;
+    border: 1px solid #d1d5db;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    color: #111827;
+
+    &:focus { outline: 2px solid #0099B8; outline-offset: 1px; }
+    &[readonly] { background: #f3f4f6; color: #6b7280; cursor: default; }
+  }
+}
+
+.field-error {
+  font-size: 0.75rem;
+  color: #dc2626;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
