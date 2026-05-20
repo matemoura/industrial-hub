@@ -30,6 +30,17 @@ public interface TimeRecordRepository extends JpaRepository<TimeRecord, UUID> {
 
     @Query("""
             SELECT t FROM TimeRecord t
+            WHERE t.profileDate BETWEEN :startDate AND :endDate
+              AND t.batch.shift.id = :shiftId
+            ORDER BY t.workerId ASC, t.profileDate ASC
+            """)
+    List<TimeRecord> findByProfileDateBetweenAndShiftIdOrderByWorkerIdAscProfileDateAsc(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("shiftId") UUID shiftId);
+
+    @Query("""
+            SELECT t FROM TimeRecord t
             WHERE t.profileDate BETWEEN :start AND :end
             AND (:workerId IS NULL OR t.workerId = :workerId)
             ORDER BY t.profileDate, t.workerId

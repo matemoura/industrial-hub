@@ -25,7 +25,18 @@ public class GetWorkOrderListUseCase {
     public Page<WorkOrderResponse> execute(UUID equipmentId, WorkOrderType type,
                                            WorkOrderStatus status, WorkOrderPriority priority,
                                            Pageable pageable) {
-        return repository.findWithFilters(equipmentId, type, status, priority, pageable)
+        return execute(equipmentId, type, status, priority, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<WorkOrderResponse> execute(UUID equipmentId, WorkOrderType type,
+                                           WorkOrderStatus status, WorkOrderPriority priority,
+                                           UUID shiftId, Pageable pageable) {
+        if (shiftId == null) {
+            return repository.findWithFilters(equipmentId, type, status, priority, pageable)
+                    .map(WorkOrderResponse::from);
+        }
+        return repository.findWithFiltersAndShift(equipmentId, type, status, priority, shiftId, pageable)
                 .map(WorkOrderResponse::from);
     }
 }

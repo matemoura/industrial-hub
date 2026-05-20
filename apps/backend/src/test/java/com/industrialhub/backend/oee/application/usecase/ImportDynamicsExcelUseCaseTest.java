@@ -1,14 +1,17 @@
 package com.industrialhub.backend.oee.application.usecase;
 
+import com.industrialhub.backend.common.application.usecase.ShiftResolverService;
+import com.industrialhub.backend.common.domain.Shift;
+import com.industrialhub.backend.common.infrastructure.ShiftRepository;
 import com.industrialhub.backend.oee.application.dto.ImportResultDto;
 import com.industrialhub.backend.oee.application.parser.DynamicsExcelParser;
 import com.industrialhub.backend.oee.application.parser.ParseResult;
 import com.industrialhub.backend.oee.domain.ImportBatch;
 import com.industrialhub.backend.oee.infrastructure.ImportBatchRepository;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.web.multipart.MultipartFile;
@@ -32,11 +35,22 @@ class ImportDynamicsExcelUseCaseTest {
     @Mock private DynamicsExcelParser parser;
     @Mock private ImportBatchRepository batchRepository;
     @Mock private TimeRecordRepository timeRecordRepository;
+    @Mock private ShiftRepository shiftRepository;
+    @Mock private ShiftResolverService shiftResolverService;
     @Mock private com.industrialhub.backend.common.application.AuditService auditService;
     @Mock private MultipartFile file;
 
-    @InjectMocks
     private ImportDynamicsExcelUseCase useCase;
+
+    @BeforeEach
+    void setUp() {
+        useCase = new ImportDynamicsExcelUseCase(
+                parser, batchRepository, timeRecordRepository,
+                shiftRepository, shiftResolverService, auditService);
+        // Por padrão: sem turno ativo — lenient para evitar UnnecessaryStubbing em testes que lançam antes
+        lenient().when(shiftRepository.findAllByActiveTrueOrderByStartTime()).thenReturn(java.util.List.of());
+        lenient().when(shiftResolverService.resolveCurrentShift(any(), any())).thenReturn(java.util.Optional.empty());
+    }
 
     private static final LocalDate PERIOD = LocalDate.of(2026, 4, 28);
 

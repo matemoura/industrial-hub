@@ -1,5 +1,6 @@
 package com.industrialhub.backend.oee.domain;
 
+import com.industrialhub.backend.common.domain.Shift;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -34,4 +35,8 @@ public class ImportBatch {
 
     @Column(nullable = false)
     private int workerCount;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shift_id")
+    private Shift shift; // nullable
 }

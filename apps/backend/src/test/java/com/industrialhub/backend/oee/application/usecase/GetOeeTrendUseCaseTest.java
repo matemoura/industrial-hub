@@ -148,4 +148,32 @@ class GetOeeTrendUseCaseTest {
         assertThat(response.oeeValues()).anyMatch(v -> v != null);
         assertThat(response.sampleCounts()).anyMatch(c -> c > 0);
     }
+
+    // US-056: shiftId nulo retorna todos os registros (via método sem filtro)
+    @Test
+    void shouldCallNonShiftQuery_whenShiftIdIsNull() {
+        when(timeRecordRepository.findByProfileDateBetweenOrderByWorkerIdAscProfileDateAsc(any(), any()))
+                .thenReturn(List.of());
+
+        OeeTrendResponse response = useCase.execute(4, false, null);
+
+        assertThat(response.weekLabels()).hasSize(4);
+        // deve ter chamado o método sem shiftId
+        org.mockito.Mockito.verify(timeRecordRepository)
+                .findByProfileDateBetweenOrderByWorkerIdAscProfileDateAsc(any(), any());
+    }
+
+    // US-056: shiftId informado chama query com filtro de turno
+    @Test
+    void shouldCallShiftFilteredQuery_whenShiftIdIsProvided() {
+        UUID shiftId = UUID.randomUUID();
+        when(timeRecordRepository.findByProfileDateBetweenAndShiftIdOrderByWorkerIdAscProfileDateAsc(any(), any(), any()))
+                .thenReturn(List.of());
+
+        OeeTrendResponse response = useCase.execute(4, false, shiftId);
+
+        assertThat(response.weekLabels()).hasSize(4);
+        org.mockito.Mockito.verify(timeRecordRepository)
+                .findByProfileDateBetweenAndShiftIdOrderByWorkerIdAscProfileDateAsc(any(), any(), any());
+    }
 }

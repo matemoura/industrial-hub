@@ -216,6 +216,7 @@
                   @if (wo.assignedTo) {
                     · Responsável: <strong>{{ wo.assignedTo }}</strong>
                   }
+                  · Turno: <strong>{{ wo.shiftName ?? '—' }}</strong>
                 </p>
 
                 @if (isSupervisor) {

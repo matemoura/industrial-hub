@@ -1,5 +1,6 @@
 package com.industrialhub.backend.maintenance.domain;
 
+import com.industrialhub.backend.common.domain.Shift;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -61,4 +62,8 @@ public class WorkOrder {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "schedule_id")
     private MaintenanceSchedule schedule;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "shift_id")
+    private Shift shift; // nullable
 }

@@ -5,6 +5,16 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError } from 'rxjs';
 import { OeeAnalyticsComponent } from './oee-analytics.component';
 import { AnalyticsService } from '../analytics.service';
+import { AdminService, Shift } from '../../admin/admin.service';
+
+const MOCK_SHIFTS: Shift[] = [
+  { id: 's1', name: 'Manhã', startTime: '06:00', endTime: '14:00', overnight: false, active: true },
+  { id: 's2', name: 'Tarde', startTime: '14:00', endTime: '22:00', overnight: false, active: true },
+];
+
+const makeAdminService = (shifts: Shift[] = []) => ({
+  getShifts: vi.fn().mockReturnValue(of(shifts)),
+});
 
 const MOCK_OEE_TREND = {
   weekLabels: ['2026-W01', '2026-W02', '2026-W03'],
@@ -24,12 +34,37 @@ function makeService(data = MOCK_OEE_TREND) {
   };
 }
 
+async function resetWithServices(
+  analyticsData = MOCK_OEE_TREND,
+  shifts: Shift[] = [],
+): Promise<ComponentFixture<OeeAnalyticsComponent>> {
+  await TestBed.resetTestingModule();
+  const service = makeService(analyticsData);
+  const adminService = makeAdminService(shifts);
+
+  await TestBed.configureTestingModule({
+    imports: [OeeAnalyticsComponent],
+    providers: [
+      provideRouter([]),
+      provideHttpClient(),
+      provideHttpClientTesting(),
+      { provide: AnalyticsService, useValue: service },
+      { provide: AdminService, useValue: adminService },
+    ],
+  }).compileComponents();
+
+  const f = TestBed.createComponent(OeeAnalyticsComponent);
+  f.detectChanges();
+  return f;
+}
+
 describe('OeeAnalyticsComponent', () => {
   let fixture: ComponentFixture<OeeAnalyticsComponent>;
   let component: OeeAnalyticsComponent;
 
   beforeEach(async () => {
     const service = makeService();
+    const adminService = makeAdminService();
 
     await TestBed.configureTestingModule({
       imports: [OeeAnalyticsComponent],
@@ -38,6 +73,7 @@ describe('OeeAnalyticsComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AnalyticsService, useValue: service },
+        { provide: AdminService, useValue: adminService },
       ],
     }).compileComponents();
 
@@ -83,30 +119,16 @@ describe('OeeAnalyticsComponent', () => {
   });
 
   it('should show empty state when no data', async () => {
-    const service = { getOeeTrend: vi.fn().mockReturnValue(of(EMPTY_OEE_TREND)) };
-
-    await TestBed.resetTestingModule();
-    await TestBed.configureTestingModule({
-      imports: [OeeAnalyticsComponent],
-      providers: [
-        provideRouter([]),
-        provideHttpClient(),
-        provideHttpClientTesting(),
-        { provide: AnalyticsService, useValue: service },
-      ],
-    }).compileComponents();
-
-    const f = TestBed.createComponent(OeeAnalyticsComponent);
-    f.detectChanges();
-
+    const f = await resetWithServices(EMPTY_OEE_TREND);
     const emptyState = f.nativeElement.querySelector('[data-testid="empty-state"]');
     expect(emptyState).toBeTruthy();
   });
 
   it('should show error message on API failure', async () => {
-    const service = { getOeeTrend: vi.fn().mockReturnValue(throwError(() => new Error('fail'))) };
-
     await TestBed.resetTestingModule();
+    const service = { getOeeTrend: vi.fn().mockReturnValue(throwError(() => new Error('fail'))) };
+    const adminService = makeAdminService();
+
     await TestBed.configureTestingModule({
       imports: [OeeAnalyticsComponent],
       providers: [
@@ -114,6 +136,7 @@ describe('OeeAnalyticsComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         { provide: AnalyticsService, useValue: service },
+        { provide: AdminService, useValue: adminService },
       ],
     }).compileComponents();
 
@@ -130,7 +153,7 @@ describe('OeeAnalyticsComponent', () => {
     const select = fixture.nativeElement.querySelector('[data-testid="period-select"]');
     select.value = '26';
     select.dispatchEvent(new Event('change'));
-    expect(service.getOeeTrend).toHaveBeenCalledWith(26, false);
+    expect(service.getOeeTrend).toHaveBeenCalledWith(26, false, undefined);
   });
 
   it('should compute table rows correctly', () => {
@@ -151,5 +174,40 @@ describe('OeeAnalyticsComponent', () => {
     const toggle = fixture.nativeElement.querySelector('[data-testid="toggle-exclude-downtime"]');
     toggle.dispatchEvent(new Event('change'));
     expect(service.getOeeTrend.mock.calls.length).toBe(callsBefore + 1);
+  });
+
+  // ─── US-056 (a) dropdown exibido quando shifts() tem 2 itens ──────────────
+  it('(US-056-a) deve exibir dropdown de turno quando shifts() tem 2 itens', async () => {
+    const f = await resetWithServices(MOCK_OEE_TREND, MOCK_SHIFTS);
+    f.componentInstance.shifts.set(MOCK_SHIFTS);
+    f.detectChanges();
+
+    const select = f.nativeElement.querySelector('[data-testid="shift-select"]');
+    expect(select).toBeTruthy();
+  });
+
+  // ─── US-056 (b) dropdown oculto quando shifts() vazio ─────────────────────
+  it('(US-056-b) deve ocultar dropdown de turno quando shifts() está vazio', async () => {
+    const f = await resetWithServices(MOCK_OEE_TREND, []);
+    f.detectChanges();
+
+    const select = f.nativeElement.querySelector('[data-testid="shift-select"]');
+    expect(select).toBeFalsy();
+  });
+
+  // ─── US-056 (c) seleção chama serviço com shiftId correto ─────────────────
+  it('(US-056-c) seleção de turno deve chamar getOeeTrend com shiftId correto', async () => {
+    const f = await resetWithServices(MOCK_OEE_TREND, MOCK_SHIFTS);
+    f.componentInstance.shifts.set(MOCK_SHIFTS);
+    f.detectChanges();
+
+    const service = TestBed.inject(AnalyticsService) as any;
+    const select = f.nativeElement.querySelector('[data-testid="shift-select"]');
+    select.value = 's1';
+    select.dispatchEvent(new Event('change'));
+
+    const calls = service.getOeeTrend.mock.calls;
+    const lastCall = calls[calls.length - 1];
+    expect(lastCall[2]).toBe('s1');
   });
 });

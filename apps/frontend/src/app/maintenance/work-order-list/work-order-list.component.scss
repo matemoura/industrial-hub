@@ -19,6 +19,18 @@
   }
 }
 
+.shift-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  background: #e0f2fe;
+  color: #0369a1;
+  white-space: nowrap;
+}
+
 .global-metrics {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));

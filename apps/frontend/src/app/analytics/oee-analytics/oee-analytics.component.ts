@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { AnalyticsService, OeeTrendResponse } from '../analytics.service';
 import { LineChartComponent } from '../../shared/charts/line-chart/line-chart.component';
+import { AdminService, Shift } from '../../admin/admin.service';
 
 @Component({
   selector: 'app-oee-analytics',
@@ -19,6 +20,7 @@ import { LineChartComponent } from '../../shared/charts/line-chart/line-chart.co
 })
 export class OeeAnalyticsComponent implements OnInit {
   private readonly analyticsService = inject(AnalyticsService);
+  private readonly adminService = inject(AdminService);
 
   readonly periodOptions = [4, 8, 12, 26, 52];
   selectedWeeks = signal(12);
@@ -26,6 +28,10 @@ export class OeeAnalyticsComponent implements OnInit {
   loading = signal(false);
   errorMsg = signal<string | null>(null);
   data = signal<OeeTrendResponse | null>(null);
+
+  // Shift filter
+  shifts = signal<Shift[]>([]);
+  selectedShiftId = signal<string | null>(null);
 
   readonly chartLabels = computed(() => this.data()?.weekLabels ?? []);
   readonly chartValues = computed(
@@ -44,6 +50,20 @@ export class OeeAnalyticsComponent implements OnInit {
   });
 
   ngOnInit(): void {
+    this.loadShifts();
+    this.load();
+  }
+
+  loadShifts(): void {
+    this.adminService.getShifts().subscribe({
+      next: (list) => this.shifts.set(list),
+      error: (err) => console.error('Erro ao carregar turnos', err),
+    });
+  }
+
+  onShiftChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.selectedShiftId.set(value || null);
     this.load();
   }
 
@@ -65,7 +85,7 @@ export class OeeAnalyticsComponent implements OnInit {
   private load(): void {
     this.loading.set(true);
     this.errorMsg.set(null);
-    this.analyticsService.getOeeTrend(this.selectedWeeks(), this.excludeDowntime()).subscribe({
+    this.analyticsService.getOeeTrend(this.selectedWeeks(), this.excludeDowntime(), this.selectedShiftId() ?? undefined).subscribe({
       next: (res) => {
         this.data.set(res);
         this.loading.set(false);

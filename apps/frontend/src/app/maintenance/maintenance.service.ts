@@ -74,6 +74,8 @@ export interface WorkOrderResponse {
   startedAt: string | null;
   closedAt: string | null;
   scheduleId: string | null;
+  shiftId: string | null;
+  shiftName: string | null;
 }
 
 export interface PageResponse<T> {
@@ -155,6 +157,7 @@ export class MaintenanceService {
       type?: WorkOrderType;
       status?: WorkOrderStatus;
       priority?: WorkOrderPriority;
+      shiftId?: string;
     },
     page = 0,
   ): Observable<PageResponse<WorkOrderResponse>> {
@@ -163,6 +166,7 @@ export class MaintenanceService {
     if (filters?.type) params = params.set('type', filters.type);
     if (filters?.status) params = params.set('status', filters.status);
     if (filters?.priority) params = params.set('priority', filters.priority);
+    if (filters?.shiftId) params = params.set('shiftId', filters.shiftId);
     return this.http.get<PageResponse<WorkOrderResponse>>(this.workOrderUrl, { params });
   }
 

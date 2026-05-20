@@ -33,6 +33,24 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
         Pageable pageable
     );
 
+    @EntityGraph(attributePaths = {"equipment"})
+    @Query("""
+        SELECT w FROM WorkOrder w
+        WHERE (:equipmentId IS NULL OR w.equipment.id = :equipmentId)
+          AND (:type IS NULL OR w.type = :type)
+          AND (:status IS NULL OR w.status = :status)
+          AND (:priority IS NULL OR w.priority = :priority)
+          AND (:shiftId IS NULL OR w.shift.id = :shiftId)
+    """)
+    Page<WorkOrder> findWithFiltersAndShift(
+        @Param("equipmentId") UUID equipmentId,
+        @Param("type") WorkOrderType type,
+        @Param("status") WorkOrderStatus status,
+        @Param("priority") WorkOrderPriority priority,
+        @Param("shiftId") UUID shiftId,
+        Pageable pageable
+    );
+
     boolean existsByEquipmentIdAndStatusIn(UUID equipmentId, List<WorkOrderStatus> statuses);
 
     @Query("""
@@ -92,6 +110,20 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
 
     @Query("SELECT wo.type, COUNT(wo) FROM WorkOrder wo GROUP BY wo.type")
     List<Object[]> countByType();
+
+    @Query("""
+        SELECT wo.status, COUNT(wo) FROM WorkOrder wo
+        WHERE wo.shift.id = :shiftId
+        GROUP BY wo.status
+    """)
+    List<Object[]> countByStatusAndShift(@Param("shiftId") UUID shiftId);
+
+    @Query("""
+        SELECT wo.type, COUNT(wo) FROM WorkOrder wo
+        WHERE wo.shift.id = :shiftId
+        GROUP BY wo.type
+    """)
+    List<Object[]> countByTypeAndShift(@Param("shiftId") UUID shiftId);
 
     @Query("""
         SELECT COUNT(w) FROM WorkOrder w

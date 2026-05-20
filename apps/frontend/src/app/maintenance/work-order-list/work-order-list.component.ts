@@ -11,6 +11,7 @@ import {
   WorkOrderStatus,
   WorkOrderType,
 } from '../maintenance.service';
+import { AdminService, Shift } from '../../admin/admin.service';
 
 @Component({
   selector: 'app-work-order-list',
@@ -22,6 +23,7 @@ import {
 })
 export class WorkOrderListComponent implements OnInit {
   private readonly maintenanceService = inject(MaintenanceService);
+  private readonly adminService = inject(AdminService);
   private readonly router = inject(Router);
 
   page = signal<PageResponse<WorkOrderResponse> | null>(null);
@@ -29,6 +31,10 @@ export class WorkOrderListComponent implements OnInit {
   errorMsg = signal<string | null>(null);
 
   globalMetrics = signal<WorkOrderMetricsResponse | null>(null);
+
+  // Shift filter
+  shifts = signal<Shift[]>([]);
+  selectedShiftId = signal<string | null>(null);
 
   filterEquipmentId = signal('');
   filterType = signal<WorkOrderType | ''>('');
@@ -59,8 +65,22 @@ export class WorkOrderListComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    this.loadShifts();
     this.loadList(0);
     this.loadGlobalMetrics();
+  }
+
+  loadShifts(): void {
+    this.adminService.getShifts().subscribe({
+      next: (list) => this.shifts.set(list),
+      error: (err) => console.error('Erro ao carregar turnos', err),
+    });
+  }
+
+  onShiftChange(event: Event): void {
+    const value = (event.target as HTMLSelectElement).value;
+    this.selectedShiftId.set(value || null);
+    this.loadList(0);
   }
 
   loadGlobalMetrics(): void {
@@ -78,6 +98,7 @@ export class WorkOrderListComponent implements OnInit {
       type: this.filterType() || undefined,
       status: this.filterStatus() || undefined,
       priority: this.filterPriority() || undefined,
+      shiftId: this.selectedShiftId() ?? undefined,
     };
     this.maintenanceService.listWorkOrders(filters, pageIndex).subscribe({
       next: (p) => {
@@ -100,6 +121,7 @@ export class WorkOrderListComponent implements OnInit {
     this.filterType.set('');
     this.filterStatus.set('');
     this.filterPriority.set('');
+    this.selectedShiftId.set(null);
     this.loadList(0);
   }
 

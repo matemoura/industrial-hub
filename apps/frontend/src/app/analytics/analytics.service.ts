@@ -33,9 +33,10 @@ export class AnalyticsService {
   private readonly http = inject(HttpClient);
   private readonly base = '/api/v1/analytics';
 
-  getOeeTrend(weeks: number, excludePlannedDowntime = false): Observable<OeeTrendResponse> {
+  getOeeTrend(weeks: number, excludePlannedDowntime = false, shiftId?: string): Observable<OeeTrendResponse> {
     const params: Record<string, string> = { weeks: weeks.toString() };
     if (excludePlannedDowntime) params['excludePlannedDowntime'] = 'true';
+    if (shiftId) params['shiftId'] = shiftId;
     return this.http.get<OeeTrendResponse>(`${this.base}/oee/trend`, { params });
   }
 
@@ -57,7 +58,9 @@ export class AnalyticsService {
     });
   }
 
-  getWoSummary(): Observable<WoSummaryResponse> {
-    return this.http.get<WoSummaryResponse>(`${this.base}/maintenance/wo-summary`);
+  getWoSummary(shiftId?: string): Observable<WoSummaryResponse> {
+    const params: Record<string, string> = {};
+    if (shiftId) params['shiftId'] = shiftId;
+    return this.http.get<WoSummaryResponse>(`${this.base}/maintenance/wo-summary`, { params });
   }
 }

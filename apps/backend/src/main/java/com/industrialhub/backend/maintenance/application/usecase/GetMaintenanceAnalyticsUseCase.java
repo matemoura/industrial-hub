@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -69,21 +70,29 @@ public class GetMaintenanceAnalyticsUseCase {
     }
 
     public WoSummaryResponse executeWoSummary() {
+        return executeWoSummary(null);
+    }
+
+    public WoSummaryResponse executeWoSummary(UUID shiftId) {
         // Contar por status via agregação JPQL — todos os status com 0 se não houver
         Map<String, Long> byStatus = new LinkedHashMap<>();
         for (WorkOrderStatus status : WorkOrderStatus.values()) {
             byStatus.put(status.name(), 0L);
         }
-        workOrderRepository.countByStatus()
-                .forEach(row -> byStatus.put(((WorkOrderStatus) row[0]).name(), (Long) row[1]));
+        List<Object[]> statusRows = shiftId != null
+                ? workOrderRepository.countByStatusAndShift(shiftId)
+                : workOrderRepository.countByStatus();
+        statusRows.forEach(row -> byStatus.put(((WorkOrderStatus) row[0]).name(), (Long) row[1]));
 
         // Contar por tipo via agregação JPQL — todos os tipos com 0 se não houver
         Map<String, Long> byType = new LinkedHashMap<>();
         for (WorkOrderType type : WorkOrderType.values()) {
             byType.put(type.name(), 0L);
         }
-        workOrderRepository.countByType()
-                .forEach(row -> byType.put(((WorkOrderType) row[0]).name(), (Long) row[1]));
+        List<Object[]> typeRows = shiftId != null
+                ? workOrderRepository.countByTypeAndShift(shiftId)
+                : workOrderRepository.countByType();
+        typeRows.forEach(row -> byType.put(((WorkOrderType) row[0]).name(), (Long) row[1]));
 
         return new WoSummaryResponse(byStatus, byType);
     }

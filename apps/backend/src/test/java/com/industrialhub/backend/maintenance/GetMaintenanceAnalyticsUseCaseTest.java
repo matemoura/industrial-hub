@@ -24,6 +24,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -167,6 +170,33 @@ class GetMaintenanceAnalyticsUseCaseTest {
         assertThat(response.byStatus().get("OPEN")).isEqualTo(0L);
         assertThat(response.byStatus().get("IN_PROGRESS")).isEqualTo(0L);
         assertThat(response.byStatus().get("CANCELLED")).isEqualTo(0L);
+    }
+
+    // --- WO Summary por shiftId tests (US-056) ---
+
+    @Test
+    void woSummary_withShiftId_shouldReturnAllZeros_whenNoOrders() {
+        UUID shiftId = UUID.randomUUID();
+        when(workOrderRepository.countByStatusAndShift(shiftId)).thenReturn(List.of());
+        when(workOrderRepository.countByTypeAndShift(shiftId)).thenReturn(List.of());
+
+        WoSummaryResponse response = useCase.executeWoSummary(shiftId);
+
+        assertThat(response.byStatus().values()).containsOnly(0L);
+        assertThat(response.byType().values()).containsOnly(0L);
+    }
+
+    @Test
+    void woSummary_withNullShiftId_shouldCallNonShiftQuery() {
+        when(workOrderRepository.countByStatus()).thenReturn(List.of());
+        when(workOrderRepository.countByType()).thenReturn(List.of());
+
+        useCase.executeWoSummary(null);
+
+        verify(workOrderRepository).countByStatus();
+        verify(workOrderRepository).countByType();
+        verify(workOrderRepository, never()).countByStatusAndShift(any());
+        verify(workOrderRepository, never()).countByTypeAndShift(any());
     }
 
     private WorkOrder buildWorkOrder(WorkOrderType type, WorkOrderStatus status,
