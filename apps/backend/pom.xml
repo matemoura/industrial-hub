@@ -118,6 +118,13 @@
 			<artifactId>caffeine</artifactId>
 		</dependency>
 
+		<!-- Apache Tika — magic bytes detection (SEC-071) -->
+		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>2.9.2</version>
+		</dependency>
+
 		<!-- Utilities -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>

@@ -1,6 +1,7 @@
 package com.industrialhub.backend.common.application.usecase;
 
 import com.industrialhub.backend.common.application.dto.AttachmentResponse;
+import com.industrialhub.backend.common.domain.AttachmentEntityType;
 import com.industrialhub.backend.common.infrastructure.AttachmentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -12,9 +13,9 @@ import java.util.UUID;
 public class GetAttachmentsUseCase {
     private final AttachmentRepository attachmentRepository;
 
-    public List<AttachmentResponse> execute(String entityType, UUID entityId) {
+    public List<AttachmentResponse> execute(AttachmentEntityType entityType, UUID entityId) {
         return attachmentRepository
-            .findByEntityTypeAndEntityIdOrderByUploadedAtDesc(entityType, entityId.toString())
+            .findByEntityTypeAndEntityIdOrderByUploadedAtDesc(entityType.name(), entityId.toString())
             .stream()
             .map(AttachmentResponse::from)
             .toList();

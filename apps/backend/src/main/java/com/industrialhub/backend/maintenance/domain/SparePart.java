@@ -25,6 +25,7 @@ public class SparePart {
     @Column(length = 100)
     private String category;
 
+    @Column(length = 50)
     private String unit;
 
     private Integer stockQty;

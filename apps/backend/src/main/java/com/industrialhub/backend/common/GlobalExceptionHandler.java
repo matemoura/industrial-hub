@@ -2,6 +2,9 @@ package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.common.domain.AlertThresholdNotFoundException;
 import com.industrialhub.backend.common.domain.AttachmentNotFoundException;
+import com.industrialhub.backend.common.domain.SlaRuleDuplicateException;
+import com.industrialhub.backend.common.domain.SlaRuleNotFoundException;
+import com.industrialhub.backend.common.domain.FileTooLargeException;
 import com.industrialhub.backend.common.domain.InvalidFileTypeException;
 import com.industrialhub.backend.common.domain.NotificationNotFoundException;
 import com.industrialhub.backend.common.domain.ShiftNotFoundException;
@@ -352,7 +355,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
     public ResponseEntity<Map<String, Object>> handleMethodArgumentTypeMismatch(MethodArgumentTypeMismatchException ex) {
         return ResponseEntity.badRequest().body(Map.of(
-                "message", "shiftId inválido",
+                "message", "Invalid value for parameter: " + ex.getName(),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -417,6 +420,28 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
     public Map<String, String> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
         return Map.of("message", "File exceeds maximum allowed size of 10 MB");
+    }
+
+    @ExceptionHandler(SlaRuleNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleSlaRuleNotFound(SlaRuleNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(SlaRuleDuplicateException.class)
+    public ResponseEntity<Map<String, Object>> handleSlaRuleDuplicate(SlaRuleDuplicateException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(FileTooLargeException.class)
+    @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
+    public Map<String, String> handleFileTooLarge(FileTooLargeException ex) {
+        return Map.of("message", ex.getMessage());
     }
 
     @ExceptionHandler(AttachmentNotFoundException.class)
