@@ -91,13 +91,15 @@ Font: Inter (sans-serif), professional industrial look
 
 | Module | Package | Sprints | Status |
 |--------|---------|---------|--------|
-| OEE (Overall Equipment Effectiveness) | `oee/` | 1–3 | ✅ done |
+| OEE (Overall Equipment Effectiveness) | `oee/` | 1–3, 17 | ✅ done |
 | Authentication | `common/auth/` | 4 | ✅ done |
 | QMS (Quality Management System) | `qms/` | 5–6, 13–14 | ✅ done |
 | Maintenance (TPM) | `maintenance/` | 7–8, 15 | ✅ done |
 | Cross-module KPI + Reports + Analytics | `common/kpi/`, `common/presentation/` | 9–10, 16 | ✅ done |
 | Security Hardening | `common/security/` | 11 | ✅ done |
 | User Management | `common/auth/` | 12 | ✅ done |
+| Alert Thresholds + Notifications | `common/` | 18 | ✅ done |
+| Shift Management | `common/` | 19 | ✅ done |
 
 ## Key Conventions
 

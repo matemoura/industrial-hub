@@ -591,17 +591,17 @@
 
 ---
 
-## Sprint 15 ⬜
+## Sprint 15 ✅
 **Objetivo**: Manutenção preventiva — planos recorrentes e auto-geração de OSs
 **ADR**: ADR-011
-**Status**: pendente
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-040 | Planos de manutenção preventiva — CRUD | 5 | ⬜ pendente |
-| US-041 | Auto-geração de OSs preventivas pelo scheduler | 3 | ⬜ pendente |
-| US-042 | Calendário de manutenção preventiva (frontend) | 3 | ⬜ pendente |
+| US-040 | Planos de manutenção preventiva — CRUD | 5 | ✅ concluído |
+| US-041 | Auto-geração de OSs preventivas pelo scheduler | 3 | ✅ concluído |
+| US-042 | Calendário de manutenção preventiva (frontend) | 3 | ✅ concluído |
 
 ---
 
@@ -618,7 +618,7 @@
 5. `nextRunAt` calculado no use case com base na recorrência e data atual
 6. `GET /api/v1/maintenance/schedules` retorna `List<ScheduleResponse>` de planos ativos (OPERATOR+); filtro opcional: `?equipmentId=<uuid>`
 7. `GET /api/v1/maintenance/schedules/{id}` retorna `ScheduleResponse` ou `404` (OPERATOR+)
-8. `PUT /api/v1/maintenance/schedules/{id}` atualiza `title`, `description`, `priority`, `recurrence`, `dayOfWeek`, `dayOfMonth`; recalcula `nextRunAt`; retorna `200` ou `404` (SUPERVISOR+)
+8. `PUT /api/v1/maintenance/schedules/{id}` atualiza `title`, `description`, `priority`, `recurrence`, `dayOfWeek`, `dayOfMonth`; as mesmas validações de recorrência do AC#3 se aplicam; `nextRunAt` é recalculado a partir de `LocalDate.now()` como data base; retorna `200` ou `404` (SUPERVISOR+)
 9. `PUT /api/v1/maintenance/schedules/{id}/deactivate` seta `active = false`; retorna `204` (SUPERVISOR+)
 10. Entidade `MaintenanceSchedule` e enum `ScheduleRecurrence` criados conforme ADR-011
 11. Migration: tabela `maintenance_schedule` + coluna nullable `schedule_id` em `work_order`
@@ -630,13 +630,14 @@
 #### US-041 — Auto-geração de OSs preventivas (3 pts)
 
 **Backend**
-1. `MaintenanceSchedulerJob` com `@Scheduled(cron = "0 0 6 * * *", zone = "America/Sao_Paulo")` chama `RunDueSchedulesUseCase.execute()`
-2. `RunDueSchedulesUseCase` busca todos os planos ativos com `nextRunAt <= hoje`; para cada um, cria `WorkOrder` do tipo `PREVENTIVE` com `openedBy = "scheduler"`, `scheduleId` preenchido
-3. Após criar cada OS, avança `nextRunAt` conforme regra de recorrência e persiste (`lastRunAt = hoje`)
-4. `@EnableScheduling` adicionado em `BackendApplication`
-5. Falha ao criar uma OS loga `ERROR` e continua processando os demais planos (não aborta o job)
-6. `POST /api/v1/admin/maintenance/schedules/run-now` (ADMIN) dispara `RunDueSchedulesUseCase` imediatamente; retorna `200 { "created": N }` com número de OSs criadas
-7. `WorkOrderResponse` inclui campo `scheduleId` (UUID nullable) para rastreabilidade
+1. `WorkOrder.java` recebe campo `@ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "schedule_id") MaintenanceSchedule schedule` (nullable); `WorkOrderResponse` recebe campo `scheduleId` (UUID nullable) no factory `from()` — pré-requisito para este US
+2. `MaintenanceSchedulerJob` com `@Scheduled(cron = "0 0 6 * * *", zone = "America/Sao_Paulo")` chama `RunDueSchedulesUseCase.execute()`
+3. `RunDueSchedulesUseCase` busca todos os planos ativos com `nextRunAt <= hoje`; para cada um, cria `WorkOrder` do tipo `PREVENTIVE` com `openedBy = "scheduler"`, campo `schedule` preenchido
+4. Após criar cada OS, avança `nextRunAt` conforme regra de recorrência e persiste (`lastRunAt = hoje`)
+5. `@EnableScheduling` adicionado em `BackendApplication`
+6. Falha ao criar uma OS loga `ERROR` e continua processando os demais planos (não aborta o job)
+7. `POST /api/v1/admin/maintenance/schedules/run-now` (ADMIN) dispara `RunDueSchedulesUseCase` imediatamente; retorna `200 { "created": N }` com número de OSs criadas
+8. `WorkOrderResponse` expõe `scheduleId` (UUID nullable) para rastreabilidade
 
 ---
 
@@ -644,7 +645,7 @@
 
 **Frontend**
 1. Rota `/maintenance/schedules` lista planos ativos em tabela: equipamento, título, recorrência, próxima execução, status (ativo/inativo)
-2. Botão "Novo Plano" (SUPERVISOR+) navega para `/maintenance/schedules/new` com formulário completo
+2. Botão "Novo Plano" (SUPERVISOR+) navega para `/maintenance/schedules/new` com formulário completo; em `maintenance.routes.ts`, a rota `schedules/new` deve ser declarada **antes** de `schedules/:id` para evitar que Angular interprete "new" como UUID
 3. Formulário mostra/oculta campos `dayOfWeek` e `dayOfMonth` dinamicamente conforme recorrência selecionada
 4. Criação bem-sucedida → snackbar "Plano criado" + redirect para listagem
 5. Rota `/maintenance/calendar` exibe grade mensal (semanas em linhas, dias em colunas)
@@ -655,236 +656,463 @@
 
 ---
 
-## Sprint 16 ⬜
-**Objetivo**: Advanced analytics — trend charts e pareto por módulo
-**ADR**: ADR-012
-**Status**: pendente
+## Sprint 16 ✅
+**Objetivo**: Advanced analytics — trend charts e pareto por módulo + hardening de tech debt das sprints anteriores
+**ADRs**: ADR-012, ADR-031
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-043 | Analytics de OEE — trend semanal + gráficos | 4 | ⬜ pendente |
-| US-044 | Analytics de QMS — pareto e trend de NCs | 3 | ⬜ pendente |
-| US-045 | Analytics de Manutenção — MTTR mensal + distribuição de OSs | 3 | ⬜ pendente |
+| US-043 | Analytics de OEE — trend semanal + gráficos | 4 | ✅ concluído |
+| US-044 | Analytics de QMS — pareto e trend de NCs | 3 | ✅ concluído |
+| US-045 | Analytics de Manutenção — MTTR mensal + distribuição de OSs | 3 | ✅ concluído |
+| US-059 | Tech debt — auditoria, validação e qualidade de código (sprints 12–15) | 2 | ✅ concluído |
+
+**Total**: 12 pontos
+
+### Dependências
+- US-043, US-044, US-045 são independentes entre si mas todas dependem dos componentes `shared/charts/` (criar no início da sprint antes das páginas)
+- US-059 é independente das demais — pode ser desenvolvida em paralelo com as analytics
 
 ---
 
-#### US-043 — Analytics de OEE (4 pts)
+#### US-043 — Analytics de OEE — trend semanal + gráficos (4 pts)
 
 **Backend**
-1. `GET /api/v1/analytics/oee/trend?weeks=12` retorna `OeeTrendResponse`:
+1. `GET /api/v1/analytics/oee/trend?weeks=12` retorna `OeeTrendResponse` (SUPERVISOR+):
    ```json
-   { "weekLabels": ["2026-W01", ...], "oeeValues": [0.82, ...], "sampleCounts": [5, ...] }
+   { "weekLabels": ["2026-W01", "2026-W02"], "oeeValues": [0.82, null], "sampleCounts": [5, 0] }
    ```
-2. `weeks` default 12, max 52; valores `null` onde não há dados na semana
-3. OEE por semana = média de `(availableTimeMinutes / totalTimeMinutes)` de todos os `ImportBatch` com `periodDate` na semana ISO; calculado em Java com `Collectors.groupingBy`
-4. SUPERVISOR+
+2. `weeks` é query param opcional: default `12`, mínimo `4`, máximo `52`; valor fora do range retorna `400` com `{ "message": "weeks deve ser entre 4 e 52" }`
+3. Cada semana é identificada no formato ISO `"YYYY-Www"` (ex: `"2026-W03"`); semanas sem dado retornam `oeeValues[i] = null` e `sampleCounts[i] = 0`
+4. OEE semanal = média de `(availableTimeMinutes / totalTimeMinutes)` de todos os registros com `periodDate` na semana ISO; busca via `findByPeriodDateBetween` e agrupamento em Java com `Collectors.groupingBy` (conforme ADR-012 Decisão 1) — sem SQL nativo
+5. `GetOeeTrendUseCase` criado em `oee/application/usecase/`; endpoint adicionado em `AnalyticsController` em `common/presentation/` (conforme ADR-012 Decisão 2)
+6. Endpoint protegido: `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`
+7. Teste unitário `GetOeeTrendUseCaseTest`: cobre semana com dados, semana sem dados (null), semana parcial, e limite de `weeks`
 
 **Frontend**
-5. Rota `/analytics/oee` exibe:
-   - Line chart: OEE % por semana (eixo Y: 0–100%; linha de referência em 65%)
-   - Tabela abaixo do gráfico: semana, OEE %, nº de importações
-6. Dropdown para selecionar período: 4, 8, 12, 26, 52 semanas
-7. Botão "Imprimir" chama `window.print()` (CSS `@media print` oculta nav e sidebar)
-8. Componente `LineChartComponent` de `shared/charts/` reutilizado
+8. Link "Analytics" adicionado ao nav, visível apenas para SUPERVISOR+ (`@if (role() === 'SUPERVISOR' || role() === 'ADMIN')`)
+9. Instalação: `npm install ng2-charts chart.js` adicionado a `apps/frontend/package.json` (conforme ADR-012 Decisão 4)
+10. Componentes genéricos criados em `shared/charts/` (standalone, `OnPush`, inputs via `input()`):
+    - `LineChartComponent`: inputs `labels: InputSignal<string[]>`, `values: InputSignal<(number | null)[]>`, `referenceValue?: InputSignal<number>` (linha horizontal de referência), `yAxisLabel?: InputSignal<string>`
+    - `BarChartComponent`: inputs `labels: InputSignal<string[]>`, `datasets: InputSignal<{ label: string; data: number[]; color: string }[]>`
+    - `DoughnutChartComponent`: inputs `labels: InputSignal<string[]>`, `data: InputSignal<number[]>`, `colors: InputSignal<string[]>`
+11. Rota `/analytics/oee` (lazy-loaded) exibe:
+    - Line chart via `LineChartComponent`: OEE % por semana (eixo Y: 0–100%); linha de referência vermelha pontilhada em 65%
+    - Tabela abaixo do gráfico: colunas semana, OEE %, nº de importações; linhas com `oeeValue = null` exibem "—"
+12. Dropdown de período: opções 4, 8, 12, 26, 52 semanas; mudança recarrega os dados via signal
+13. Botão "Imprimir" chama `window.print()`; CSS `@media print` no componente oculta nav, sidebar e dropdown de período
+14. Skeleton loader exibido enquanto os dados carregam; erro de API exibe snackbar persistente
 
 ---
 
-#### US-044 — Analytics de QMS (3 pts)
+#### US-044 — Analytics de QMS — pareto e trend de NCs (3 pts)
 
 **Backend**
-1. `GET /api/v1/analytics/nc/pareto?days=30` retorna `NcParetoResponse`:
+1. `GET /api/v1/analytics/nc/pareto?days=30` retorna `NcParetoResponse` (SUPERVISOR+):
    ```json
-   { "byType": { "PROCESS": 12, "PRODUCT": 5 }, "bySeverity": { "CRITICAL": 3, "HIGH": 8 } }
+   { "byType": { "PROCESS": 12, "PRODUCT": 5, "SUPPLIER": 3 }, "bySeverity": { "CRITICAL": 3, "HIGH": 8, "MEDIUM": 6, "LOW": 3 } }
    ```
-2. `days` default 30, opções: 30, 90, 180; Java stream sobre NCs no período
-3. `GET /api/v1/analytics/nc/trend?weeks=12` retorna `TimeSeriesResponse` com contagem de NCs abertas por semana
-4. SUPERVISOR+
+2. `days` é query param opcional: default `30`; valores aceitos: `30`, `90`, `180`; valor não permitido retorna `400` com `{ "message": "days deve ser 30, 90 ou 180" }`
+3. Contagens calculadas via Java stream sobre NCs com `reportedAt >= LocalDateTime.now().minusDays(days)` — sem SQL nativo (ADR-012 Decisão 1); todos os tipos e severidades sem NCs no período aparecem no map com value `0`
+4. `GET /api/v1/analytics/nc/trend?weeks=12` retorna `TimeSeriesResponse` (SUPERVISOR+):
+   ```json
+   { "labels": ["2026-W01", "2026-W02"], "values": [4.0, 7.0] }
+   ```
+5. `weeks` com mesmas regras de US-043 AC#2; contagem de NCs criadas (`reportedAt`) na semana; `values[i] = 0.0` onde sem NC (nunca null para trend de NCs — 0 é informação válida)
+6. `GetNcAnalyticsUseCase` criado em `qms/application/usecase/`; ambos os endpoints adicionados ao `AnalyticsController`
+7. Ambos os endpoints protegidos: `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`
+8. Teste unitário `GetNcAnalyticsUseCaseTest`: cobre pareto com dados mistos, pareto com período sem NCs (todos zeros), trend com NCs em múltiplas semanas, trend com semana vazia (zero)
 
 **Frontend**
-5. Rota `/analytics/qms` exibe:
-   - Bar chart: NCs por tipo (ordenado DESC)
-   - Bar chart: NCs por severidade (CRITICAL em vermelho, HIGH em laranja, MEDIUM em amarelo, LOW em verde)
-   - Line chart: novas NCs por semana
-6. Dropdowns de período independentes para pareto (30/90/180 dias) e trend (4/8/12 semanas)
-7. Componentes `BarChartComponent` e `LineChartComponent` de `shared/charts/`
+9. Rota `/analytics/qms` (lazy-loaded) exibe três seções:
+   - Bar chart "NCs por Tipo" via `BarChartComponent`: barras ordenadas por contagem DESC; cor única MSB `#0099B8`
+   - Bar chart "NCs por Severidade" via `BarChartComponent`: cores fixas por severidade (CRITICAL=#EF4444, HIGH=#F97316, MEDIUM=#EAB308, LOW=#22C55E)
+   - Line chart "Novas NCs por Semana" via `LineChartComponent`: sem linha de referência; eixo Y começa em 0
+10. Dropdown de período para pareto: 30 / 90 / 180 dias (independente do trend)
+11. Dropdown de período para trend: 4 / 8 / 12 semanas (independente do pareto)
+12. Skeleton loaders independentes por seção; erro de API exibe snackbar e mantém seção anterior (sem tela em branco)
 
 ---
 
-#### US-045 — Analytics de Manutenção (3 pts)
+#### US-045 — Analytics de Manutenção — MTTR mensal + distribuição de OSs (3 pts)
 
 **Backend**
-1. `GET /api/v1/analytics/maintenance/mttr-trend?months=6` retorna `MttrTrendResponse`:
+1. `GET /api/v1/analytics/maintenance/mttr-trend?months=6` retorna `MttrTrendResponse` (SUPERVISOR+):
    ```json
-   { "monthLabels": ["2026-01", "2026-02", ...], "mttrValues": [4.2, null, 3.8, ...] }
+   { "monthLabels": ["2026-01", "2026-02", "2026-03"], "mttrValues": [4.2, null, 3.8] }
    ```
-2. `months` default 6, max 24; MTTR médio mensal das OSs CORRECTIVE+DONE; `null` onde sem OS concluída no mês
-3. `GET /api/v1/analytics/maintenance/wo-summary` retorna distribuição de OSs por status e por tipo:
+2. `months` é query param opcional: default `6`, mínimo `3`, máximo `24`; valor fora do range retorna `400`
+3. MTTR mensal = média de `(closedAt − startedAt)` em horas das OSs `CORRECTIVE + DONE` com `startedAt` não nulo, agrupadas por mês de `closedAt`; calculado em Java via `Collectors.groupingBy` com `YearMonth.from(wo.getClosedAt())`; mês sem OS retorna `mttrValues[i] = null`
+4. `GET /api/v1/analytics/maintenance/wo-summary` retorna `WoSummaryResponse` (SUPERVISOR+):
    ```json
    { "byStatus": { "OPEN": 5, "IN_PROGRESS": 2, "DONE": 30, "CANCELLED": 1 }, "byType": { "CORRECTIVE": 20, "PREVENTIVE": 18 } }
    ```
-4. SUPERVISOR+
+5. `wo-summary` agrega todas as OSs (sem filtro de período); todos os status e tipos aparecem no map, mesmo com contagem zero
+6. `GetMaintenanceAnalyticsUseCase` criado em `maintenance/application/usecase/`; ambos os endpoints adicionados ao `AnalyticsController`
+7. Ambos os endpoints protegidos: `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`
+8. Teste unitário `GetMaintenanceAnalyticsUseCaseTest`: cobre MTTR com meses com e sem OS concluída (null), `wo-summary` com distribuição completa, `wo-summary` com OSs apenas de um status (restantes = 0)
 
 **Frontend**
-5. Rota `/analytics/maintenance` exibe:
-   - Line chart: MTTR médio mensal (eixo Y: horas; pontos nulos exibidos como gap na linha)
-   - Doughnut chart: distribuição de OSs por status (cores: OPEN=amber, IN_PROGRESS=blue, DONE=green, CANCELLED=gray)
-   - Doughnut chart: distribuição por tipo (CORRECTIVE vs PREVENTIVE)
-6. Dropdown para período de MTTR: 3, 6, 12, 24 meses
-7. Componentes `LineChartComponent` e `DoughnutChartComponent` de `shared/charts/`
+9. Rota `/analytics/maintenance` (lazy-loaded) exibe três seções:
+   - Line chart "MTTR Médio Mensal (h)" via `LineChartComponent`: eixo Y em horas com 1 decimal; pontos nulos exibidos como gap na linha (propriedade `spanGaps: false` do Chart.js)
+   - Doughnut chart "OSs por Status" via `DoughnutChartComponent`: cores OPEN=#F59E0B, IN_PROGRESS=#3B82F6, DONE=#22C55E, CANCELLED=#9CA3AF
+   - Doughnut chart "OSs por Tipo" via `DoughnutChartComponent`: CORRECTIVE=#EF4444, PREVENTIVE=#0099B8
+10. Dropdown de período para MTTR: 3 / 6 / 12 / 24 meses
+11. Doughnut charts sem controle de período — sempre refletem todas as OSs do histórico
+12. Skeleton loaders independentes por seção; erro exibe snackbar persistente
 
 ---
 
-## Sprint 17 ⬜
-**Objetivo**: Planned Downtime — separação de paradas planejadas no cálculo de OEE
-**ADR**: ADR-025
+#### US-059 — Tech debt — auditoria, validação e qualidade de código (2 pts)
+
+Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Beatriz (SEC-045, SEC-046, SEC-048, SEC-049, SEC-050, SEC-051, SEC-052) e Maiana (G16, G17) das Sprints 12–15.
+
+**Backend — Auditoria (SEC-045, SEC-046, SEC-050, SEC-051 / SH-38)**
+1. `AuditAction` enum recebe três novas constantes: `ROLE_CHANGED`, `USER_REACTIVATED`, `SUPPLIER_UPDATED`, `SCHEDULE_UPDATED`
+2. `UpdateUserRoleUseCase.execute()` chama `auditService.log(username, AuditAction.ROLE_CHANGED, "User", userId, Map.of("newRole", role.name()))` após o save; assinatura do método atualizada para receber `String adminUsername` se necessário
+3. `ReactivateUserUseCase.execute()` chama `auditService.log(adminUsername, AuditAction.USER_REACTIVATED, "User", userId, Map.of())` após o save
+4. `UpdateSupplierUseCase.execute()` chama `auditService.log(username, AuditAction.SUPPLIER_UPDATED, "Supplier", supplierId, Map.of("name", supplier.getName()))` após o save; assinatura do método recebe `String adminUsername` se ausente
+5. `UpdateScheduleUseCase.execute()` chama `auditService.log(username, AuditAction.SCHEDULE_UPDATED, "MaintenanceSchedule", scheduleId, Map.of("recurrence", request.recurrence().name()))` após o save; assinatura do método atualizada para receber `String username` e o `MaintenanceController` passa `principal.getName()`
+
+**Backend — Validação (SEC-048, SEC-049, SEC-052)**
+6. `CreateSupplierRequest` recebe anotação `@Email(message = "contactEmail deve ser um endereço de email válido")` no campo `contactEmail` — sem alterar campos existentes
+7. `SupplierController`: endpoints `GET /quality-score` e `GET /quality-ranking` recebem `@Min(1) @Max(730)` no parâmetro `days`; `@Validated` adicionado na classe do controller
+8. `GlobalExceptionHandler` recebe handler para `IllegalArgumentException`:
+   ```java
+   @ExceptionHandler(IllegalArgumentException.class)
+   public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+       return ResponseEntity.badRequest().body(Map.of("message", ex.getMessage()));
+   }
+   ```
+   Isso cobre o cenário de `ScheduleRecurrenceHelper.validate()` retornando 400 em vez de 500 (SEC-052 / MF-3 de Helena)
+
+**Backend — Testes (G16 de Maiana, SH-41 de Helena)**
+9. `UpdateScheduleUseCaseTest` criado cobrindo: (a) atualização bem-sucedida recalcula `nextRunAt`; (b) schedule não encontrado lança exceção 404; (c) chamada a `auditService.log` verificada com `eq(AuditAction.SCHEDULE_UPDATED)`
+10. `DeactivateScheduleUseCaseTest` criado cobrindo: (a) soft-delete bem-sucedido (`active = false`); (b) schedule não encontrado lança exceção 404
+11. `RunDueSchedulesUseCaseTest` recebe asserção adicional: `verify(scheduleRepository, times(1)).save(any(MaintenanceSchedule.class))` no teste `shouldProcessAllSchedules_evenIfOneFails` (SH-41)
+
+**Frontend — Qualidade (SUG-23 de Helena, G17 de Maiana)**
+12. `schedule-list.component.ts` e `maintenance-calendar.component.ts`: getter `isSupervisor` convertido para `computed()`:
+    ```typescript
+    readonly isSupervisor = computed(() => this.role() === 'SUPERVISOR' || this.role() === 'ADMIN');
+    ```
+13. `schedule-form.component.spec.ts` recebe teste `should navigate to list with toast on successful create`: mock de `maintenanceService.createSchedule` retornando `of(mockSchedule)`, verificação de que `router.navigate` foi chamado com `['/maintenance/schedules']` e state `{ toast: 'Plano criado com sucesso' }` (G17)
+
+---
+
+## Sprint 17 ✅
+**Objetivo**: Planned Downtime — separação de paradas planejadas no cálculo de OEE + correção residual de bug visual da Sprint 16
+**ADRs**: ADR-025, ADR-032
 **Status**: pendente
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-073 | Backend de registro de paradas planejadas | 3 | ⬜ pendente |
-| US-074 | Integração com cálculo de OEE e frontend | 3 | ⬜ pendente |
+| US-073 | Backend de registro de paradas planejadas | 3 | ✅ concluído |
+| US-074 | Integração com cálculo de OEE e frontend | 3 | ✅ concluído |
+| US-060 | Tech debt residual — BUG-2 (cores de severidade) + alinhamento ADR-031 | 1 | ✅ concluído |
+
+**Total**: 7 pontos
+
+### Dependências
+- US-074 depende de US-073 (entidade `PlannedDowntime` e repositório necessários)
+- US-060 é independente de US-073 e US-074 — pode ser desenvolvida em paralelo
 
 ---
 
 #### US-073 — Registro de paradas planejadas (3 pts)
 
 **Backend**
-1. `POST /api/v1/oee/planned-downtimes` cria `PlannedDowntime` (SUPERVISOR+); campos: `equipmentId` (UUID, optional — null = parada de planta inteira), `date`, `durationMinutes`, `reason` (enum `DowntimeReason`), `description`
-2. Enum `DowntimeReason`: `PREVENTIVE_MAINTENANCE`, `SCHEDULED_SETUP`, `HOLIDAY`, `OTHER`
-3. `GET /api/v1/oee/planned-downtimes` lista com filtros `?date=`, `?equipmentId=` (OPERATOR+)
-4. `PUT /api/v1/oee/planned-downtimes/{id}` atualiza; `DELETE /{id}` remove (SUPERVISOR+)
-5. Migration: tabela `planned_downtime`
+1. Entidade `PlannedDowntime` criada no pacote `oee/domain/` com campos: `id` (UUID), `equipment` (`@ManyToOne LAZY`, nullable — null = parada de planta inteira), `date` (`LocalDate`), `durationMinutes` (`Integer`), `reason` (`DowntimeReason` enum), `description` (`String`, nullable), `registeredBy` (`String`), `registeredAt` (`LocalDateTime`); tabela `planned_downtime` com índices em `equipment_id` e `date` (conforme ADR-025 Decisão 1)
+2. Enum `DowntimeReason` criado com valores: `PREVENTIVE_MAINTENANCE`, `SCHEDULED_SETUP`, `HOLIDAY`, `OTHER`
+3. `PlannedDowntimeRepository` criado em `oee/infrastructure/` com método `findByDateAndEquipmentIdOrEquipmentIsNull(LocalDate date, UUID equipmentId)` para consulta eficiente na etapa de cálculo (sem `findAll`)
+4. `POST /api/v1/oee/planned-downtimes` cria `PlannedDowntime` (SUPERVISOR+); campos obrigatórios: `date`, `durationMinutes` (min 1, max 1440), `reason`; `equipmentId` é opcional (null = planta inteira); `description` é opcional; `registeredBy` preenchido do JWT; retorna `201 PlannedDowntimeResponse`
+5. Campos de validação: `date` não nula; `durationMinutes` com `@Min(1) @Max(1440)`; `reason` com enum válido; `equipmentId` quando informado deve referenciar equipamento existente — caso contrário `404`
+6. `GET /api/v1/oee/planned-downtimes` lista paradas (OPERATOR+); filtros opcionais `?date=<ISO_DATE>` e `?equipmentId=<UUID>`; sem filtro retorna todas (máximo 90 dias retroativos via query param `?from=`); retorna `List<PlannedDowntimeResponse>`
+7. `PUT /api/v1/oee/planned-downtimes/{id}` atualiza `date`, `durationMinutes`, `reason`, `description`, `equipmentId` (SUPERVISOR+); parada inexistente retorna `404`; retorna `200 PlannedDowntimeResponse`
+8. `DELETE /api/v1/oee/planned-downtimes/{id}` remove permanentemente a parada (SUPERVISOR+); retorna `204`; parada inexistente retorna `404`
+9. `PlannedDowntimeResponse` é Java record com campos: `id`, `equipmentId`, `equipmentCode` (nullable), `date`, `durationMinutes`, `reason`, `description`, `registeredBy`, `registeredAt`
+10. Endpoint `POST` e `PUT` protegidos com `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`; `GET` com `@PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")`
+11. Teste unitário `CreatePlannedDowntimeUseCaseTest` cobre: (a) criação bem-sucedida com `equipmentId` nulo (planta inteira); (b) criação com equipamento existente; (c) criação com equipamento inexistente lança exceção 404; (d) `durationMinutes` inválido retorna 400 via Bean Validation
 
 ---
 
 #### US-074 — OEE com paradas planejadas (3 pts)
 
 **Backend**
-1. `GET /api/v1/oee/dashboard?excludePlannedDowntime=true` subtrai `plannedDowntimeMinutes` do denominador: `Disponibilidade = availableTimeMinutes / (totalTimeMinutes - plannedDowntimeMinutes)`
-2. Default `excludePlannedDowntime=false` — comportamento atual preservado
-3. `GET /api/v1/analytics/oee/trend` também suporta `?excludePlannedDowntime=true`
+1. `CalculateOeeUseCase` (ou use case equivalente de cálculo de OEE) recebe parâmetro booleano `excludePlannedDowntime`; quando `true`, subtrai `plannedDowntimeMinutes` do denominador: `Disponibilidade = availableTimeMinutes / (totalTimeMinutes - plannedDowntimeMinutes)`; quando `false`, comportamento atual inalterado
+2. `plannedDowntimeMinutes` para um `ImportBatch` = soma de `durationMinutes` de `PlannedDowntime` onde `date = importBatch.profileDate` e (`equipment = importBatch.equipment` OR `equipment IS NULL`); calculado via chamada ao `PlannedDowntimeRepository.findByDateAndEquipmentIdOrEquipmentIsNull(date, equipmentId)` — sem `findAll()` para evitar N+1
+3. `totalTimeMinutes - plannedDowntimeMinutes` nunca pode ser ≤ 0; caso o resultado seja ≤ 0, usa `totalTimeMinutes` sem subtração (fallback silencioso) — evita divisão por zero ou OEE incoerente
+4. `GET /api/v1/oee/dashboard` recebe query param `?excludePlannedDowntime=false` (default `false` — comportamento atual preservado; retrocompatível com todos os clientes existentes)
+5. `GET /api/v1/analytics/oee/trend` também suporta `?excludePlannedDowntime=false` com mesma semântica; o parâmetro é repassado ao `GetOeeTrendUseCase`
+6. Teste unitário `CalculateOeeUseCaseTest` (ou equivalente) recebe novos casos: (a) `excludePlannedDowntime=false` — sem alteração no valor calculado; (b) `excludePlannedDowntime=true` com parada de planta inteira — denominator reduzido, OEE maior; (c) `excludePlannedDowntime=true` sem paradas cadastradas na data — mesmo resultado que `false`; (d) paradas somadas excedem `totalTimeMinutes` — fallback preserva denominator original
 
 **Frontend**
-4. Toggle "Excluir paradas planejadas" no dashboard de OEE e na rota `/analytics/oee`
-5. Rota `/oee/planned-downtimes`: calendário mensal com badges de paradas por dia; formulário de registro
-6. Tooltip nos cards de OEE indica modo atual: "Incluindo paradas planejadas" / "Excluindo paradas planejadas"
+7. Toggle "Excluir paradas planejadas do denominador" no `OeeDashboardComponent` e no `OeeAnalyticsComponent` (`/analytics/oee`); estado do toggle controlado por `signal<boolean>`; mudança dispara reconsulta imediata dos endpoints
+8. Tooltip nos cards de OEE exibe modo atual: "Calculado incluindo paradas planejadas" / "Calculado excluindo paradas planejadas"; implementado com `[matTooltip]` do Angular Material
+9. Rota `/oee/planned-downtimes` (lazy-loaded, SUPERVISOR+): exibe calendário mensal com badges por dia indicando o número de paradas registradas (paradas de equipamento e de planta inteira somadas); clique no badge filtra a lista abaixo para o dia selecionado
+10. Formulário de registro na mesma rota: campos equipamento (select com opção "Toda a planta"), data (datepicker), duração em minutos (input numérico), razão (select), descrição (textarea opcional); validação client-side; botão "Registrar" desabilitado se formulário inválido
+11. Submit bem-sucedido exibe snackbar "Parada planejada registrada" e atualiza o calendário sem reload da página; erro 400/404 exibe mensagem da API em snackbar de erro
+12. Botão "Excluir" por linha na lista de paradas do dia (SUPERVISOR+) com dialog de confirmação `MatDialog`; após exclusão atualiza a lista e o calendário
+13. Link "Paradas Planejadas" adicionado ao submenu de OEE no `NavComponent`, visível apenas para SUPERVISOR+
 
 ---
 
-## Sprint 18 ⬜
-**Objetivo**: Threshold alerts configuráveis + central de notificações in-app
-**ADR**: ADR-013
-**Status**: pendente
+#### US-060 — Tech debt residual Sprint 16 — BUG-2 + alinhamento ADR-031 (1 pt)
+
+> **Nota de escopo (2026-05-20):** Os itens MF-5, MF-6, BUG-1, SH-42 (SEC-055), SH-43 e SH-44 foram corrigidos por Mateus antes do commit final da Sprint 16 (confirmado nos logs de Helena, Mateus e Maiana). O escopo desta US foi reduzido de 3 para 1 ponto — apenas o item genuinamente pendente (BUG-2) e o alinhamento de nomenclatura do ADR-031 permanecem.
+
+**Frontend — BUG-2 (cores de severidade divergem do AC em qms-analytics)**
+1. `qms-analytics.component.ts`: método `severityColor()` corrigido para usar os valores especificados nos ACs originais (CRITICAL=#EF4444, HIGH=#F97316, MEDIUM=#EAB308, LOW=#22C55E):
+   ```typescript
+   private severityColor(severity: string): string {
+     const map: Record<string, string> = {
+       CRITICAL: '#EF4444', HIGH: '#F97316', MEDIUM: '#EAB308', LOW: '#22C55E'
+     };
+     return map[severity] ?? '#0099B8';
+   }
+   ```
+   Implementação atual usa `#E53E3E`, `#DD6B20`, `#D69E2E`, `#38A169` — divergência visual sem impacto funcional
+2. Spec `qms-analytics.component.spec.ts`: asserções de cores atualizadas para os valores corretos; os testes estavam validando as cores erradas, mascarando o bug
+
+**Documentação — inconsistência de nomenclatura ADR-031**
+3. `docs/adr/ADR-031-sprint16-technical-debt.md` Decisão 1: renomear `USER_ROLE_UPDATED` para `ROLE_CHANGED` para alinhar ao nome real da constante implementada em `AuditAction.java`; sem impacto no comportamento do sistema — é estritamente correção de documentação
+
+---
+
+## Sprint 18 ✅
+**Objetivo**: Tech debt Sprint 17 (auditoria PlannedDowntime, validação, correções UX) + threshold alerts configuráveis + central de notificações in-app
+**ADR**: ADR-013, ADR-033
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-046 | Configuração de thresholds de alerta | 3 | ⬜ pendente |
-| US-047 | Motor de avaliação de alertas + notificação email | 4 | ⬜ pendente |
-| US-048 | Central de notificações in-app (sino no nav) | 3 | ⬜ pendente |
+| US-088 | Tech debt Sprint 17 — auditoria PlannedDowntime, validação e correções de UX | 2 | ✅ concluído |
+| US-046 | Configuração de thresholds de alerta | 3 | ✅ concluído |
+| US-047 | Motor de avaliação de alertas + notificação email | 4 | ✅ concluído |
+| US-048 | Central de notificações in-app (sino no nav) | 3 | ✅ concluído |
+
+### Dependências
+- US-088 independente das demais
+- US-046 independente
+- US-047 depende de US-046 (entidade `AlertThreshold` e enum `AlertMetric`)
+- US-048 depende de US-047 (entidade `Notification` e repositório)
 
 ---
 
-#### US-046 — Configuração de thresholds (3 pts)
+#### US-088 — Tech debt Sprint 17 (2 pts)
+
+> Cobre: SEC-057, SEC-058 (auditoria PlannedDowntime), SEC-059 (`@Size` em description), SEC-030 (SecurityConfig URL-level), SH-40 (DAILY fora do mês no calendário), SUG-30 (equipmentOptions via API). ADR de referência: ADR-033.
+
+**Backend — Auditoria (SEC-057, SEC-058)**
+1. `AuditAction` enum: adicionar `DOWNTIME_UPDATED`; `DOWNTIME_CREATED` e `DOWNTIME_DELETED` (já declarados) passam a ser invocados pelos use cases
+2. `CreatePlannedDowntimeUseCase`: injetar `AuditService`; após `save()` chamar `auditService.log(username, DOWNTIME_CREATED, "PlannedDowntime", id, Map.of("reason", ..., "durationMinutes", ...))`
+3. `UpdatePlannedDowntimeUseCase`: injetar `AuditService`; assinatura `execute(id, request, username)`; chamar `auditService.log(username, DOWNTIME_UPDATED, ...)`
+4. `DeletePlannedDowntimeUseCase`: injetar `AuditService`; migrar `existsById+deleteById` para `findById+delete` (captura dados antes da exclusão); chamar `auditService.log(username, DOWNTIME_DELETED, ...)`
+5. `PlannedDowntimeController`: passar `principal.getName()` para os três use cases
+6. `CreatePlannedDowntimeUseCaseTest`: asserção `verify(auditService).log(..., DOWNTIME_CREATED, ...)` no happy path; `verify(auditService, never())` no path de equipamento inativo
+7. Criar `DeletePlannedDowntimeUseCaseTest`: (a) deleção com auditoria — `verify(auditService).log(..., DOWNTIME_DELETED, ...)`; (b) id inexistente sem auditoria — `PlannedDowntimeNotFoundException` antes do log
+
+**Backend — Validação (SEC-059)**
+8. `CreatePlannedDowntimeRequest.description`: adicionar `@Size(max = 500, message = "Descrição não pode exceder 500 caracteres")`
+9. `UpdatePlannedDowntimeRequest.description`: idem
+10. Violação retorna `400` com mensagem descritiva (em vez de `500` via `DataIntegrityViolationException`)
+
+**Backend — SecurityConfig (SEC-030)**
+11. `SecurityConfig`: adicionar regras URL-level explícitas — `GET /api/v1/oee/planned-downtimes/**` → `hasAnyRole("OPERATOR","SUPERVISOR","ADMIN")`; `POST/PUT/DELETE /api/v1/oee/planned-downtimes/**` → `hasAnyRole("SUPERVISOR","ADMIN")`
+12. `@PreAuthorize` permanece nos métodos como segunda barreira (ADR-033 Decisão 5)
+
+**Frontend — DAILY fora do mês (SH-40)**
+13. `MaintenanceCalendarComponent`: schedules `DAILY` não devem exibir badge em dias de padding do grid 6×7 (dias fora do mês corrente)
+14. Guard: `if (!day.inCurrentMonth) return false` antes de `scheduleFallsOnDate`
+15. Spec: caso (a) dia de padding anterior ao mês → schedule DAILY sem badge; caso (b) dia de padding posterior ao mês → sem badge; caso (c) dia do mês corrente → badge exibido
+
+**Frontend — equipmentOptions via API (SUG-30)**
+16. `PlannedDowntimeCalendarComponent.equipmentOptions`: substituir `computed()` derivado das paradas por `signal<EquipmentOption[]>([])` populado por `MaintenanceService.listEquipment()` na inicialização via `forkJoin` junto ao carregamento das paradas
+17. Falha em `listEquipment()` não bloqueia o calendário — `equipmentOptions` permanece `[]` e formError exibe aviso
+18. Spec: mock de `listEquipment()` retornando 3 equipamentos; assert que o select exibe os 3 independentemente de paradas existentes
+
+---
+
+#### US-046 — Configuração de thresholds de alerta (3 pts)
 
 **Backend**
-1. `POST /api/v1/admin/alert-thresholds` cria `AlertThreshold` (ADMIN); campos: `metric` (enum `AlertMetric`), `threshold` (double), `emailEnabled` (bool); retorna `201`
-2. Enums: `AlertMetric` = `OEE_AVG_BELOW`, `NC_CRITICAL_ABOVE`, `WO_URGENT_PENDING_HOURS`
-3. `GET /api/v1/admin/alert-thresholds` retorna lista de thresholds (ADMIN)
-4. `PUT /api/v1/admin/alert-thresholds/{id}` atualiza `threshold` e `emailEnabled`; retorna `200` ou `404`
-5. `DELETE /api/v1/admin/alert-thresholds/{id}` remove threshold; retorna `204`
-6. Seed de thresholds default: OEE < 65%, NCs críticas > 3, OSs urgentes pendentes > 4h
+1. Entidade `AlertThreshold` em `common/domain/` — campos: `id` (UUID), `metric` (enum `AlertMetric`, `@Column(unique=true)`), `threshold` (Double, `@NotNull @Positive`), `emailEnabled` (boolean, default false), `active` (boolean, default true), `createdBy`, `updatedAt`; tabela `alert_threshold`
+2. Enum `AlertMetric`: `OEE_AVG_BELOW`, `NC_CRITICAL_ABOVE`, `WO_URGENT_PENDING_HOURS`
+3. `POST /api/v1/admin/alert-thresholds` (ADMIN) — `metric` duplicado em threshold ativo retorna `409 { "message": "Já existe threshold ativo para esta métrica" }`; retorna `201 AlertThresholdResponse`
+4. `GET /api/v1/admin/alert-thresholds` (ADMIN) — lista todos os ativos, ordenados por `metric`
+5. `PUT /api/v1/admin/alert-thresholds/{id}` (ADMIN) — atualiza `threshold` e `emailEnabled`; campo `metric` imutável; retorna `200` ou `404`
+6. `DELETE /api/v1/admin/alert-thresholds/{id}` (ADMIN) — soft delete (`active=false`); retorna `204` ou `404`
+7. Pacotes: `AlertThresholdController` em `common/presentation/`; use cases em `common/application/usecase/`; `AlertThresholdRepository` em `common/infrastructure/`
+8. Seed: 3 defaults — `OEE_AVG_BELOW threshold=0.65`, `NC_CRITICAL_ABOVE threshold=3`, `WO_URGENT_PENDING_HOURS threshold=4` — todos `emailEnabled=false`
+9. `AlertThresholdResponse` record: `id`, `metric`, `threshold`, `emailEnabled`, `active`, `updatedAt`
 
 **Frontend**
-7. Rota `/admin/alert-thresholds` (ADMIN): tabela com métrica, valor limite, email habilitado, toggle ativo
-8. Formulário de criação: select de métrica + input numérico de threshold + toggle de email
-9. Linha da tabela editável inline (valor + toggle email); botão salvar por linha
+10. Rota `/admin/alert-thresholds` (ADMIN, lazy-loaded) — tabela: métrica (label PT-BR), valor, email (ícone), ações
+11. Labels PT-BR: `OEE_AVG_BELOW` → "OEE médio abaixo de (%)", `NC_CRITICAL_ABOVE` → "NCs críticas abertas acima de (un.)", `WO_URGENT_PENDING_HOURS` → "OSs urgentes abertas há mais de (h)"
+12. "Novo Threshold": dialog com select de métrica (só sem threshold ativo), input numérico, toggle email; sucesso → fecha + snackbar + lista atualiza
+13. "Editar" por linha: dialog pré-preenchido; métrica readonly; `PUT`
+14. "Excluir" por linha: confirmação + snackbar "Threshold removido"
+15. Link no nav admin — visível apenas para ADMIN
+16. `ChangeDetectionStrategy.OnPush`, standalone, signals
 
 ---
 
-#### US-047 — Motor de avaliação de alertas (4 pts)
+#### US-047 — Motor de avaliação de alertas + notificação email (4 pts)
 
-**Backend**
-1. `AlertEvaluatorJob` com `@Scheduled(cron = "0 0/30 * * * *")` chama `AlertEvaluatorUseCase.execute()`
-2. Para `OEE_AVG_BELOW`: calcula OEE médio dos últimos 30 dias; dispara se < threshold
-3. Para `NC_CRITICAL_ABOVE`: conta NCs com `severity=CRITICAL` e `status` não-CLOSED; dispara se > threshold
-4. Para `WO_URGENT_PENDING_HOURS`: conta OSs com `priority=URGENT` e `status=OPEN` com `openedAt + threshold horas < now()`; dispara se > 0
-5. Debounce: não dispara nova notificação para a mesma métrica se existe `Notification` criada nos últimos 60 minutos (query por `createdAt`)
-6. Se `emailEnabled = true`: envia email para todos SUPERVISOR+ via `JavaMailSender` assíncrono
-7. `POST /api/v1/admin/alert-thresholds/evaluate-now` (ADMIN) dispara avaliação imediata para testes
+**Backend — Entidade Notification**
+1. Entidade `Notification` em `common/domain/` — campos: `id` (UUID), `username` (String, nullable — null = broadcast), `title`, `body`, `severity` (enum `NotificationSeverity`: `INFO`/`WARNING`/`CRITICAL`), `metric` (String, nullable), `createdAt`, `readAt` (nullable); tabela `notification` com índices em `username`, `read_at`, `created_at`
+2. `NotificationRepository.existsByMetricAndCreatedAtAfter(String metric, LocalDateTime since)` — consulta de debounce
+
+**Backend — Motor de avaliação**
+3. `AlertEvaluatorJob` com `@Scheduled(cron = "0 0/30 * * * *", zone = "America/Sao_Paulo")` chama `AlertEvaluatorUseCase.execute()`
+4. Para `OEE_AVG_BELOW`: calcula OEE médio dos últimos 30 dias; dispara se < threshold; severity `CRITICAL`
+5. Para `NC_CRITICAL_ABOVE`: count de NCs `severity=CRITICAL` e `status != CLOSED`; dispara se > threshold; severity `WARNING`
+6. Para `WO_URGENT_PENDING_HOURS`: count de OSs `priority=URGENT`, `status=OPEN`, `openedAt + threshold h < now()`; dispara se > 0; severity `WARNING`
+7. Debounce: `existsByMetricAndCreatedAtAfter(metric.name(), now().minusMinutes(60))` → se true, não cria nem envia
+8. Notification criada com `username=null` (broadcast), `metric` preenchido
+9. `emailEnabled=true`: busca usuários SUPERVISOR+ via `UserRepository`; envia por `JavaMailSender` `@Async`; falha logada sem abortar loop
+10. `POST /api/v1/admin/alert-thresholds/evaluate-now` (ADMIN) — dispara avaliação imediata; retorna `200 { "evaluated": N }`
+11. `AlertEvaluatorUseCaseTest`: 5 cenários — disparo, não-disparo (abaixo do threshold), debounce, email desabilitado, falha de email isolada (demais thresholds continuam)
 
 ---
 
 #### US-048 — Central de notificações in-app (3 pts)
 
 **Backend**
-1. `GET /api/v1/notifications` retorna `Page<NotificationResponse>` do usuário autenticado (não lidas primeiro, depois por `createdAt DESC`); size=20
-2. `PUT /api/v1/notifications/{id}/read` marca como lida (`readAt = now()`); retorna `200`
-3. `PUT /api/v1/notifications/read-all` marca todas as não lidas do usuário como lidas; retorna `204`
-4. `GET /api/v1/notifications/unread-count` retorna `{ "count": N }` — usado para badge do sino
+1. `GET /api/v1/notifications` (autenticado) — `Page<NotificationResponse>` com `username = <atual>` OR `username IS NULL` (broadcasts); não lidas primeiro, depois `createdAt DESC`; `size=20`
+2. `GET /api/v1/notifications/unread-count` (autenticado) — `{ "count": N }` (pessoais + broadcasts não lidos)
+3. `PUT /api/v1/notifications/{id}/read` (autenticado) — `readAt = now()`; `200` ou `404`; `403` se `username != null && username != current`
+4. `PUT /api/v1/notifications/read-all` (autenticado) — marca todas pessoais + broadcasts não lidos; `204`
+5. `NotificationResponse` record: `id`, `username`, `title`, `body`, `severity`, `createdAt`, `readAt`
 
 **Frontend**
-5. Ícone de sino no `NavComponent` com badge numérico (contagem não lidas); badge some quando = 0
-6. Clique abre overlay/panel com lista das últimas 10 notificações; notificações CRITICAL com fundo vermelho, WARNING com âmbar
-7. Botão "Marcar todas como lidas" no topo do panel
-8. Polling de `unread-count` a cada 60 segundos via `interval(60_000)`
-9. Notificação não lida: fonte bold; lida: normal; clique marca como lida e fecha o panel
+6. `NavComponent`: sino `mat-icon` + `MatBadge` com `unreadCount()`; `[matBadgeHidden]="unreadCount() === 0"`
+7. Polling: `interval(60_000).pipe(startWith(0), switchMap(() => notificationService.getUnreadCount()), takeUntilDestroyed())` alimenta `unreadCount = signal<number>(0)`
+8. Clique abre `MatMenu` com últimas 10 notificações (carregadas ao abrir)
+9. Card de notificação: ícone de severidade colorido (`CRITICAL=#EF4444`, `WARNING=#F97316`, `INFO=#0099B8`), título bold se não lida, body truncado 80 chars, data formatada
+10. "Marcar todas como lidas": `PUT /read-all` + `unreadCount.set(0)` (optimistic update)
+11. Clique em item: `PUT /{id}/read` + `unreadCount.update(n => Math.max(0, n-1))` + fecha menu
+12. Spec `nav.component.spec.ts`: (a) badge visível quando `count > 0`; (b) badge oculto quando `count = 0`; (c) "marcar todas" → `PUT /read-all` chamado + badge zerado
 
 ---
 
-## Sprint 19 ⬜
+## Sprint 19 ✅
 **Objetivo**: Gestão de turnos e rastreabilidade de registros por turno
-**ADR**: ADR-016
-**Status**: pendente
+**ADR**: ADR-016, ADR-034
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-054 | Cadastro de turnos (Shift CRUD) | 2 | ⬜ pendente |
-| US-055 | Associação automática de OSs e importações OEE a turno | 3 | ⬜ pendente |
-| US-056 | Filtro e analytics por turno | 3 | ⬜ pendente |
+| US-054 | Cadastro de turnos (Shift CRUD) | 2 | ✅ concluído |
+| US-055 | Associação automática de OSs e importações OEE a turno | 3 | ✅ concluído |
+| US-056 | Filtro e analytics por turno | 3 | ✅ concluído |
+| US-089 | Tech debt Sprint 18 — rate limiting + audit no evaluate-now (SEC-061) | 1 | ✅ concluído |
+
+**Total**: 9 pontos
+
+### Dependências
+- US-055 depende de US-054 (entidade `Shift` e `ShiftResolverService` precisam existir)
+- US-056 depende de US-054 (necessita IDs de turno reais para os filtros e frontend)
+- US-089 independente das demais — pode ser desenvolvida em paralelo
 
 ---
 
 #### US-054 — Cadastro de turnos (2 pts)
 
 **Backend**
-1. `POST /api/v1/admin/shifts` cria `Shift` (ADMIN); campos: `name`, `startTime` (ISO time), `endTime`, `overnight` (bool)
-2. Sobreposição de turno com turno ativo existente retorna `422` com `{ "message": "Turno sobrepõe turno existente: {nome}" }`
-3. `GET /api/v1/admin/shifts` retorna lista de turnos (OPERATOR+)
-4. `PUT /api/v1/admin/shifts/{id}` atualiza campos (ADMIN); valida sobreposição
-5. `PUT /api/v1/admin/shifts/{id}/deactivate` desativa turno (ADMIN); `204`
+1. Entidade `Shift` criada no pacote `common/domain/` com campos: `id` (UUID), `name` (String, max 50, não nulo), `startTime` (`LocalTime`), `endTime` (`LocalTime`), `overnight` (boolean), `active` (boolean, default `true`); tabela `shift` (conforme ADR-016 Decisão 1)
+2. `POST /api/v1/admin/shifts` cria `Shift` (ADMIN); campos obrigatórios: `name`, `startTime` (formato ISO time `HH:mm`), `endTime` (formato ISO time `HH:mm`), `overnight` (boolean); retorna `201 ShiftResponse`
+3. `name` em branco ou nulo retorna `400 { "message": "nome é obrigatório" }`; `startTime` ou `endTime` ausentes retornam `400 { "message": "..." }` (Bean Validation)
+4. Sobreposição entre o novo turno e qualquer turno ativo existente retorna `422 { "message": "Turno sobrepõe turno existente: {nome}" }` — validada no use case antes do `save()` (conforme ADR-016 Consequências); turno noturno (`overnight=true`) tem lógica própria: cobre `[startTime, 24:00)` ∪ `[00:00, endTime)` — sobreposição considera essa extensão
+5. Turno noturno explícito: quando `overnight=true`, `endTime < startTime` é o estado esperado (ex: `startTime=22:00`, `endTime=06:00`); when `overnight=false`, `endTime <= startTime` retorna `400 { "message": "endTime deve ser posterior a startTime para turno não-noturno" }`
+6. `GET /api/v1/admin/shifts` retorna `List<ShiftResponse>` de todos os turnos ativos, ordenados por `startTime` (OPERATOR+); `@PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")`
+7. `PUT /api/v1/admin/shifts/{id}` atualiza `name`, `startTime`, `endTime`, `overnight`; as mesmas validações de sobreposição e coerência de horário se aplicam; turno inexistente retorna `404`; retorna `200 ShiftResponse` (ADMIN)
+8. `PUT /api/v1/admin/shifts/{id}/deactivate` seta `active = false`; retorna `204`; turno inexistente retorna `404` (ADMIN)
+9. `ShiftResponse` é Java record com campos: `id`, `name`, `startTime`, `endTime`, `overnight`, `active`
+10. Pacotes conforme ADR-016 Decisão 3: `CreateShiftUseCase`, `GetShiftListUseCase`, `UpdateShiftUseCase`, `DeactivateShiftUseCase` em `common/application/usecase/`; `ShiftController` em `common/presentation/`; `ShiftRepository` em `common/infrastructure/`
+11. `CreateShiftUseCase`: `@PreAuthorize("hasRole('ADMIN')")` no controller; `DeactivateShiftUseCase` e `UpdateShiftUseCase` idem
+12. Teste unitário `CreateShiftUseCaseTest`: (a) criação de turno normal (diurno) bem-sucedida — sem sobreposição; (b) criação de turno noturno overnight (`22:00–06:00`) bem-sucedida; (c) sobreposição com turno ativo existente lança exceção 422; (d) `overnight=false` com `endTime <= startTime` lança exceção 400
 
 **Frontend**
-6. Rota `/admin/shifts` (ADMIN): tabela com nome, início, fim, overnight (ícone), status
-7. Formulário de criação: nome, hora início (timepicker), hora fim (timepicker), toggle "Turno noturno (passa meia-noite)"
-8. Linha de turno com chip de horário: ex "06:00 – 14:00"
+13. Rota `/admin/shifts` (ADMIN, lazy-loaded): tabela com colunas nome, início, fim, tipo (chip "Noturno" ícone lua / "Diurno" ícone sol), status (chip Ativo/Inativo); exibe mensagem "Nenhum turno cadastrado" quando lista vazia
+14. Botão "Novo Turno" (ADMIN) abre formulário inline ou modal: `name` (input text), `startTime` (input `type="time"`), `endTime` (input `type="time"`), toggle "Turno noturno (passa meia-noite)"; quando toggle ativo, exibe nota "O turno se estende além da meia-noite (ex: 22:00–06:00)"
+15. Validação client-side: `name` obrigatório; `startTime` e `endTime` obrigatórios; quando `overnight=false`, `endTime` deve ser posterior a `startTime` (validador custom no `FormGroup`); botão "Salvar" desabilitado enquanto formulário inválido
+16. Criação bem-sucedida: snackbar "Turno criado" + lista atualizada sem reload
+17. Erro `422` da API exibe mensagem retornada pela API em snackbar de erro
+18. Botão "Desativar" por linha (ADMIN) com dialog de confirmação `MatDialog`; após confirmação envia `PUT .../deactivate`; snackbar "Turno desativado"
+19. Chip de horário por linha: exibe "HH:mm – HH:mm" (ex: "06:00 – 14:00"); turno noturno exibe "22:00 – 06:00 ✦" com ícone/sufixo indicando overnight
+20. Link "Turnos" adicionado ao submenu de administração no `NavComponent`, visível apenas para ADMIN
+21. `ChangeDetectionStrategy.OnPush`, standalone, signals
+22. Spec `shift-list.component.spec.ts`: (a) tabela exibe 3 turnos mockados; (b) formulário desabilitado enquanto `name` vazio; (c) erro 422 exibe snackbar com mensagem da API; (d) chip "Noturno" exibido apenas quando `overnight=true`
 
 ---
 
-#### US-055 — Associação automática de turnos (3 pts)
+#### US-055 — Associação automática de OSs e importações OEE a turno (3 pts)
 
 **Backend**
-1. `ShiftResolverService.resolveCurrentShift()` busca turno ativo com intervalo cobrindo `LocalTime.now()` (considera `overnight`); retorna `Optional<Shift>`
-2. `CreateWorkOrderUseCase` chama `ShiftResolverService`; associa `shift` à OS criada (null se nenhum turno ativo)
-3. Migration: coluna `shift_id UUID NULLABLE` em `work_order` e `import_batch`
-4. `WorkOrderResponse` e `ImportBatchResponse` incluem campo `shiftId` e `shiftName` (nullable)
-5. `GET /api/v1/maintenance/work-orders` aceita filtro `?shiftId=<uuid>`
+1. `ShiftResolverService` criado no pacote `common/application/usecase/` (utilitário compartilhado, não um use case isolado — conforme ADR-016 Decisão 3); método `resolveCurrentShift(List<Shift> activeShifts, LocalTime now): Optional<Shift>`; recebe a lista de turnos como parâmetro (sem chamada ao banco diretamente — testável sem contexto JPA)
+2. Lógica de resolução: para turno normal (`overnight=false`), cobre `[startTime, endTime)`; para turno noturno (`overnight=true`), cobre `[startTime, 24:00)` ∪ `[00:00, endTime)`; retorna o primeiro turno ativo que cobre `now`; se nenhum cobre, retorna `Optional.empty()`
+3. `CreateWorkOrderUseCase`: antes do `save()`, chama `shiftRepository.findAllByActiveTrue()` e depois `shiftResolverService.resolveCurrentShift(activeShifts, LocalTime.now())`; resultado (nullable) é associado à OS criada; `shift = null` não bloqueia criação (graceful degradation — conforme ADR-016 Decisão 2)
+4. `ProcessOeeImportUseCase` (ou use case equivalente de importação OEE): mesma lógica — associa `Shift` ao `ImportBatch` criado a partir do horário do servidor no momento da importação
+5. Migration: coluna `shift_id UUID NULLABLE REFERENCES shift(id)` adicionada à tabela `work_order`; coluna `shift_id UUID NULLABLE REFERENCES shift(id)` adicionada à tabela `import_batch`; retrocompatível — registros existentes terão `shift_id = NULL`
+6. Entidade `WorkOrder`: campo `@ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "shift_id") Shift shift` adicionado (nullable)
+7. Entidade `ImportBatch`: campo `@ManyToOne(fetch = FetchType.LAZY) @JoinColumn(name = "shift_id") Shift shift` adicionado (nullable)
+8. `WorkOrderResponse` record: campos `shiftId` (UUID nullable) e `shiftName` (String nullable) adicionados; derivados do `shift` da entidade (null-safe)
+9. `GET /api/v1/maintenance/work-orders` passa a aceitar query param opcional `?shiftId=<uuid>` — quando informado, filtra OSs pelo turno; quando ausente, retorna todas (comportamento anterior preservado); `WorkOrderRepository` recebe método de query com `shiftId` opcional
+10. Teste unitário `ShiftResolverServiceTest`: (a) turno diurno 06:00–14:00, `now=09:00` → turno encontrado; (b) turno diurno 06:00–14:00, `now=14:00` → não encontrado (endTime exclusivo); (c) turno noturno 22:00–06:00, `now=23:30` → turno encontrado; (d) turno noturno 22:00–06:00, `now=03:00` → turno encontrado; (e) turno noturno 22:00–06:00, `now=10:00` → não encontrado; (f) lista de turnos vazia → `Optional.empty()`
+11. Teste unitário `CreateWorkOrderUseCaseTest`: (a) criação com turno ativo cobrindo o horário → `workOrder.getShift()` não nulo; (b) criação sem nenhum turno ativo → `workOrder.getShift()` nulo (sem exceção)
+
+**Frontend**
+12. `WorkOrderResponse` interface TypeScript recebe campos `shiftId: string | null` e `shiftName: string | null`
+13. Listagem de OSs (`/maintenance/work-orders`): chip de turno (ex: mat-chip "Tarde") exibido em cada card/linha quando `shiftName` não nulo; quando nulo, célula/espaço permanece vazio (sem texto "N/A")
+14. Página de detalhe da OS: campo "Turno" exibido na seção de informações; valor "—" quando `shiftName` nulo
+15. Loading state: skeleton loader exibido enquanto a listagem de OSs carrega; erro de API exibe snackbar
+16. Spec `work-order-list.component.spec.ts`: (a) OS com `shiftName = "Manhã"` exibe chip "Manhã"; (b) OS com `shiftName = null` não exibe chip de turno
 
 ---
 
-#### US-056 — Analytics por turno (3 pts)
+#### US-056 — Filtro e analytics por turno (3 pts)
 
 **Backend**
-1. `GET /api/v1/analytics/oee/trend?shiftId=<uuid>&weeks=12` retorna OEE médio por semana apenas dos `ImportBatch` do turno especificado
-2. `GET /api/v1/analytics/maintenance/wo-summary?shiftId=<uuid>` retorna distribuição de OSs do turno
+1. `GET /api/v1/analytics/oee/trend` passa a aceitar query param opcional `?shiftId=<uuid>`; quando informado, filtra `ImportBatch` pelo turno antes de calcular o OEE semanal; quando ausente, comportamento anterior (todos os batches) preservado; `GetOeeTrendUseCase` recebe parâmetro `shiftId` opcional (conforme ADR-016 Decisão 5)
+2. `GET /api/v1/analytics/maintenance/wo-summary` passa a aceitar query param opcional `?shiftId=<uuid>`; quando informado, distribui apenas OSs do turno especificado; `GetMaintenanceAnalyticsUseCase` recebe `shiftId` opcional (conforme ADR-016 Decisão 5)
+3. `shiftId` inexistente (UUID válido mas sem turno cadastrado) retorna distribuição vazia (zeros) ou trend com todos os valores `null` — sem `404` (filtro sem resultado não é erro)
+4. `shiftId` com UUID malformado retorna `400 { "message": "shiftId inválido" }` via `MethodArgumentTypeMismatchException` handler no `GlobalExceptionHandler`
+5. `WorkOrderRepository`: método de query para `wo-summary` com `shiftId` opcional (JPQL com `(:shiftId IS NULL OR wo.shift.id = :shiftId)`)
+6. Ambos os endpoints mantêm `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`
+7. Teste unitário `GetOeeTrendUseCaseTest` — novos casos: (a) `shiftId` informado — apenas batches do turno entram no cálculo; (b) `shiftId` nulo — todos os batches (comportamento anterior)
+8. Teste unitário `GetMaintenanceAnalyticsUseCaseTest` — novos casos: (a) `shiftId` informado — distribuição apenas do turno; (b) `shiftId` nulo — todas as OSs
 
 **Frontend**
-3. Dropdown "Turno" adicionado aos filtros em `/maintenance/work-orders` e `/analytics/oee`
-4. Card de OS exibe chip de turno (ex: "Tarde") quando presente
-5. Página `/analytics/oee` exibe dropdown de seleção de turno; ao selecionar, reconsulta o endpoint com `shiftId`
+9. Dropdown "Turno" adicionado aos filtros da página `/maintenance/work-orders`: opções carregadas via `GET /api/v1/admin/shifts` na inicialização do componente; primeira opção: "Todos os turnos" (sem filtro); mudança de seleção recarrega a lista de OSs com `?shiftId=<uuid>`
+10. Dropdown "Turno" adicionado à barra de filtros da página `/analytics/oee`: mesma fonte de dados (`GET /api/v1/admin/shifts`); primeira opção "Todos os turnos"; mudança dispara reconsulta imediata com `shiftId` no payload do `GetOeeTrendUseCase`
+11. Quando nenhum turno estiver cadastrado (`/admin/shifts` retorna lista vazia), o dropdown não é exibido (componente usa `@if (shifts().length > 0)`)
+12. Falha ao carregar turnos não bloqueia a página — dropdown permanece oculto, demais filtros funcionam normalmente; erro logado em console
+13. `ChangeDetectionStrategy.OnPush`, standalone, signals; `shifts = signal<ShiftOption[]>([])`
+14. Spec `oee-analytics.component.spec.ts` — novos casos: (a) dropdown exibido quando `shifts()` tem 2 itens mockados; (b) dropdown oculto quando `shifts()` vazio; (c) seleção de turno dispara chamada ao serviço com `shiftId` correto
+15. Spec `work-order-list.component.spec.ts` — novo caso: seleção de turno no dropdown filtra a lista (mock do serviço chamado com `shiftId`)
+
+---
+
+#### US-089 — Tech debt Sprint 18 — SEC-061: rate limiting + audit no evaluate-now (1 pt)
+
+> Cobre: SEC-061 (identificado por Beatriz na revisão da Sprint 18) — o endpoint `POST /api/v1/admin/alert-thresholds/evaluate-now` não possui rate limiting nem registro de auditoria.
+
+**Backend — Rate Limiting**
+1. `POST /api/v1/admin/alert-thresholds/evaluate-now` recebe anotação de rate limiting (Bucket4j, conforme ADR-021 Decisão 1 — bucket em memória com Caffeine); limite: 5 requisições por minuto por usuário (identificado pelo `username` do JWT); excedido retorna `429 Too Many Requests` com body `{ "message": "Muitas requisições. Aguarde antes de acionar novamente." }`
+2. `RateLimiterInterceptor` (ou configuração Bucket4j existente da Sprint 11) deve ser extendido para cobrir a rota `/api/v1/admin/alert-thresholds/evaluate-now`; sem duplicação de código — reutilizar a infraestrutura de rate limiting já existente
+3. Teste de integração ou unitário: chamada ao endpoint 6× em sequência pelo mesmo usuário → 5 primeiras retornam `200`; 6ª retorna `429`
+
+**Backend — Auditoria**
+4. `AuditAction` enum: adicionar constante `ALERT_EVALUATED`
+5. `AlertEvaluatorUseCase.execute()` (invocado pelo endpoint `evaluate-now`) chama `auditService.log(username, ALERT_EVALUATED, "AlertThreshold", null, Map.of("triggeredBy", "manual", "evaluated", N))` após a avaliação; `username` passado pelo `EvaluateNowController` via `principal.getName()`; falha do auditService não aborta a execução (padrão `@Async` já aplicado ao `AuditService`)
+6. `EvaluateNowController` (ou método no `AlertThresholdController`): assinatura do método de handler atualizada para receber `Principal principal` e repassar `principal.getName()` ao use case
+7. Teste unitário `AlertEvaluatorUseCaseTest` — novos casos: (a) disparo manual com `N` thresholds avaliados → `verify(auditService).log(eq("admin"), eq(ALERT_EVALUATED), ...)` confirmado; (b) `auditService` lança exceção → avaliação continua (sem propagação — `@Async` isola a falha)
 
 ---
 
@@ -899,54 +1127,108 @@
 | US-049 | Cadastro de peças (catálogo) | 3 | ⬜ pendente |
 | US-050 | Consumo de peças em ordens de serviço | 4 | ⬜ pendente |
 | US-051 | Alertas de estoque mínimo | 2 | ⬜ pendente |
+| US-090 | Tech debt Sprint 19 | 1 | ⬜ pendente |
+
+**Total**: 10 pontos
+
+### Dependências
+- US-050 depende de US-049 (entidade `SparePart` e `SparePartRepository` precisam existir)
+- US-051 depende de US-050 (o disparo de alerta ocorre dentro do `AddWorkOrderPartUseCase`)
+- US-090 independente — pode ser desenvolvida em paralelo
 
 ---
 
 #### US-049 — Cadastro de peças (3 pts)
 
 **Backend**
-1. `POST /api/v1/maintenance/spare-parts` cria `SparePart` (ADMIN); campos: `code` (único), `name`, `category`, `unit`, `stockQty`, `minStockQty`; retorna `201`
-2. `code` duplicado retorna `409`
-3. `GET /api/v1/maintenance/spare-parts` lista peças ativas (OPERATOR+); filtros: `category`, `belowMin=true`
-4. `GET /api/v1/maintenance/spare-parts/{id}` retorna detalhe ou `404`
-5. `PUT /api/v1/maintenance/spare-parts/{id}` atualiza `name`, `category`, `unit`, `minStockQty` (ADMIN); `stockQty` imutável via este endpoint
-6. `PUT /api/v1/maintenance/spare-parts/{id}/stock` ajuste manual de estoque (ADMIN); body `{ "quantity": N, "reason": "..." }`; `quantity` pode ser positivo (entrada) ou negativo (saída); bloqueia se resultado < 0
+1. Entidades `SparePart` e `WorkOrderPart` criadas no pacote `maintenance/domain/` conforme ADR-014 Decisão 1; migration `V{N}__spare_parts.sql` cria tabelas `spare_part` (com índice único em `code` e índice em `category`) e `work_order_part` (FK para `spare_part` e `work_order`)
+2. `POST /api/v1/maintenance/spare-parts` cria `SparePart` (ADMIN); `@PreAuthorize("hasRole('ADMIN')")`; `CreateSparePartRequest` record com: `@NotBlank String code`, `@NotBlank String name`, `String category`, `String unit`, `@NotNull @Min(0) Integer stockQty`, `@NotNull @Min(0) Integer minStockQty`; retorna `201 SparePartResponse`
+3. `code` duplicado (violação de `@Column(unique=true)`) retorna `409 { "message": "Já existe uma peça com o código informado." }`
+4. Campos `@NotBlank`/`@NotNull` ausentes ou inválidos retornam `400 { "message": "..." }` via `MethodArgumentNotValidException` no `GlobalExceptionHandler`; `stockQty` ou `minStockQty` negativos retornam `400 { "message": "Quantidade não pode ser negativa" }` (`@Min(0)`)
+5. `GET /api/v1/maintenance/spare-parts` lista peças ativas (`active=true`); `@PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")`; aceita query params opcionais: `?category=<string>` (filtro por categoria, case-insensitive `LOWER(p.category) = LOWER(:category)`) e `?belowMin=true` (retorna apenas peças com `stockQty < minStockQty`); os dois filtros podem ser combinados; retorna `List<SparePartResponse>`
+6. `GET /api/v1/maintenance/spare-parts/{id}` retorna `SparePartResponse` ou `404 { "message": "Peça não encontrada" }` (OPERATOR+)
+7. `PUT /api/v1/maintenance/spare-parts/{id}` atualiza `name`, `category`, `unit`, `minStockQty` (ADMIN); `@PreAuthorize("hasRole('ADMIN')")`; campo `stockQty` **não** é atualizado por este endpoint; `minStockQty` aceita apenas `@Min(0)`; peça inexistente retorna `404`; peça inativa retorna `422 { "message": "Peça inativa não pode ser editada" }`; retorna `200 SparePartResponse`
+8. `PUT /api/v1/maintenance/spare-parts/{id}/stock` ajuste manual de estoque (ADMIN); `@PreAuthorize("hasRole('ADMIN')")`; `UpdateSparePartStockRequest` record com: `@NotNull Integer quantity` (positivo = entrada, negativo = saída), `@NotBlank String reason`; resultado `stockQty + quantity < 0` retorna `422 { "message": "Estoque resultante seria negativo: atual N, ajuste M" }`; ajuste bem-sucedido registra `auditService.log(username, PART_STOCK_ADJUSTED, "SparePart", id, Map.of("delta", quantity, "reason", reason))`; retorna `200 SparePartResponse` com novo saldo
+9. `AuditAction` enum: adicionar constantes `PART_CREATED` e `PART_STOCK_ADJUSTED`; `CreateSparePartUseCase` chama `auditService.log(username, PART_CREATED, "SparePart", id, Map.of("code", code))`
+10. `SparePartResponse` record: `id` (UUID), `code`, `name`, `category`, `unit`, `stockQty`, `minStockQty`, `active`, `belowMin` (calculado: `stockQty < minStockQty`); `belowMin` evita cálculo no frontend
+11. Pacotes conforme ADR-014 Decisão 3: `CreateSparePartUseCase`, `GetSparePartListUseCase`, `UpdateSparePartUseCase`, `UpdateSparePartStockUseCase` em `maintenance/application/usecase/`; `SparePartRepository`, `WorkOrderPartRepository` em `maintenance/infrastructure/`; endpoints em `MaintenanceController` (já existente)
+12. Teste unitário `CreateSparePartUseCaseTest`: (a) criação bem-sucedida — `save()` chamado, `auditService.log(PART_CREATED)` confirmado; (b) `code` duplicado — `DataIntegrityViolationException` propagada como `409`; (c) `stockQty` negativo — `400` antes do `save()`
 
 **Frontend**
-7. Rota `/maintenance/spare-parts`: tabela com código, nome, categoria, unidade, estoque atual, estoque mínimo; linhas com estoque abaixo do mínimo têm row vermelha
-8. Botão "Nova Peça" (ADMIN) → formulário completo
-9. Coluna "Ajustar Estoque" (ADMIN): dialog de ajuste com campo de quantidade e motivo
+13. Rota `/maintenance/spare-parts` (OPERATOR+, lazy-loaded): tabela com colunas código, nome, categoria, unidade, estoque atual, estoque mínimo, status do estoque; linhas com `belowMin=true` recebem cor de fundo `#FEE2E2` (vermelho claro) e ícone de alerta `mat-icon warning` na coluna de estoque; estado de loading: skeleton loader (3 linhas) enquanto `isLoading()=true`; empty state: "Nenhuma peça cadastrada" com botão "Nova Peça" quando lista vazia
+14. Filtros na barra superior: input de busca por código/nome (filtra na lista carregada, sem nova requisição), select de categoria (valores únicos extraídos da lista), toggle "Somente abaixo do mínimo" (chama `?belowMin=true`); botão "Limpar filtros" reseta todos
+15. Botão "Nova Peça" (ADMIN, `@if (isAdmin())`): abre `MatDialog` com formulário reactive — campos: código (`@NotBlank`, trim), nome (`@NotBlank`), categoria (input livre), unidade (input livre), estoque inicial (`@Min(0)`), estoque mínimo (`@Min(0)`); botão "Salvar" desabilitado enquanto inválido ou `isSaving()`; sucesso: fecha dialog + snackbar "Peça criada com sucesso" + lista recarregada
+16. Botão "Editar" por linha (ADMIN): dialog pré-preenchido sem campos de estoque; mesmas validações do formulário de criação exceto `code` (somente leitura no edit)
+17. Botão "Ajustar Estoque" por linha (ADMIN): dialog com campo quantidade (aceita valores negativos) e motivo (`@NotBlank`); exibe saldo atual no cabeçalho do dialog ("Estoque atual: N un"); preview do resultado calculado em tempo real ("Saldo após ajuste: X"); quantity que resultaria em negativo mostra aviso inline antes de submeter; erro `422` da API exibe snackbar com mensagem retornada
+18. Erros HTTP `400`/`409`/`422` retornados pela API são exibidos em snackbar de erro (cor `#EF4444`); erros `500` exibem mensagem genérica "Erro inesperado. Tente novamente."
+19. `ChangeDetectionStrategy.OnPush`, standalone, signals; `spareParts = signal<SparePartResponse[]>([])`, `isLoading = signal(false)`, `isAdmin = computed(() => ...)`
+20. Spec `spare-part-list.component.spec.ts`: (a) tabela exibe 3 peças mockadas com colunas corretas; (b) linha com `belowMin=true` tem classe CSS de alerta verificada; (c) empty state exibido quando lista vazia; (d) erro `409` exibe snackbar com mensagem da API; (e) botão "Nova Peça" oculto para role OPERATOR
 
 ---
 
 #### US-050 — Consumo de peças em OSs (4 pts)
 
 **Backend**
-1. `POST /api/v1/maintenance/work-orders/{id}/parts` registra consumo (SUPERVISOR+); body: `{ "sparePartId": UUID, "quantity": N }
-2. Dentro do mesmo `@Transactional`: cria `WorkOrderPart`, decrementa `sparePart.stockQty -= quantity`
-3. Estoque insuficiente retorna `422` com `{ "message": "Estoque insuficiente: disponível N, solicitado M" }`
-4. OS inexistente ou peça inexistente retorna `404`
-5. `GET /api/v1/maintenance/work-orders/{id}/parts` lista peças consumidas da OS (OPERATOR+); retorna `List<WorkOrderPartResponse>`
-6. `DELETE /api/v1/maintenance/work-orders/{id}/parts/{partId}` remove consumo e restaura estoque (SUPERVISOR+); retorna `204`
+1. `POST /api/v1/maintenance/work-orders/{id}/parts` registra consumo (SUPERVISOR+); `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`; `AddWorkOrderPartRequest` record com: `@NotNull UUID sparePartId`, `@NotNull @Min(1) Integer quantity`; `quantity=0` retorna `400 { "message": "Quantidade deve ser maior que zero" }` (`@Min(1)`)
+2. Dentro do mesmo `@Transactional`: (1) valida existência da OS (`WorkOrderRepository.findById`) — `404` se ausente; (2) valida existência da peça (`SparePartRepository.findById`) — `404 { "message": "Peça não encontrada" }` se ausente; (3) valida `sparePart.isActive()=true` — `422 { "message": "Peça inativa não pode ser consumida" }` se inativa; (4) valida `sparePart.stockQty - quantity >= 0` — `422 { "message": "Estoque insuficiente: disponível N, solicitado M" }` se insuficiente; (5) cria `WorkOrderPart` (com `addedBy = username`, `addedAt = LocalDateTime.now()`); (6) decrementa `sparePart.stockQty -= quantity`; retorna `201 WorkOrderPartResponse`
+3. `WorkOrderPartResponse` record: `id` (UUID), `sparePartId`, `sparePartCode`, `sparePartName`, `quantity`, `addedBy`, `addedAt`; campos `sparePartCode` e `sparePartName` populados via projeção ou `sparePart` carregado — sem N+1 (usar `@Query` com JOIN FETCH ou projeção de interface)
+4. `GET /api/v1/maintenance/work-orders/{id}/parts` lista peças consumidas da OS (OPERATOR+); `@PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")`; OS inexistente retorna `404`; retorna `List<WorkOrderPartResponse>` (pode ser vazia — `[]`)
+5. `DELETE /api/v1/maintenance/work-orders/{id}/parts/{partId}` remove consumo e restaura estoque (SUPERVISOR+); `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`; dentro do mesmo `@Transactional`: (1) valida existência da OS e do `WorkOrderPart` (pertencente à OS) — `404` se ausente; (2) restaura `sparePart.stockQty += workOrderPart.quantity`; (3) deleta `WorkOrderPart`; retorna `204`
+6. `AuditAction` enum: adicionar `PART_CONSUMED` e `PART_CONSUMPTION_REMOVED`; `AddWorkOrderPartUseCase` chama `auditService.log(username, PART_CONSUMED, "WorkOrderPart", id, Map.of("workOrderId", ..., "sparePartId", ..., "quantity", ...))`; remoção idem com `PART_CONSUMPTION_REMOVED`
+7. Teste unitário `AddWorkOrderPartUseCaseTest`: (a) consumo bem-sucedido — `save(workOrderPart)` + `stockQty` decrementado + `auditService.log(PART_CONSUMED)` confirmados; (b) estoque insuficiente (`stockQty=2, quantity=3`) → `422` sem `save()`; (c) OS inexistente → `404` antes de qualquer operação no estoque; (d) peça inexistente → `404`; (e) peça inativa → `422 "Peça inativa"`; (f) `quantity=0` → `400` (Bean Validation antes de entrar no use case)
 
 **Frontend**
-7. Seção "Peças Utilizadas" na página de detalhe da OS com tabela: peça, quantidade, adicionada por, data
-8. Botão "+ Adicionar Peça" (SUPERVISOR+): dialog com autocomplete de peça (busca por código ou nome) + campo quantidade
-9. Botão de lixeira por linha (SUPERVISOR+) com confirmação
-10. Estoque atual da peça exibido no dialog de adição para informar o técnico
+8. Seção "Peças Utilizadas" adicionada à página de detalhe da OS (`/maintenance/work-orders/{id}`): tabela com colunas peça (código + nome), quantidade, adicionada por, data; estado de loading: skeleton de 2 linhas; empty state: "Nenhuma peça registrada nesta OS"
+9. Botão "+ Adicionar Peça" (SUPERVISOR+, `@if (canEdit())`): abre `MatDialog` com autocomplete de peça (`MatAutocomplete`) que busca por código ou nome via `GET /api/v1/maintenance/spare-parts` com debounce de 300 ms; cada opção exibe `[{code}] {name} — Estoque: {stockQty} {unit}`; campo quantidade (`@Min(1)`); saldo atual da peça selecionada exibido abaixo do campo de quantidade como lembrete; botão "Adicionar" desabilitado enquanto inválido ou `isSaving()`; sucesso: fecha dialog + snackbar "Peça adicionada" + seção "Peças Utilizadas" recarregada
+10. Erro `422` (estoque insuficiente) exibido em snackbar de erro com a mensagem literal da API ("Estoque insuficiente: disponível N, solicitado M"); erro `404` (peça removida entre seleção e submit) exibe "Peça não encontrada. Recarregue a página."
+11. Botão lixeira por linha (SUPERVISOR+): `MatDialog` de confirmação "Remover peça {nome} (qtd: {N}) da OS? O estoque será restaurado."; confirmar → `DELETE`; snackbar "Consumo removido e estoque restaurado"; linha removida da tabela (optimistic removal após confirmação)
+12. `ChangeDetectionStrategy.OnPush`, standalone, signals; `parts = signal<WorkOrderPartResponse[]>([])`, `isLoadingParts = signal(false)`, `canEdit = computed(() => role === 'SUPERVISOR' || role === 'ADMIN')`
+13. Spec `work-order-detail.component.spec.ts` — casos para a seção de peças: (a) tabela exibe 2 peças mockadas; (b) empty state quando `parts()` vazio; (c) erro `422` exibe snackbar com mensagem da API; (d) botão "+ Adicionar Peça" oculto para role OPERATOR; (e) clique em lixeira abre dialog de confirmação
 
 ---
 
 #### US-051 — Alertas de estoque mínimo (2 pts)
 
 **Backend**
-1. `AddWorkOrderPartUseCase`: após decrementar estoque, se `stockQty < minStockQty`, chama `NotificationService.broadcast()` com título "Estoque baixo: {nome da peça}" (via ADR-013)
-2. Debounce: não dispara notificação de estoque baixo para a mesma peça se já existe `Notification` nas últimas 24h com o título correspondente
-3. `GET /api/v1/maintenance/spare-parts?belowMin=true` retorna apenas peças abaixo do mínimo (usado no dashboard)
+1. `AddWorkOrderPartUseCase`: após decrementar `sparePart.stockQty`, se `stockQty < minStockQty`, chama `notificationService.broadcast(title, body, severity)` com: `title = "Estoque baixo: " + sparePart.getName()`, `body = "Estoque atual: " + stockQty + " " + unit + " (mínimo: " + minStockQty + ")"`, `severity = WARNING`; o disparo de notificação **não** está no `@Transactional` do consumo — chama `notificationService` após o commit (via `@TransactionalEventListener` ou chamada após `save()` fora da transação, conforme padrão já estabelecido em ADR-013)
+2. Debounce de 24 h: antes de chamar `notificationService.broadcast()`, verifica `notificationRepository.existsByTitleAndCreatedAtAfter("Estoque baixo: " + sparePart.getName(), LocalDateTime.now().minusHours(24))`; se `true`, pula a notificação sem erro; `NotificationRepository` já possui `existsByMetricAndCreatedAtAfter` — adicionar método análogo `existsByTitleAndCreatedAtAfter(String title, LocalDateTime since)` (JPQL simples)
+3. `UpdateSparePartStockUseCase` (ajuste manual): após atualizar `stockQty`, aplica a mesma lógica de debounce + `notificationService.broadcast()` se o resultado ainda estiver abaixo do mínimo — garante alerta mesmo em saídas manuais
+4. `GET /api/v1/maintenance/spare-parts?belowMin=true` retorna apenas peças ativas com `stockQty < minStockQty`; `SparePartRepository` deve ter método `List<SparePart> findAllByActiveTrueAndStockQtyLessThanMinStockQty()` (ou JPQL equivalente); endpoint já coberto pelo AC#5 da US-049 — confirmar que o filtro `belowMin=true` está implementado na query
+5. Teste unitário `AddWorkOrderPartUseCaseTest` — casos adicionais para US-051: (a) consumo que resulta em `stockQty < minStockQty` sem notificação recente → `notificationService.broadcast()` chamado uma vez; (b) consumo abaixo do mínimo com notificação nas últimas 24 h → `notificationService.broadcast()` **não** chamado (debounce); (c) consumo que mantém `stockQty >= minStockQty` → `notificationService.broadcast()` não chamado
 
 **Frontend**
-4. Card "Estoque Crítico" na rota `/maintenance/dashboard` (ou na listagem de equipamentos): lista de peças com `stockQty < minStockQty` com quantidade atual e mínima
-5. Badge numérico "Estoque Crítico" no submenu de Maintenance no nav (contagem de peças abaixo do mínimo)
+6. Card "Estoque Crítico" adicionado à rota `/maintenance/dashboard` (seção superior, antes dos KPIs de OSs): exibe lista de `SparePartResponse` com `belowMin=true` carregados via `GET /api/v1/maintenance/spare-parts?belowMin=true` na inicialização; cada item: código + nome, barra de progresso `[stockQty / minStockQty]` (ex: "3 / 10 un"), cor da barra vermelha (`#EF4444`); empty state do card: "Nenhuma peça abaixo do estoque mínimo" com ícone check verde; card com `isLoading()` exibe skeleton de 3 linhas
+7. Badge numérico "Estoque Crítico" no item "Peças" do submenu de Manutenção no `NavComponent`: `MatBadge` com a contagem de peças `belowMin=true`; polling a cada 5 minutos via `interval(300_000).pipe(startWith(0), switchMap(() => maintenanceService.countBelowMin()), takeUntilDestroyed())`; `[matBadgeHidden]="belowMinCount() === 0"`; `belowMinCount = signal<number>(0)`
+8. `MaintenanceService`: adicionar método `listBelowMin(): Observable<SparePartResponse[]>` (`GET ?belowMin=true`) e `countBelowMin(): Observable<number>` (chama `listBelowMin()` e retorna `arr.length`)
+9. Erro ao carregar card "Estoque Crítico" exibe mensagem "Não foi possível carregar o estoque crítico" dentro do card — não bloqueia o restante do dashboard
+10. `ChangeDetectionStrategy.OnPush`, standalone, signals; `belowMinParts = signal<SparePartResponse[]>([])`, `isLoadingCritical = signal(false)`, `belowMinCount = signal<number>(0)`
+11. Spec `maintenance-dashboard.component.spec.ts`: (a) card exibe 2 peças mockadas com `belowMin=true`; (b) empty state exibido quando lista vazia; (c) badge no nav exibido quando `belowMinCount() > 0`; (d) badge oculto quando `belowMinCount() = 0`
+
+---
+
+#### US-090 — Tech debt Sprint 19 (1 pt)
+
+> Cobre 5 itens identificados por Beatriz (SEC) e Helena (SH) na revisão da Sprint 19: race condition em `evaluateNow`, regra URL-level ausente para `/shifts/**`, ausência de auditoria nos shift use cases, acoplamento de `UpdateShiftUseCase` e timeout sem cleanup no frontend.
+
+**Backend — SEC-063: race condition em `evaluateNow` (`AtomicReference`)**
+1. `AlertEvaluatorUseCase` (ou `AlertEvaluatorJob`): substituir o padrão `AtomicReference.get()` + `set()` não-atômicos por `compareAndSet(expected, newValue)` — garante que a atualização do estado de "em execução" seja atômica; implementação: `AtomicReference<Boolean> running = new AtomicReference<>(false); if (!running.compareAndSet(false, true)) return;` no início do `execute()`; `finally { running.set(false); }` ao final
+2. Teste unitário: dois threads chamam `execute()` simultaneamente via `ExecutorService` → apenas um efetua a avaliação (o outro retorna imediatamente); verificar com `verify(alertThresholdRepository, times(1)).findAllByActiveTrue()`
+
+**Backend — SEC-064: SecurityConfig sem regra URL-level para `/api/v1/admin/shifts/**`**
+3. `SecurityConfig`: adicionar regras URL-level explícitas para turnos — `GET /api/v1/admin/shifts/**` → `hasAnyRole("OPERATOR","SUPERVISOR","ADMIN")`; `POST /api/v1/admin/shifts/**` e `PUT /api/v1/admin/shifts/**` → `hasRole("ADMIN")`; `@PreAuthorize` permanece nos métodos como segunda barreira (conforme ADR-033 Decisão 5)
+
+**Backend — SEC-065: shift use cases sem `auditService.log()`**
+4. `AuditAction` enum: adicionar constantes `SHIFT_CREATED`, `SHIFT_UPDATED`, `SHIFT_DEACTIVATED`
+5. `CreateShiftUseCase.execute()`: chamar `auditService.log(username, SHIFT_CREATED, "Shift", id, Map.of("name", shift.getName()))` após `save()`; assinatura atualizada para receber `username` passado pelo `ShiftController` via `principal.getName()`
+6. `UpdateShiftUseCase.execute()`: idem com `SHIFT_UPDATED` e `Map.of("name", ...)`
+7. `DeactivateShiftUseCase.execute()`: idem com `SHIFT_DEACTIVATED`; `ShiftController` passa `principal.getName()` nos três métodos
+
+**Backend — SH-52: `UpdateShiftUseCase` chama `CreateShiftUseCase.overlaps()` diretamente**
+8. Mover o método `overlaps(Shift candidate, List<Shift> existing)` de `CreateShiftUseCase` para `ShiftResolverService` (que já existe como utilitário compartilhado conforme ADR-016 Decisão 3); `CreateShiftUseCase` e `UpdateShiftUseCase` passam a injetar `ShiftResolverService` e chamar `shiftResolverService.overlaps(...)`; elimina o acoplamento direto entre use cases; nenhuma mudança de comportamento — apenas refatoração de local
+
+**Frontend — SH-53: `ShiftListComponent.showSnackbar` usa `setTimeout` sem cleanup**
+9. `ShiftListComponent`: substituir `setTimeout(() => this.snackbarMessage.set(null), 3000)` por `timer(3000).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.snackbarMessage.set(null))`; `DestroyRef` injetado via `inject(DestroyRef)` no construtor (padrão já usado em outros componentes do projeto); garante cancelamento do timer se o componente for destruído antes dos 3 s
+10. Spec `shift-list.component.spec.ts`: verificar que `snackbarMessage()` volta a `null` após 3 s (usar `fakeAsync` + `tick(3000)`); verificar que a subscription é limpa no `ngOnDestroy` (sem timer ativo)
 
 ---
 
@@ -1294,11 +1576,11 @@
 | ✅ Sprint 12 | User management UI + self-service password | US-037, US-038, US-039 | ADR-010 |
 | ✅ Sprint 13 | Análise de causa raiz — 5-Porquês em NCs | US-052, US-053 | ADR-015 |
 | ✅ Sprint 14 | Gestão de fornecedores + score de qualidade | US-057, US-058 | ADR-017 |
-| ⬜ Sprint 15 | Preventive maintenance scheduling + calendar | US-040, US-041, US-042 | ADR-011 |
-| ⬜ Sprint 16 | Advanced analytics: OEE trend, NC pareto, MTTR trend | US-043, US-044, US-045 | ADR-012 |
-| ⬜ Sprint 17 | Planned Downtime — paradas planejadas no OEE | US-073, US-074 | ADR-025 |
-| ⬜ Sprint 18 | Threshold alerts + central de notificações in-app | US-046, US-047, US-048 | ADR-013 |
-| ⬜ Sprint 19 | Gestão de turnos + rastreabilidade por turno | US-054, US-055, US-056 | ADR-016 |
+| ✅ Sprint 15 | Preventive maintenance scheduling + calendar | US-040, US-041, US-042 | ADR-011 |
+| ✅ Sprint 16 | Advanced analytics: OEE trend, NC pareto, MTTR trend + tech debt | US-043, US-044, US-045, US-059 | ADR-012, ADR-031 |
+| ✅ Sprint 17 | Planned Downtime + correção residual BUG-2 (qms-analytics) | US-073, US-074, US-060 | ADR-025, ADR-032 |
+| ✅ Sprint 18 | Tech debt Sprint 17 + threshold alerts + notificações in-app | US-088, US-046, US-047, US-048 | ADR-013, ADR-033 |
+| ✅ Sprint 19 | Gestão de turnos + rastreabilidade por turno | US-054, US-055, US-056, US-089 | ADR-016, ADR-034 |
 | ⬜ Sprint 20 | Peças e insumos (spare parts inventory) | US-049, US-050, US-051 | ADR-014 |
 | ⬜ Sprint 21 | Anexos — upload de documentos e imagens | US-059, US-060 | ADR-018 |
 | ⬜ Sprint 22 | SLA e escalação automática | US-061, US-062 | ADR-019 |
