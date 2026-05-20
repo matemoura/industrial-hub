@@ -1,0 +1,165 @@
+<div class="wo-detail-page">
+
+  <div class="page-header">
+    <a routerLink="/maintenance/work-orders" class="back-link">← Ordens de Serviço</a>
+    @if (workOrder()) {
+      <h2>OS — {{ workOrder()!.title }}</h2>
+    }
+  </div>
+
+  <!-- Snackbar -->
+  @if (snackbar()) {
+    <div
+      class="snackbar"
+      [class.snackbar--error]="snackbar()!.type === 'error'"
+      data-testid="snackbar"
+      role="alert"
+    >
+      {{ snackbar()!.message }}
+    </div>
+  }
+
+  @if (loading()) {
+    <p class="loading-msg">Carregando…</p>
+  } @else if (!workOrder()) {
+    <p class="error-msg" data-testid="not-found">Ordem de serviço não encontrada.</p>
+  } @else {
+    <!-- WO Summary -->
+    <div class="wo-summary">
+      <div class="wo-summary__item">
+        <span class="wo-summary__label">Equipamento</span>
+        <span>{{ workOrder()!.equipmentCode }} — {{ workOrder()!.equipmentName }}</span>
+      </div>
+      <div class="wo-summary__item">
+        <span class="wo-summary__label">Tipo</span>
+        <span>{{ workOrder()!.type === 'CORRECTIVE' ? 'Corretiva' : 'Preventiva' }}</span>
+      </div>
+      <div class="wo-summary__item">
+        <span class="wo-summary__label">Status</span>
+        <span class="status-chip" [attr.data-status]="workOrder()!.status">
+          {{ woStatusLabels[workOrder()!.status] }}
+        </span>
+      </div>
+      <div class="wo-summary__item">
+        <span class="wo-summary__label">Prioridade</span>
+        <span>{{ workOrder()!.priority }}</span>
+      </div>
+      <div class="wo-summary__item">
+        <span class="wo-summary__label">Aberta em</span>
+        <span>{{ formatDate(workOrder()!.openedAt) }}</span>
+      </div>
+    </div>
+
+    <!-- Parts Section -->
+    <section class="parts-section">
+      <div class="parts-header">
+        <h3>Peças Consumidas</h3>
+        @if (canEdit()) {
+          <button
+            type="button"
+            class="btn btn--primary"
+            data-testid="btn-add-part"
+            (click)="openAddForm()"
+          >
+            + Adicionar Peça
+          </button>
+        }
+      </div>
+
+      @if (partsLoading()) {
+        <p class="loading-msg">Carregando peças…</p>
+      } @else if (parts().length === 0) {
+        <div class="empty-state" data-testid="parts-empty">
+          <p>Nenhuma peça consumida nesta OS.</p>
+        </div>
+      } @else {
+        <table class="parts-table" data-testid="parts-table">
+          <thead>
+            <tr>
+              <th>Código</th>
+              <th>Peça</th>
+              <th>Qtd.</th>
+              <th>Adicionado por</th>
+              <th>Adicionado em</th>
+              @if (canEdit()) {
+                <th></th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (part of parts(); track part.id) {
+              <tr class="part-row" data-testid="part-row">
+                <td class="part-code">{{ part.sparePartCode }}</td>
+                <td>{{ part.sparePartName }}</td>
+                <td>{{ part.quantity }}</td>
+                <td>{{ part.addedBy }}</td>
+                <td>{{ formatDate(part.addedAt) }}</td>
+                @if (canEdit()) {
+                  <td>
+                    <button
+                      type="button"
+                      class="btn-icon btn-icon--danger"
+                      data-testid="btn-remove-part"
+                      aria-label="Remover peça"
+                      (click)="openConfirmRemove(part.id)"
+                    >
+                      🗑
+                    </button>
+                  </td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </section>
+  }
+</div>
+
+<!-- Add Part Dialog -->
+@if (showAddForm()) {
+  <div class="dialog-overlay" role="dialog" aria-modal="true" aria-label="Adicionar peça">
+    <div class="dialog">
+      <h3>Adicionar Peça à OS</h3>
+      <form [formGroup]="addForm" (ngSubmit)="submitAddPart()">
+        <div class="form-field">
+          <label>Peça *</label>
+          <select formControlName="sparePartId">
+            <option value="">Selecione…</option>
+            @for (sp of spareParts(); track sp.id) {
+              <option [value]="sp.id">{{ sp.code }} — {{ sp.name }} (estoque: {{ sp.stockQty }})</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label>Quantidade *</label>
+          <input formControlName="quantity" type="number" min="1" />
+        </div>
+        <div class="dialog-actions">
+          <button type="button" class="btn btn--secondary" (click)="cancelAddForm()">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="addForm.invalid || submitting()">
+            {{ submitting() ? 'Adicionando…' : 'Adicionar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Confirm Remove Dialog -->
+@if (confirmRemoveId()) {
+  <div class="dialog-overlay" role="dialog" aria-modal="true" aria-label="Confirmar remoção">
+    <div class="dialog dialog--sm">
+      <h3>Remover Peça</h3>
+      <p>Confirma a remoção desta peça? O estoque será restaurado.</p>
+      <div class="dialog-actions">
+        <button type="button" class="btn btn--secondary" data-testid="btn-cancel-remove" (click)="cancelRemove()">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn--danger" data-testid="btn-confirm-remove" [disabled]="submitting()" (click)="confirmRemove()">
+          {{ submitting() ? 'Removendo…' : 'Remover' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
