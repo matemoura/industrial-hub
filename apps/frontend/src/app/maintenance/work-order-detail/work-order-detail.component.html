@@ -50,6 +50,12 @@
       </div>
     </div>
 
+    <!-- Attachments Section -->
+    <app-attachment-list
+      entityType="WORK_ORDER"
+      [entityId]="workOrder()!.id"
+    />
+
     <!-- Parts Section -->
     <section class="parts-section">
       <div class="parts-header">

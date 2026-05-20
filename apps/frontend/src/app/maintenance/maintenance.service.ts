@@ -223,6 +223,10 @@ export class MaintenanceService {
     return this.http.get<PageResponse<WorkOrderResponse>>(this.workOrderUrl, { params });
   }
 
+  getWorkOrder(id: string): Observable<WorkOrderResponse> {
+    return this.http.get<WorkOrderResponse>(`${this.workOrderUrl}/${id}`);
+  }
+
   transitionStatus(id: string, status: WorkOrderStatus): Observable<WorkOrderResponse> {
     return this.http.put<WorkOrderResponse>(`${this.workOrderUrl}/${id}/status`, { status });
   }

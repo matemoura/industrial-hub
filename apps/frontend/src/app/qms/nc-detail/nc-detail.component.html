@@ -192,6 +192,11 @@
       </div>
 
       <app-nc-rca [nc]="nc" [role]="role()" />
+
+      <app-attachment-list
+        entityType="NON_CONFORMANCE"
+        [entityId]="nc.id"
+      />
     </div>
   }
 </div>

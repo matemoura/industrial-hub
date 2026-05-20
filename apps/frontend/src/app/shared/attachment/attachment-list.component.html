@@ -1,0 +1,80 @@
+<section class="attachment-section">
+  <div class="attachment-header">
+    <h3 class="attachment-title">
+      <span class="attachment-icon">📎</span>
+      Anexos
+      @if (!isLoading()) {
+        <span class="count">({{ attachments().length }})</span>
+      }
+    </h3>
+
+    @if (canUpload()) {
+      <button
+        type="button"
+        class="btn btn--upload"
+        [disabled]="isUploading()"
+        (click)="fileInput.click()"
+        data-testid="btn-upload"
+      >
+        @if (isUploading()) {
+          <span class="spinner"></span>
+          Enviando…
+        } @else {
+          ↑ Anexar arquivo
+        }
+      </button>
+      <input #fileInput type="file" hidden
+        accept=".jpg,.jpeg,.png,.webp,.pdf,.xlsx,.xls"
+        (change)="onFileSelected($event)" />
+    }
+  </div>
+
+  @if (isLoading()) {
+    <div class="loading-container">
+      <span class="spinner spinner--lg"></span>
+    </div>
+  } @else if (attachments().length === 0) {
+    <p class="empty-state" data-testid="attachments-empty">Nenhum anexo encontrado.</p>
+  } @else {
+    <ul class="attachment-list">
+      @for (a of attachments(); track a.id) {
+        <li class="attachment-item" data-testid="attachment-item">
+          @if (isImage(a) && thumbUrls()[a.id]) {
+            <img [src]="thumbUrls()[a.id]" [alt]="a.originalName" class="thumb" />
+          } @else {
+            <span class="file-icon">📄</span>
+          }
+
+          <div class="attachment-info">
+            <span class="file-name" [title]="a.originalName">{{ a.originalName }}</span>
+            <span class="file-meta">{{ formatSize(a.fileSizeBytes) }} · {{ a.uploadedBy }}</span>
+          </div>
+
+          <div class="attachment-actions">
+            <button
+              type="button"
+              class="btn-icon"
+              title="Baixar / visualizar"
+              (click)="openUrl(a.id)"
+              data-testid="btn-download"
+            >
+              ↗
+            </button>
+
+            @if (canDelete()) {
+              <button
+                type="button"
+                class="btn-icon btn-icon--danger"
+                title="Remover anexo"
+                (click)="deleteAttachment(a.id)"
+                data-testid="btn-delete"
+              >
+                🗑
+              </button>
+            }
+          </div>
+        </li>
+      }
+    </ul>
+  }
+</section>

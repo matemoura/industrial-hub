@@ -11,6 +11,7 @@ import {
   WorkOrderResponse,
 } from '../maintenance.service';
 import { AuthService } from '../../auth/auth.service';
+import { AttachmentService } from '../../shared/attachment/attachment.service';
 
 const WO: WorkOrderResponse = {
   id: 'wo-1',
@@ -71,7 +72,7 @@ describe('WorkOrderDetailComponent', () => {
   ) {
     const listWOParts = listWorkOrderParts ?? vi.fn().mockReturnValue(of(parts));
     const service = {
-      listWorkOrders: vi.fn().mockReturnValue(of({ content: [WO], page: 0, size: 20, totalElements: 1, totalPages: 1 })),
+      getWorkOrder: vi.fn().mockReturnValue(of(WO)),
       listWorkOrderParts: listWOParts,
       listSpareParts: vi.fn().mockReturnValue(of([])),
       addWorkOrderPart: vi.fn(),
@@ -87,6 +88,15 @@ describe('WorkOrderDetailComponent', () => {
         { provide: MaintenanceService, useValue: service },
         { provide: AuthService, useValue: makeAuthService(role) },
         { provide: ActivatedRoute, useValue: makeRoute('wo-1') },
+        {
+          provide: AttachmentService,
+          useValue: {
+            list: vi.fn().mockReturnValue(of([])),
+            upload: vi.fn(),
+            getDownloadUrl: vi.fn().mockReturnValue(of({ url: '' })),
+            delete: vi.fn(),
+          },
+        },
       ],
     }).compileComponents();
 

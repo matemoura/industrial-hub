@@ -4,12 +4,13 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ActionResponse, NcResponse, NcStatus, QmsService } from '../qms.service';
 import { AuthService } from '../../auth/auth.service';
 import { NcRcaComponent } from './nc-rca/nc-rca.component';
+import { AttachmentListComponent } from '../../shared/attachment/attachment-list.component';
 
 @Component({
   selector: 'app-nc-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, NcRcaComponent],
+  imports: [RouterLink, FormsModule, NcRcaComponent, AttachmentListComponent],
   templateUrl: './nc-detail.component.html',
   styleUrl: './nc-detail.component.scss',
 })

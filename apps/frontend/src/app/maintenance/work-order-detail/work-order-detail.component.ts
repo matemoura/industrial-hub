@@ -20,12 +20,13 @@ import {
   WorkOrderStatus,
 } from '../maintenance.service';
 import { AuthService } from '../../auth/auth.service';
+import { AttachmentListComponent } from '../../shared/attachment/attachment-list.component';
 
 @Component({
   selector: 'app-work-order-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [ReactiveFormsModule, RouterLink, AttachmentListComponent],
   templateUrl: './work-order-detail.component.html',
   styleUrl: './work-order-detail.component.scss',
 })
@@ -76,16 +77,18 @@ export class WorkOrderDetailComponent implements OnInit {
 
   loadWorkOrder(id: string): void {
     this.loading.set(true);
-    this.maintenanceService.listWorkOrders().subscribe({
-      next: (page) => {
-        const wo = page.content.find((w) => w.id === id) ?? null;
-        this.workOrder.set(wo);
-        this.loading.set(false);
-      },
-      error: () => {
-        this.loading.set(false);
-      },
-    });
+    this.maintenanceService.getWorkOrder(id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (wo) => {
+          this.workOrder.set(wo);
+          this.loading.set(false);
+        },
+        error: () => {
+          this.workOrder.set(null);
+          this.loading.set(false);
+        },
+      });
   }
 
   loadParts(workOrderId: string): void {
