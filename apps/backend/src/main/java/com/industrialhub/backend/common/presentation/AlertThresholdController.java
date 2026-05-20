@@ -88,11 +88,20 @@ public class AlertThresholdController {
     public ResponseEntity<Map<String, Integer>> evaluateNow(Principal principal) {
         Instant now = Instant.now();
         Instant last = lastManualEvaluation.get();
+
         if (Duration.between(last, now).compareTo(EVALUATE_NOW_COOLDOWN) < 0) {
             long remaining = EVALUATE_NOW_COOLDOWN.toSeconds() - Duration.between(last, now).toSeconds();
             throw new EvaluateNowCooldownException(remaining);
         }
-        lastManualEvaluation.set(now);
+
+        if (!lastManualEvaluation.compareAndSet(last, now)) {
+            Instant updatedLast = lastManualEvaluation.get();
+            long remaining = EVALUATE_NOW_COOLDOWN.toSeconds() - Duration.between(updatedLast, now).toSeconds();
+            if (remaining > 0) {
+                throw new EvaluateNowCooldownException(remaining);
+            }
+        }
+
         int evaluated = alertEvaluatorUseCase.execute();
         auditService.log(
                 principal != null ? principal.getName() : "system",

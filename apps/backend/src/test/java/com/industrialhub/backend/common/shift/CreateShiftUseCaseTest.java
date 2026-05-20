@@ -1,8 +1,10 @@
 package com.industrialhub.backend.common.shift;
 
+import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.common.application.dto.CreateShiftRequest;
 import com.industrialhub.backend.common.application.usecase.CreateShiftUseCase;
 import com.industrialhub.backend.common.application.dto.ShiftResponse;
+import com.industrialhub.backend.common.application.usecase.ShiftResolverService;
 import com.industrialhub.backend.common.domain.Shift;
 import com.industrialhub.backend.common.infrastructure.ShiftRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,11 +28,16 @@ class CreateShiftUseCaseTest {
     @Mock
     private ShiftRepository shiftRepository;
 
+    @Mock
+    private AuditService auditService;
+
+    private ShiftResolverService shiftResolverService;
     private CreateShiftUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new CreateShiftUseCase(shiftRepository);
+        shiftResolverService = new ShiftResolverService();
+        useCase = new CreateShiftUseCase(shiftRepository, shiftResolverService, auditService);
     }
 
     // (a) turno diurno criado com sucesso
@@ -50,12 +57,13 @@ class CreateShiftUseCaseTest {
         CreateShiftRequest request = new CreateShiftRequest("Turno A",
                 LocalTime.of(6, 0), LocalTime.of(14, 0), false);
 
-        ShiftResponse response = useCase.execute(request);
+        ShiftResponse response = useCase.execute(request, "admin");
 
         assertThat(response.name()).isEqualTo("Turno A");
         assertThat(response.overnight()).isFalse();
         assertThat(response.active()).isTrue();
         verify(shiftRepository).save(any());
+        verify(auditService).log(eq("admin"), any(), eq("Shift"), any(String.class), any());
     }
 
     // (b) turno noturno 22:00–06:00 criado com sucesso
@@ -75,7 +83,7 @@ class CreateShiftUseCaseTest {
         CreateShiftRequest request = new CreateShiftRequest("Turno Noturno",
                 LocalTime.of(22, 0), LocalTime.of(6, 0), true);
 
-        ShiftResponse response = useCase.execute(request);
+        ShiftResponse response = useCase.execute(request, "admin");
 
         assertThat(response.name()).isEqualTo("Turno Noturno");
         assertThat(response.overnight()).isTrue();
@@ -99,7 +107,7 @@ class CreateShiftUseCaseTest {
         CreateShiftRequest request = new CreateShiftRequest("Turno B",
                 LocalTime.of(8, 0), LocalTime.of(16, 0), false);
 
-        assertThatThrownBy(() -> useCase.execute(request))
+        assertThatThrownBy(() -> useCase.execute(request, "admin"))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("Turno A");
 
@@ -112,7 +120,7 @@ class CreateShiftUseCaseTest {
         CreateShiftRequest request = new CreateShiftRequest("Turno X",
                 LocalTime.of(14, 0), LocalTime.of(6, 0), false);
 
-        assertThatThrownBy(() -> useCase.execute(request))
+        assertThatThrownBy(() -> useCase.execute(request, "admin"))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("endTime deve ser posterior a startTime");
 

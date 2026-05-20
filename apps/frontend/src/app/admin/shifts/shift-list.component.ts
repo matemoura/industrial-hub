@@ -1,10 +1,13 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   OnInit,
   inject,
   signal,
 } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { timer } from 'rxjs';
 import {
   FormBuilder,
   FormGroup,
@@ -37,6 +40,7 @@ type DialogMode = 'create' | 'deactivate' | null;
 export class ShiftListComponent implements OnInit {
   private readonly adminService = inject(AdminService);
   private readonly fb = inject(FormBuilder);
+  private readonly destroyRef = inject(DestroyRef);
 
   readonly shifts = signal<Shift[]>([]);
   readonly loading = signal(true);
@@ -144,6 +148,8 @@ export class ShiftListComponent implements OnInit {
 
   private showSnackbar(message: string, type: 'success' | 'error'): void {
     this.snackbar.set({ message, type });
-    setTimeout(() => this.snackbar.set(null), 4000);
+    timer(4000)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => this.snackbar.set(null));
   }
 }

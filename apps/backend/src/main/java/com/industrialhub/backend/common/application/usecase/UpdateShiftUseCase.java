@@ -1,7 +1,9 @@
 package com.industrialhub.backend.common.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.common.application.dto.ShiftResponse;
 import com.industrialhub.backend.common.application.dto.UpdateShiftRequest;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.common.domain.Shift;
 import com.industrialhub.backend.common.domain.ShiftNotFoundException;
 import com.industrialhub.backend.common.infrastructure.ShiftRepository;
@@ -9,19 +11,26 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
 public class UpdateShiftUseCase {
 
     private final ShiftRepository shiftRepository;
+    private final ShiftResolverService shiftResolverService;
+    private final AuditService auditService;
 
-    public UpdateShiftUseCase(ShiftRepository shiftRepository) {
+    public UpdateShiftUseCase(ShiftRepository shiftRepository,
+                               ShiftResolverService shiftResolverService,
+                               AuditService auditService) {
         this.shiftRepository = shiftRepository;
+        this.shiftResolverService = shiftResolverService;
+        this.auditService = auditService;
     }
 
     @Transactional
-    public ShiftResponse execute(UUID id, UpdateShiftRequest request) {
+    public ShiftResponse execute(UUID id, UpdateShiftRequest request, String updatedBy) {
         Shift shift = shiftRepository.findById(id)
                 .orElseThrow(() -> new ShiftNotFoundException(id));
 
@@ -45,7 +54,7 @@ public class UpdateShiftUseCase {
             if (existing.getId().equals(id)) {
                 continue; // Excluir o próprio turno da verificação
             }
-            if (CreateShiftUseCase.overlaps(existing, candidate)) {
+            if (shiftResolverService.overlaps(existing, candidate)) {
                 throw new IllegalStateException(
                         "Turno sobrepõe turno existente: " + existing.getName());
             }
@@ -57,6 +66,12 @@ public class UpdateShiftUseCase {
         shift.setOvernight(request.overnight());
 
         Shift saved = shiftRepository.save(shift);
+
+        auditService.log(updatedBy, AuditAction.SHIFT_UPDATED, "Shift", id.toString(),
+                Map.of("name", request.name(),
+                       "startTime", request.startTime().toString(),
+                       "endTime", request.endTime().toString()));
+
         return ShiftResponse.from(saved);
     }
 }

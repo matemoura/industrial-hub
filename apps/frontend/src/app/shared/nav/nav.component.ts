@@ -19,6 +19,7 @@ import {
   severityColor,
   formatNotificationDate,
 } from '../../notifications/notification.utils';
+import { MaintenanceService } from '../../maintenance/maintenance.service';
 
 @Component({
   selector: 'app-nav',
@@ -31,6 +32,7 @@ import {
 export class NavComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
+  private readonly maintenanceService = inject(MaintenanceService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly role = this.authService.role;
@@ -43,6 +45,8 @@ export class NavComponent implements OnInit {
   readonly panelOpen = signal(false);
   readonly panelLoading = signal(false);
 
+  readonly belowMinCount = signal<number>(0);
+
   ngOnInit(): void {
     interval(60_000)
       .pipe(
@@ -52,6 +56,17 @@ export class NavComponent implements OnInit {
       )
       .subscribe({
         next: (res) => this.unreadCount.set(res.count),
+        error: () => { /* polling falha silenciosamente */ },
+      });
+
+    interval(300_000)
+      .pipe(
+        startWith(0),
+        switchMap(() => this.maintenanceService.countBelowMin()),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (count) => this.belowMinCount.set(count),
         error: () => { /* polling falha silenciosamente */ },
       });
   }

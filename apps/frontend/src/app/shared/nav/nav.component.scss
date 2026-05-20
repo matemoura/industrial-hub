@@ -79,6 +79,28 @@
   }
 }
 
+.nav-link-badge-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.nav-stock-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #fbbf24;
+  color: #78350f;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 /* ── Notification Bell ── */
 .notification-wrapper {
   position: relative;

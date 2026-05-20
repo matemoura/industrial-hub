@@ -1,26 +1,34 @@
 package com.industrialhub.backend.common.application.usecase;
 
+import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.common.application.dto.CreateShiftRequest;
 import com.industrialhub.backend.common.application.dto.ShiftResponse;
+import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.common.domain.Shift;
 import com.industrialhub.backend.common.infrastructure.ShiftRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Service
 public class CreateShiftUseCase {
 
     private final ShiftRepository shiftRepository;
+    private final ShiftResolverService shiftResolverService;
+    private final AuditService auditService;
 
-    public CreateShiftUseCase(ShiftRepository shiftRepository) {
+    public CreateShiftUseCase(ShiftRepository shiftRepository,
+                               ShiftResolverService shiftResolverService,
+                               AuditService auditService) {
         this.shiftRepository = shiftRepository;
+        this.shiftResolverService = shiftResolverService;
+        this.auditService = auditService;
     }
 
     @Transactional
-    public ShiftResponse execute(CreateShiftRequest request) {
+    public ShiftResponse execute(CreateShiftRequest request, String addedBy) {
         // Validação: turno não-noturno exige endTime > startTime
         if (!request.overnight() && !request.endTime().isAfter(request.startTime())) {
             throw new IllegalArgumentException(
@@ -37,57 +45,20 @@ public class CreateShiftUseCase {
                 .build();
 
         for (Shift existing : activeShifts) {
-            if (overlaps(existing, candidate)) {
+            if (shiftResolverService.overlaps(existing, candidate)) {
                 throw new IllegalStateException(
                         "Turno sobrepõe turno existente: " + existing.getName());
             }
         }
 
         Shift saved = shiftRepository.save(candidate);
+
+        auditService.log(addedBy, AuditAction.SHIFT_CREATED, "Shift", saved.getId().toString(),
+                Map.of("name", saved.getName(),
+                       "startTime", saved.getStartTime().toString(),
+                       "endTime", saved.getEndTime().toString(),
+                       "overnight", String.valueOf(saved.isOvernight())));
+
         return ShiftResponse.from(saved);
-    }
-
-    /**
-     * Verifica sobreposição entre dois turnos usando intervalos em minutos do dia.
-     * Para turnos noturnos, desdobra em dois intervalos: [start, 1440) e [0, end).
-     */
-    static boolean overlaps(Shift a, Shift b) {
-        List<int[]> rangesA = toMinuteRanges(a);
-        List<int[]> rangesB = toMinuteRanges(b);
-
-        for (int[] ra : rangesA) {
-            for (int[] rb : rangesB) {
-                if (rangesIntersect(ra, rb)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private static List<int[]> toMinuteRanges(Shift s) {
-        int start = s.getStartTime().toSecondOfDay() / 60;
-        int end = s.getEndTime().toSecondOfDay() / 60;
-
-        List<int[]> ranges = new ArrayList<>();
-        if (!s.isOvernight()) {
-            ranges.add(new int[]{start, end});
-        } else {
-            // Desdobra overnight em [start, 1440) e [0, end)
-            if (start < 1440) {
-                ranges.add(new int[]{start, 1440});
-            }
-            if (end > 0) {
-                ranges.add(new int[]{0, end});
-            }
-        }
-        return ranges;
-    }
-
-    /**
-     * Verifica intersecção de dois intervalos semi-abertos [a0, a1) e [b0, b1).
-     */
-    private static boolean rangesIntersect(int[] ra, int[] rb) {
-        return ra[0] < rb[1] && rb[0] < ra[1];
     }
 }

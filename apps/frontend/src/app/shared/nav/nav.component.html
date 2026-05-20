@@ -12,7 +12,14 @@
     <a routerLink="/processes" routerLinkActive="active">Processos</a>
     <a routerLink="/summary" routerLinkActive="active">Resumo</a>
     <a routerLink="/qms/non-conformances" routerLinkActive="active">Não-Conformidades</a>
-    <a routerLink="/maintenance/equipment" routerLinkActive="active">Manutenção</a>
+    <a routerLink="/maintenance/equipment" routerLinkActive="active" class="nav-link-badge-wrapper">
+      Manutenção
+      @if (belowMinCount() > 0) {
+        <span class="nav-stock-badge" data-testid="below-min-badge" aria-label="{{ belowMinCount() }} peças abaixo do mínimo">
+          {{ belowMinCount() }}
+        </span>
+      }
+    </a>
     @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
       <a routerLink="/analytics/oee" routerLinkActive="active">Analytics</a>
     }

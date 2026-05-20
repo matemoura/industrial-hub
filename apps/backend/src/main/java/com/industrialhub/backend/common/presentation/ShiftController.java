@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -39,8 +40,10 @@ public class ShiftController {
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ShiftResponse> create(@Valid @RequestBody CreateShiftRequest request) {
-        ShiftResponse response = createShift.execute(request);
+    public ResponseEntity<ShiftResponse> create(@Valid @RequestBody CreateShiftRequest request,
+                                                 Principal principal) {
+        ShiftResponse response = createShift.execute(request,
+                principal != null ? principal.getName() : "system");
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -53,14 +56,16 @@ public class ShiftController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ShiftResponse> update(@PathVariable UUID id,
-                                                 @Valid @RequestBody UpdateShiftRequest request) {
-        return ResponseEntity.ok(updateShift.execute(id, request));
+                                                 @Valid @RequestBody UpdateShiftRequest request,
+                                                 Principal principal) {
+        return ResponseEntity.ok(updateShift.execute(id, request,
+                principal != null ? principal.getName() : "system"));
     }
 
     @PutMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
-    public void deactivate(@PathVariable UUID id) {
-        deactivateShift.execute(id);
+    public void deactivate(@PathVariable UUID id, Principal principal) {
+        deactivateShift.execute(id, principal != null ? principal.getName() : "system");
     }
 }
