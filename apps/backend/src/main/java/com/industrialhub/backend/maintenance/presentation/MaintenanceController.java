@@ -31,6 +31,7 @@ import com.industrialhub.backend.maintenance.application.usecase.GetSparePartLis
 import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderListUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderMetricsUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderPartsUseCase;
+import com.industrialhub.backend.maintenance.application.usecase.GetWorkOrderDetailUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.RemoveWorkOrderPartUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.TransitionWorkOrderStatusUseCase;
 import com.industrialhub.backend.maintenance.application.usecase.UpdateEquipmentUseCase;
@@ -77,6 +78,7 @@ public class MaintenanceController {
     private final GetSparePartListUseCase getSparePartList;
     private final UpdateSparePartUseCase updateSparePart;
     private final UpdateSparePartStockUseCase updateSparePartStock;
+    private final GetWorkOrderDetailUseCase getWorkOrderDetail;
     private final AddWorkOrderPartUseCase addWorkOrderPart;
     private final GetWorkOrderPartsUseCase getWorkOrderParts;
     private final RemoveWorkOrderPartUseCase removeWorkOrderPart;
@@ -99,6 +101,7 @@ public class MaintenanceController {
                                   GetSparePartListUseCase getSparePartList,
                                   UpdateSparePartUseCase updateSparePart,
                                   UpdateSparePartStockUseCase updateSparePartStock,
+                                  GetWorkOrderDetailUseCase getWorkOrderDetail,
                                   AddWorkOrderPartUseCase addWorkOrderPart,
                                   GetWorkOrderPartsUseCase getWorkOrderParts,
                                   RemoveWorkOrderPartUseCase removeWorkOrderPart) {
@@ -120,6 +123,7 @@ public class MaintenanceController {
         this.getSparePartList = getSparePartList;
         this.updateSparePart = updateSparePart;
         this.updateSparePartStock = updateSparePartStock;
+        this.getWorkOrderDetail = getWorkOrderDetail;
         this.addWorkOrderPart = addWorkOrderPart;
         this.getWorkOrderParts = getWorkOrderParts;
         this.removeWorkOrderPart = removeWorkOrderPart;
@@ -183,6 +187,12 @@ public class MaintenanceController {
             @RequestParam(required = false) UUID shiftId,
             @PageableDefault(size = 20, sort = "openedAt", direction = Sort.Direction.DESC) Pageable pageable) {
         return getWorkOrderList.execute(equipmentId, type, status, priority, shiftId, pageable);
+    }
+
+    @GetMapping("/work-orders/{id}")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public WorkOrderResponse getWorkOrder(@PathVariable UUID id) {
+        return getWorkOrderDetail.execute(id);
     }
 
     @GetMapping("/work-orders/metrics")

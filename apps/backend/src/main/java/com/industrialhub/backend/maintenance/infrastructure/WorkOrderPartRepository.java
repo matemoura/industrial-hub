@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface WorkOrderPartRepository extends JpaRepository<WorkOrderPart, UUID> {
@@ -17,4 +18,7 @@ public interface WorkOrderPartRepository extends JpaRepository<WorkOrderPart, UU
         ORDER BY wop.addedAt ASC
     """)
     List<WorkOrderPart> findByWorkOrderIdWithPart(@Param("workOrderId") UUID workOrderId);
+
+    @Query("SELECT wop.workOrder.id FROM WorkOrderPart wop WHERE wop.id = :partId")
+    Optional<UUID> findWorkOrderIdByPartId(@Param("partId") UUID partId);
 }

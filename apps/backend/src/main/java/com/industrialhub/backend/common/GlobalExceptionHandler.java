@@ -1,8 +1,11 @@
 package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.common.domain.AlertThresholdNotFoundException;
+import com.industrialhub.backend.common.domain.AttachmentNotFoundException;
+import com.industrialhub.backend.common.domain.InvalidFileTypeException;
 import com.industrialhub.backend.common.domain.NotificationNotFoundException;
 import com.industrialhub.backend.common.domain.ShiftNotFoundException;
+import com.industrialhub.backend.common.infrastructure.StorageException;
 import com.industrialhub.backend.common.auth.application.usecase.InvalidCredentialsException;
 import com.industrialhub.backend.common.auth.domain.InvalidPasswordException;
 import com.industrialhub.backend.common.auth.domain.LastAdminException;
@@ -413,7 +416,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     @ResponseStatus(HttpStatus.PAYLOAD_TOO_LARGE)
     public Map<String, String> handleMaxUploadSize(MaxUploadSizeExceededException ex) {
-        return Map.of("message", "Arquivo muito grande. Limite: 10 MB.");
+        return Map.of("message", "File exceeds maximum allowed size of 10 MB");
+    }
+
+    @ExceptionHandler(AttachmentNotFoundException.class)
+    @ResponseStatus(HttpStatus.NOT_FOUND)
+    public Map<String, String> handleAttachmentNotFound(AttachmentNotFoundException ex) {
+        return Map.of("message", ex.getMessage());
+    }
+
+    @ExceptionHandler(InvalidFileTypeException.class)
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public Map<String, String> handleInvalidFileType(InvalidFileTypeException ex) {
+        return Map.of("message", ex.getMessage());
+    }
+
+    @ExceptionHandler(StorageException.class)
+    @ResponseStatus(HttpStatus.BAD_GATEWAY)
+    public Map<String, String> handleStorage(StorageException ex) {
+        return Map.of("message", ex.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

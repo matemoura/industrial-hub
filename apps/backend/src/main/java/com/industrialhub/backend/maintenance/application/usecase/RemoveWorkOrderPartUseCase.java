@@ -30,11 +30,12 @@ public class RemoveWorkOrderPartUseCase {
 
     @Transactional
     public void execute(UUID workOrderId, UUID partId, String removedBy) {
-        WorkOrderPart wop = workOrderPartRepository.findById(partId)
+        UUID actualWorkOrderId = workOrderPartRepository.findWorkOrderIdByPartId(partId)
                 .orElseThrow(() -> new WorkOrderPartNotFoundException(partId));
-        if (!wop.getWorkOrder().getId().equals(workOrderId)) {
+        if (!actualWorkOrderId.equals(workOrderId)) {
             throw new WorkOrderPartNotFoundException(partId);
         }
+        WorkOrderPart wop = workOrderPartRepository.findById(partId).orElseThrow();
 
         SparePart part = wop.getSparePart();
         part.setStockQty(part.getStockQty() + wop.getQuantity());

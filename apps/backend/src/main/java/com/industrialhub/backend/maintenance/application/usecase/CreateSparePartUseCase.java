@@ -35,14 +35,15 @@ public class CreateSparePartUseCase {
                 .stockQty(request.stockQty())
                 .minStockQty(request.minStockQty())
                 .build();
+        SparePart saved;
         try {
-            SparePart saved = sparePartRepository.save(part);
+            saved = sparePartRepository.save(part);
             sparePartRepository.flush();
-            auditService.log(username, AuditAction.PART_CREATED, "SparePart",
-                    saved.getId().toString(), Map.of("code", saved.getCode()));
-            return SparePartResponse.from(saved);
         } catch (DataIntegrityViolationException ex) {
             throw new SparePartDuplicateCodeException(request.code());
         }
+        auditService.log(username, AuditAction.PART_CREATED, "SparePart",
+                saved.getId().toString(), Map.of("code", saved.getCode()));
+        return SparePartResponse.from(saved);
     }
 }

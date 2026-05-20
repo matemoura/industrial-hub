@@ -17,6 +17,6 @@ class GlobalExceptionHandlerTest {
 
         Map<String, String> response = handler.handleMaxUploadSize(ex);
 
-        assertThat(response).containsEntry("message", "Arquivo muito grande. Limite: 10 MB.");
+        assertThat(response).containsEntry("message", "File exceeds maximum allowed size of 10 MB");
     }
 }
