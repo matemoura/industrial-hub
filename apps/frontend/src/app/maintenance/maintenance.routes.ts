@@ -64,4 +64,26 @@ export const MAINTENANCE_ROUTES: Routes = [
         (m) => m.MaintenanceCalendarComponent,
       ),
   },
+  {
+    path: 'spare-parts',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./spare-part-list/spare-part-list.component').then((m) => m.SparePartListComponent),
+  },
+  {
+    path: 'work-orders/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./work-order-detail/work-order-detail.component').then(
+        (m) => m.WorkOrderDetailComponent,
+      ),
+  },
+  {
+    path: 'dashboard',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./maintenance-dashboard/maintenance-dashboard.component').then(
+        (m) => m.MaintenanceDashboardComponent,
+      ),
+  },
 ];

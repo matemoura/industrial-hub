@@ -1,0 +1,71 @@
+<div class="dashboard-page">
+
+  <div class="page-header">
+    <h2>Dashboard de Manutenção</h2>
+  </div>
+
+  <!-- Critical Stock Card -->
+  <section class="card card--critical" aria-labelledby="critical-stock-title">
+    <div class="card__header">
+      <h3 id="critical-stock-title" class="card__title">
+        <span class="card__icon" aria-hidden="true">⚠</span>
+        Estoque Crítico
+      </h3>
+      <a routerLink="/maintenance/spare-parts" class="card__action-link">Ver catálogo</a>
+    </div>
+
+    @if (loading()) {
+      <div class="skeleton-list" data-testid="skeleton" aria-label="Carregando…">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="skeleton-row"></div>
+        }
+      </div>
+    } @else if (errorMsg()) {
+      <div class="error-banner" data-testid="error" role="alert">
+        <p>{{ errorMsg() }}</p>
+        <button type="button" class="btn btn--secondary btn--sm" (click)="loadCriticalStock()">
+          Tentar novamente
+        </button>
+      </div>
+    } @else if (criticalParts().length === 0) {
+      <div class="empty-state" data-testid="empty">
+        <span class="empty-state__icon" aria-hidden="true">✅</span>
+        <p>Todos os estoques estão acima do mínimo.</p>
+      </div>
+    } @else {
+      <p class="critical-count" data-testid="critical-count">
+        {{ criticalParts().length }} {{ criticalParts().length === 1 ? 'peça abaixo' : 'peças abaixo' }} do mínimo
+      </p>
+      <table class="critical-table" data-testid="critical-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Peça</th>
+            <th>Categoria</th>
+            <th>Estoque</th>
+            <th>Mín.</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (part of criticalParts(); track part.id) {
+            <tr data-testid="critical-row">
+              <td class="part-code">{{ part.code }}</td>
+              <td>{{ part.name }}</td>
+              <td>{{ part.category ?? '—' }}</td>
+              <td class="stock-critical">{{ part.stockQty }}</td>
+              <td>{{ part.minStockQty }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </section>
+
+  <!-- Quick links -->
+  <div class="quick-links">
+    <a routerLink="/maintenance/equipment" class="quick-link">Equipamentos</a>
+    <a routerLink="/maintenance/work-orders" class="quick-link">Ordens de Serviço</a>
+    <a routerLink="/maintenance/schedules" class="quick-link">Planos Preventivos</a>
+    <a routerLink="/maintenance/spare-parts" class="quick-link">Catálogo de Peças</a>
+  </div>
+</div>
