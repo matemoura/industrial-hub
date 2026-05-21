@@ -4,6 +4,43 @@
     <span class="refresh-hint">Atualiza automaticamente a cada 5 min</span>
   </div>
 
+  <!-- SLA Risk Panel -->
+  @if (showSlaPanel()) {
+    <div class="sla-risk-panel" data-testid="sla-risk-panel">
+      <h3 class="sla-risk-panel__title">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="sla-risk-panel__icon">
+          <path d="M8 1l7 14H1L8 1z" stroke="#DC2626" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
+          <path d="M8 6v4M8 12v.5" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        SLA em Risco
+      </h3>
+      <div class="sla-risk-cards">
+        <a
+          routerLink="/qms/non-conformances"
+          [queryParams]="{ slaBreached: true }"
+          class="sla-risk-card"
+          data-testid="sla-risk-ncs"
+        >
+          <span class="sla-risk-card__count">
+            {{ slaLoading() ? '--' : (slaSummary()?.totalBreachedNcs ?? 0) }}
+          </span>
+          <span class="sla-risk-card__label">NCs com SLA Vencido</span>
+        </a>
+        <a
+          routerLink="/maintenance/work-orders"
+          [queryParams]="{ slaBreached: true }"
+          class="sla-risk-card"
+          data-testid="sla-risk-wos"
+        >
+          <span class="sla-risk-card__count">
+            {{ slaLoading() ? '--' : (slaSummary()?.totalBreachedWorkOrders ?? 0) }}
+          </span>
+          <span class="sla-risk-card__label">OSs com SLA Vencido</span>
+        </a>
+      </div>
+    </div>
+  }
+
   @if (errorMsg()) {
     <div class="error-banner" role="alert">{{ errorMsg() }}</div>
   }

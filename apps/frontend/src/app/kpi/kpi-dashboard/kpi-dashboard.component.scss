@@ -121,3 +121,67 @@
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.55; }
 }
+
+// ---- SLA Risk Panel ----
+.sla-risk-panel {
+  background: #FEF2F2;
+  border: 1px solid #FECACA;
+  border-radius: 10px;
+  padding: 1rem 1.5rem 1.25rem;
+  margin-bottom: 1.5rem;
+
+  &__title {
+    font-size: 0.8125rem;
+    font-weight: 700;
+    color: #991B1B;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0.875rem;
+  }
+
+  &__icon {
+    flex-shrink: 0;
+  }
+}
+
+.sla-risk-cards {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.sla-risk-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.875rem 1.25rem;
+  background: #fff;
+  border: 1px solid #FECACA;
+  border-radius: 8px;
+  text-decoration: none;
+  min-width: 180px;
+  transition: box-shadow 0.15s, border-color 0.15s;
+
+  &:hover {
+    box-shadow: 0 2px 8px rgba(220, 38, 38, 0.12);
+    border-color: #EF4444;
+  }
+
+  &__count {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #991B1B;
+    line-height: 1.2;
+  }
+
+  &__label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+}

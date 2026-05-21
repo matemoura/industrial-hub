@@ -17,6 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 
+
 public interface NonConformanceRepository extends JpaRepository<NonConformance, UUID> {
 
     @EntityGraph(attributePaths = {"actions"})
@@ -30,13 +31,31 @@ public interface NonConformanceRepository extends JpaRepository<NonConformance, 
         WHERE (:status IS NULL OR nc.status = :status)
         AND (:severity IS NULL OR nc.severity = :severity)
         AND (:type IS NULL OR nc.type = :type)
+        AND (:slaBreached IS NULL OR nc.slaBreached = :slaBreached)
         """)
     Page<NonConformance> findAllFiltered(
         @Param("status") NcStatus status,
         @Param("severity") NcSeverity severity,
         @Param("type") NcType type,
+        @Param("slaBreached") Boolean slaBreached,
         Pageable pageable
     );
+
+    @Query("""
+        SELECT nc FROM NonConformance nc
+        WHERE nc.status <> 'CLOSED'
+          AND nc.slaBreached = false
+          AND nc.reportedAt <= :deadline
+        """)
+    List<NonConformance> findBreachCandidates(
+        @Param("deadline") LocalDateTime deadline
+    );
+
+    @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.slaBreached = true")
+    long countBreached();
+
+    @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.status <> 'CLOSED'")
+    long countOpen();
 
     List<NonConformance> findAllByOrderByReportedAtDesc();
 

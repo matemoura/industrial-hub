@@ -12,12 +12,13 @@ import {
   WorkOrderType,
 } from '../maintenance.service';
 import { AdminService, Shift } from '../../admin/admin.service';
+import { SlaBreachedChipComponent } from '../../shared/sla-breached-chip/sla-breached-chip.component';
 
 @Component({
   selector: 'app-work-order-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, DecimalPipe],
+  imports: [FormsModule, DecimalPipe, SlaBreachedChipComponent],
   templateUrl: './work-order-list.component.html',
   styleUrl: './work-order-list.component.scss',
 })
@@ -40,6 +41,7 @@ export class WorkOrderListComponent implements OnInit {
   filterType = signal<WorkOrderType | ''>('');
   filterStatus = signal<WorkOrderStatus | ''>('');
   filterPriority = signal<WorkOrderPriority | ''>('');
+  filterSlaBreached = signal(false);
 
   readonly woTypes: WorkOrderType[] = ['CORRECTIVE', 'PREVENTIVE'];
   readonly woStatuses: WorkOrderStatus[] = ['OPEN', 'IN_PROGRESS', 'DONE', 'CANCELLED'];
@@ -99,6 +101,7 @@ export class WorkOrderListComponent implements OnInit {
       status: this.filterStatus() || undefined,
       priority: this.filterPriority() || undefined,
       shiftId: this.selectedShiftId() ?? undefined,
+      slaBreached: this.filterSlaBreached() ? true : undefined,
     };
     this.maintenanceService.listWorkOrders(filters, pageIndex).subscribe({
       next: (p) => {
@@ -122,6 +125,7 @@ export class WorkOrderListComponent implements OnInit {
     this.filterStatus.set('');
     this.filterPriority.set('');
     this.selectedShiftId.set(null);
+    this.filterSlaBreached.set(false);
     this.loadList(0);
   }
 

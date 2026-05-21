@@ -39,6 +39,7 @@
         <span class="status-chip" [attr.data-status]="workOrder()!.status">
           {{ woStatusLabels[workOrder()!.status] }}
         </span>
+        <app-sla-breached-chip [slaBreached]="workOrder()!.slaBreached" />
       </div>
       <div class="wo-summary__item">
         <span class="wo-summary__label">Prioridade</span>

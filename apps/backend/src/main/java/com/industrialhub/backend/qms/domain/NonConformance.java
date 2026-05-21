@@ -54,6 +54,13 @@ public class NonConformance {
     @Column(length = 50)
     private String closedBy;
 
+    @Column(name = "sla_breached", nullable = false)
+    @Builder.Default
+    private boolean slaBreached = false;
+
+    @Column(name = "sla_breached_at")
+    private LocalDateTime slaBreachedAt;
+
     @OneToMany(mappedBy = "nonConformance", cascade = CascadeType.ALL, orphanRemoval = true)
     @Builder.Default
     private List<CorrectiveAction> actions = new ArrayList<>();

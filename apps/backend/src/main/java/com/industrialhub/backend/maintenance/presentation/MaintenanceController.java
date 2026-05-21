@@ -185,8 +185,9 @@ public class MaintenanceController {
             @RequestParam(required = false) WorkOrderStatus status,
             @RequestParam(required = false) WorkOrderPriority priority,
             @RequestParam(required = false) UUID shiftId,
+            @RequestParam(required = false) Boolean slaBreached,
             @PageableDefault(size = 20, sort = "openedAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return getWorkOrderList.execute(equipmentId, type, status, priority, shiftId, pageable);
+        return getWorkOrderList.execute(equipmentId, type, status, priority, shiftId, slaBreached, pageable);
     }
 
     @GetMapping("/work-orders/{id}")

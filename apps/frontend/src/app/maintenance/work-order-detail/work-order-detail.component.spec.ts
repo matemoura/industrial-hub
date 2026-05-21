@@ -31,6 +31,7 @@ const WO: WorkOrderResponse = {
   scheduleId: null,
   shiftId: null,
   shiftName: null,
+  slaBreached: false,
 };
 
 const PART1: WorkOrderPartResponse = {

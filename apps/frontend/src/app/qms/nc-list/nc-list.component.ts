@@ -12,12 +12,13 @@ import {
   QmsService,
 } from '../qms.service';
 import { AuthService } from '../../auth/auth.service';
+import { SlaBreachedChipComponent } from '../../shared/sla-breached-chip/sla-breached-chip.component';
 
 @Component({
   selector: 'app-nc-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FormsModule, RouterLink, SlicePipe],
+  imports: [FormsModule, RouterLink, SlicePipe, SlaBreachedChipComponent],
   templateUrl: './nc-list.component.html',
   styleUrl: './nc-list.component.scss',
 })
@@ -36,6 +37,7 @@ export class NcListComponent implements OnInit {
   filterStatus = signal<NcStatus | ''>('');
   filterSeverity = signal<NcSeverity | ''>('');
   filterType = signal<NcType | ''>('');
+  filterSlaBreached = signal(false);
 
   readonly statuses: NcStatus[] = ['OPEN', 'IN_ANALYSIS', 'CLOSED'];
   readonly severities: NcSeverity[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
@@ -86,6 +88,7 @@ export class NcListComponent implements OnInit {
       status: this.filterStatus() || undefined,
       severity: this.filterSeverity() || undefined,
       type: this.filterType() || undefined,
+      slaBreached: this.filterSlaBreached() ? true : undefined,
     };
     this.qmsService.listNcs(filters, pageIndex).subscribe({
       next: (p) => {
@@ -104,6 +107,7 @@ export class NcListComponent implements OnInit {
     this.filterStatus.set('');
     this.filterSeverity.set('');
     this.filterType.set('');
+    this.filterSlaBreached.set(false);
     this.loadList(0);
   }
 

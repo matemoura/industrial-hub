@@ -5,12 +5,13 @@ import { ActionResponse, NcResponse, NcStatus, QmsService } from '../qms.service
 import { AuthService } from '../../auth/auth.service';
 import { NcRcaComponent } from './nc-rca/nc-rca.component';
 import { AttachmentListComponent } from '../../shared/attachment/attachment-list.component';
+import { SlaBreachedChipComponent } from '../../shared/sla-breached-chip/sla-breached-chip.component';
 
 @Component({
   selector: 'app-nc-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, FormsModule, NcRcaComponent, AttachmentListComponent],
+  imports: [RouterLink, FormsModule, NcRcaComponent, AttachmentListComponent, SlaBreachedChipComponent],
   templateUrl: './nc-detail.component.html',
   styleUrl: './nc-detail.component.scss',
 })

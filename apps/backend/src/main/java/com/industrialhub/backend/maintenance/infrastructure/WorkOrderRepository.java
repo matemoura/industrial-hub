@@ -24,12 +24,14 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
           AND (:type IS NULL OR w.type = :type)
           AND (:status IS NULL OR w.status = :status)
           AND (:priority IS NULL OR w.priority = :priority)
+          AND (:slaBreached IS NULL OR w.slaBreached = :slaBreached)
     """)
     Page<WorkOrder> findWithFilters(
         @Param("equipmentId") UUID equipmentId,
         @Param("type") WorkOrderType type,
         @Param("status") WorkOrderStatus status,
         @Param("priority") WorkOrderPriority priority,
+        @Param("slaBreached") Boolean slaBreached,
         Pageable pageable
     );
 
@@ -41,6 +43,7 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
           AND (:status IS NULL OR w.status = :status)
           AND (:priority IS NULL OR w.priority = :priority)
           AND (:shiftId IS NULL OR w.shift.id = :shiftId)
+          AND (:slaBreached IS NULL OR w.slaBreached = :slaBreached)
     """)
     Page<WorkOrder> findWithFiltersAndShift(
         @Param("equipmentId") UUID equipmentId,
@@ -48,8 +51,32 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
         @Param("status") WorkOrderStatus status,
         @Param("priority") WorkOrderPriority priority,
         @Param("shiftId") UUID shiftId,
+        @Param("slaBreached") Boolean slaBreached,
         Pageable pageable
     );
+
+    @Query("""
+        SELECT w FROM WorkOrder w
+        WHERE w.status NOT IN (
+                com.industrialhub.backend.maintenance.domain.WorkOrderStatus.DONE,
+                com.industrialhub.backend.maintenance.domain.WorkOrderStatus.CANCELLED)
+          AND w.slaBreached = false
+          AND w.openedAt <= :deadline
+        """)
+    List<WorkOrder> findBreachCandidates(
+        @Param("deadline") LocalDateTime deadline
+    );
+
+    @Query("SELECT COUNT(w) FROM WorkOrder w WHERE w.slaBreached = true")
+    long countBreached();
+
+    @Query("""
+        SELECT COUNT(w) FROM WorkOrder w
+        WHERE w.status NOT IN (
+            com.industrialhub.backend.maintenance.domain.WorkOrderStatus.DONE,
+            com.industrialhub.backend.maintenance.domain.WorkOrderStatus.CANCELLED)
+    """)
+    long countOpen();
 
     boolean existsByEquipmentIdAndStatusIn(UUID equipmentId, List<WorkOrderStatus> statuses);
 

@@ -82,6 +82,17 @@
       </label>
     }
 
+    <label class="filter-field filter-field--checkbox">
+      <input
+        type="checkbox"
+        data-testid="filter-sla-breached"
+        [ngModel]="filterSlaBreached()"
+        (ngModelChange)="filterSlaBreached.set($event)"
+        name="slaBreached"
+      />
+      Apenas SLA vencido
+    </label>
+
     <div class="filter-actions">
       <button type="button" class="btn btn--primary" (click)="applyFilters()">Filtrar</button>
       <button type="button" class="btn btn--secondary" (click)="clearFilters()">Limpar</button>
@@ -108,6 +119,7 @@
             <th>Tipo</th>
             <th>Prioridade</th>
             <th>Status</th>
+            <th>SLA</th>
             <th>Turno</th>
             <th>Aberta por</th>
             <th>Data</th>
@@ -135,6 +147,9 @@
                 <span [class]="'status-chip status-' + wo.status.toLowerCase().replace('_', '-')">
                   {{ woStatusLabels[wo.status] }}
                 </span>
+              </td>
+              <td>
+                <app-sla-breached-chip [slaBreached]="wo.slaBreached" />
               </td>
               <td>
                 @if (wo.shiftName) {

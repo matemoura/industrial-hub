@@ -65,6 +65,17 @@
       </select>
     </label>
 
+    <label class="filter-field filter-field--checkbox">
+      <input
+        type="checkbox"
+        data-testid="filter-sla-breached"
+        [ngModel]="filterSlaBreached()"
+        (ngModelChange)="filterSlaBreached.set($event)"
+        name="slaBreached"
+      />
+      Apenas SLA vencido
+    </label>
+
     <div class="filter-actions">
       <button type="button" class="btn btn--primary" (click)="applyFilters()">Filtrar</button>
       <button type="button" class="btn btn--secondary" (click)="clearFilters()">Limpar</button>
@@ -89,6 +100,7 @@
             <th>Tipo</th>
             <th>Severidade</th>
             <th>Status</th>
+            <th>SLA</th>
             <th>Registrado por</th>
             <th>Data</th>
           </tr>
@@ -107,6 +119,9 @@
                 <span [class]="'status-chip status-' + nc.status.toLowerCase()">
                   {{ statusLabels[nc.status] }}
                 </span>
+              </td>
+              <td>
+                <app-sla-breached-chip [slaBreached]="nc.slaBreached" />
               </td>
               <td>{{ nc.reportedBy }}</td>
               <td>{{ nc.reportedAt | slice: 0 : 10 }}</td>

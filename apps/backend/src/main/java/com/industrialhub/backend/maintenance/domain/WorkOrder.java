@@ -66,4 +66,11 @@ public class WorkOrder {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shift_id")
     private Shift shift; // nullable
+
+    @Column(name = "sla_breached", nullable = false)
+    @Builder.Default
+    private boolean slaBreached = false;
+
+    @Column(name = "sla_breached_at")
+    private LocalDateTime slaBreachedAt;
 }

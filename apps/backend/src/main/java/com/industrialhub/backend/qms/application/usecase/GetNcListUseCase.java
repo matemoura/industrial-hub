@@ -21,7 +21,13 @@ public class GetNcListUseCase {
 
     @Transactional(readOnly = true)
     public Page<NcSummaryItem> execute(NcStatus status, NcSeverity severity, NcType type, Pageable pageable) {
-        return repository.findAllFiltered(status, severity, type, pageable)
+        return execute(status, severity, type, null, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<NcSummaryItem> execute(NcStatus status, NcSeverity severity, NcType type,
+                                       Boolean slaBreached, Pageable pageable) {
+        return repository.findAllFiltered(status, severity, type, slaBreached, pageable)
                 .map(NcSummaryItem::from);
     }
 }

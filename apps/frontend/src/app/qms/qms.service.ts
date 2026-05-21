@@ -46,6 +46,7 @@ export interface NcSummaryItem {
   status: NcStatus;
   reportedBy: string;
   reportedAt: string;
+  slaBreached: boolean;
 }
 
 export interface ActionResponse {
@@ -142,13 +143,14 @@ export class QmsService {
   }
 
   listNcs(
-    filters?: { status?: NcStatus; severity?: NcSeverity; type?: NcType },
+    filters?: { status?: NcStatus; severity?: NcSeverity; type?: NcType; slaBreached?: boolean },
     page = 0,
   ): Observable<PageResponse<NcSummaryItem>> {
     let params = new HttpParams().set('page', page.toString());
     if (filters?.status) params = params.set('status', filters.status);
     if (filters?.severity) params = params.set('severity', filters.severity);
     if (filters?.type) params = params.set('type', filters.type);
+    if (filters?.slaBreached !== undefined) params = params.set('slaBreached', filters.slaBreached.toString());
     return this.http.get<PageResponse<NcSummaryItem>>(this.baseUrl, { params });
   }
 

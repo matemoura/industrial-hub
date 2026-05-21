@@ -21,12 +21,13 @@ import {
 } from '../maintenance.service';
 import { AuthService } from '../../auth/auth.service';
 import { AttachmentListComponent } from '../../shared/attachment/attachment-list.component';
+import { SlaBreachedChipComponent } from '../../shared/sla-breached-chip/sla-breached-chip.component';
 
 @Component({
   selector: 'app-work-order-detail',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ReactiveFormsModule, RouterLink, AttachmentListComponent],
+  imports: [ReactiveFormsModule, RouterLink, AttachmentListComponent, SlaBreachedChipComponent],
   templateUrl: './work-order-detail.component.html',
   styleUrl: './work-order-detail.component.scss',
 })

@@ -99,8 +99,9 @@ public class QmsController {
             @RequestParam(required = false) NcStatus status,
             @RequestParam(required = false) NcSeverity severity,
             @RequestParam(required = false) NcType type,
+            @RequestParam(required = false) Boolean slaBreached,
             @PageableDefault(size = 20, sort = "reportedAt", direction = Sort.Direction.DESC) Pageable pageable) {
-        return getNcList.execute(status, severity, type, pageable);
+        return getNcList.execute(status, severity, type, slaBreached, pageable);
     }
 
     @GetMapping("/summary")

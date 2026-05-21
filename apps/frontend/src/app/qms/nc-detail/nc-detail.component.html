@@ -19,6 +19,7 @@
           <span [class]="'status-chip status-' + nc.status.toLowerCase()" data-testid="nc-status-chip">
             {{ statusLabels[nc.status] }}
           </span>
+          <app-sla-breached-chip [slaBreached]="nc.slaBreached" />
         </div>
 
         @if (allowedTransitions.length > 0) {

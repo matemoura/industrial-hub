@@ -25,6 +25,7 @@ const BASE_WO: WorkOrderResponse = {
   scheduleId: null,
   shiftId: null,
   shiftName: null,
+  slaBreached: false,
 };
 
 function makePageResponse(items: WorkOrderResponse[]): PageResponse<WorkOrderResponse> {
