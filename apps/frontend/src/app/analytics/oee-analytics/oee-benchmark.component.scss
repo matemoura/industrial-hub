@@ -1,0 +1,249 @@
+.benchmark-page {
+  padding-top: 16px;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 16px;
+  background: var(--msb-surface);
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  label {
+    font-size: 0.75rem;
+    color: var(--msb-text-muted);
+    font-weight: 500;
+  }
+
+  input[type='date'] {
+    padding: 6px 10px;
+    border: 1px solid #cbd5e0;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    background: var(--msb-surface);
+    color: var(--msb-text);
+
+    &:focus {
+      outline: 2px solid var(--msb-primary);
+    }
+  }
+}
+
+.toggle-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.875rem;
+  cursor: pointer;
+  color: var(--msb-text);
+
+  input[type='checkbox'] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--msb-primary);
+  }
+}
+
+.btn-primary {
+  padding: 7px 16px;
+  background: var(--msb-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+
+  &:hover {
+    background: var(--msb-primary-dark);
+  }
+}
+
+.validation-error {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #fff5f5;
+  color: #e53e3e;
+  border: 1px solid #fed7d7;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.warning-msg {
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #fffbeb;
+  color: #b7791f;
+  border: 1px solid #faf089;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.section-error {
+  padding: 8px 12px;
+  background: #fff5f5;
+  color: #e53e3e;
+  border-radius: 6px;
+  font-size: 0.875rem;
+}
+
+.chart-card {
+  background: var(--msb-surface);
+  border-radius: 8px;
+  padding: 20px 24px;
+  margin-bottom: 20px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+
+  h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--msb-text);
+    margin-bottom: 16px;
+  }
+
+  h4 {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--msb-text-muted);
+    margin-bottom: 12px;
+  }
+}
+
+.chip-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.oee-chip {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 12px;
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.empty-msg {
+  color: var(--msb-text-muted);
+  font-size: 0.875rem;
+  padding: 24px;
+  text-align: center;
+}
+
+// ── Comparação de períodos ──────────────────────────────────────────────────
+
+.comparison-filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.period-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--msb-bg);
+  border-radius: 6px;
+}
+
+.period-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--msb-text-muted);
+  align-self: center;
+  white-space: nowrap;
+}
+
+.improvement-card {
+  display: inline-flex;
+  align-items: center;
+  padding: 10px 18px;
+  border-radius: 8px;
+  background: var(--msb-surface);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--msb-text);
+  margin-bottom: 16px;
+  border-left: 4px solid var(--msb-primary);
+}
+
+.improvement-badge {
+  display: inline-block;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 700;
+  margin-bottom: 16px;
+
+  &.positive {
+    background: #c6f6d5;
+    color: #276749;
+  }
+
+  &.negative {
+    background: #fff5f5;
+    color: #c53030;
+  }
+
+  &.neutral {
+    background: #e2e8f0;
+    color: var(--msb-text-muted);
+  }
+}
+
+.comparison-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.comparison-chart-wrap {
+  background: var(--msb-bg);
+  border-radius: 6px;
+  padding: 14px;
+}
+
+// ── Skeletons ──────────────────────────────────────────────────────────────
+
+.skeleton-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.skeleton-chart {
+  height: 280px;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}

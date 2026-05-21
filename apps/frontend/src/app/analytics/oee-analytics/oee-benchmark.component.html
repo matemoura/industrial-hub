@@ -1,0 +1,225 @@
+<div class="benchmark-page" data-testid="benchmark-section">
+
+  <!-- ── Filtro de período ────────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="field-group">
+      <label for="bench-from">De</label>
+      <input
+        id="bench-from"
+        type="date"
+        [value]="benchmarkFrom()"
+        (change)="onBenchmarkFromChange($event)"
+        data-testid="bench-from"
+      />
+    </div>
+    <div class="field-group">
+      <label for="bench-to">Até</label>
+      <input
+        id="bench-to"
+        type="date"
+        [value]="benchmarkTo()"
+        (change)="onBenchmarkToChange($event)"
+        data-testid="bench-to"
+      />
+    </div>
+    <button
+      class="btn-primary"
+      type="button"
+      (click)="onUpdateRankings()"
+      data-testid="btn-update-rankings"
+    >
+      Atualizar rankings
+    </button>
+    <label class="toggle-label">
+      <input
+        type="checkbox"
+        [checked]="showWorldClassRef()"
+        (change)="onToggleWorldClass()"
+        data-testid="toggle-world-class"
+      />
+      Referência OEE Classe Mundial (85%)
+    </label>
+  </div>
+
+  @if (rankingError()) {
+    <div class="validation-error" data-testid="ranking-error">{{ rankingError() }}</div>
+  }
+
+  <!-- ── Rankings ─────────────────────────────────────────────────────────── -->
+  @if (isBenchmarkLoading()) {
+    <div class="skeleton-wrap" data-testid="benchmark-loading">
+      <div class="skeleton skeleton-chart"></div>
+      <div class="skeleton skeleton-chart"></div>
+      <div class="skeleton skeleton-chart"></div>
+    </div>
+  } @else {
+
+    <!-- Workers -->
+    <div class="chart-card" data-testid="workers-section">
+      <h3>Ranking por Trabalhador</h3>
+      @if (workersError()) {
+        <div class="section-error">{{ workersError() }}</div>
+      } @else if (workersLabels().length === 0) {
+        <p class="empty-msg" data-testid="workers-empty">Sem dados</p>
+      } @else {
+        <app-bar-chart
+          [labels]="workersLabels()"
+          [values]="workersValues()"
+          [colors]="workersColors()"
+          yLabel="OEE (%)"
+          data-testid="workers-chart"
+        />
+        <div class="chip-legend">
+          @for (entry of benchmarkWorkers(); track entry.label) {
+            <span class="oee-chip" [style.background]="oeeChipBg(entry.avgOee)">
+              {{ entry.label }}: {{ (entry.avgOee * 100).toFixed(1) }}%
+            </span>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Turnos -->
+    <div class="chart-card" data-testid="shifts-section">
+      <h3>Ranking por Turno</h3>
+      @if (recordsWithoutShift() > 0) {
+        <div class="warning-msg" data-testid="records-without-shift-warning">
+          {{ recordsWithoutShift() }} registro(s) sem turno associado foram excluídos do ranking.
+        </div>
+      }
+      @if (shiftsError()) {
+        <div class="section-error">{{ shiftsError() }}</div>
+      } @else if (shiftsLabels().length === 0) {
+        <p class="empty-msg" data-testid="shifts-empty">Sem dados</p>
+      } @else {
+        <app-bar-chart
+          [labels]="shiftsLabels()"
+          [values]="shiftsValues()"
+          [colors]="shiftsColors()"
+          yLabel="OEE (%)"
+          data-testid="shifts-chart"
+        />
+      }
+    </div>
+
+    <!-- Tipo de Equipamento -->
+    <div class="chart-card" data-testid="equipment-section">
+      <h3>Ranking por Tipo de Equipamento</h3>
+      @if (equipmentError()) {
+        <div class="section-error">{{ equipmentError() }}</div>
+      } @else if (equipmentLabels().length === 0) {
+        <p class="empty-msg" data-testid="equipment-empty">Sem dados</p>
+      } @else {
+        <app-bar-chart
+          [labels]="equipmentLabels()"
+          [values]="equipmentValues()"
+          [colors]="equipmentColors()"
+          yLabel="OEE (%)"
+          data-testid="equipment-chart"
+        />
+      }
+    </div>
+  }
+
+  <!-- ── Comparação de Períodos ────────────────────────────────────────────── -->
+  <div class="chart-card comparison-card" data-testid="comparison-section">
+    <h3>Comparação de Períodos</h3>
+
+    <div class="comparison-filters">
+      <div class="period-group">
+        <span class="period-label">Período A</span>
+        <div class="field-group">
+          <label for="period-a-from">De</label>
+          <input
+            id="period-a-from"
+            type="date"
+            [value]="periodAFrom()"
+            (change)="periodAFrom.set(getInputValue($event))"
+            data-testid="period-a-from"
+          />
+        </div>
+        <div class="field-group">
+          <label for="period-a-to">Até</label>
+          <input
+            id="period-a-to"
+            type="date"
+            [value]="periodATo()"
+            (change)="periodATo.set(getInputValue($event))"
+            data-testid="period-a-to"
+          />
+        </div>
+      </div>
+
+      <div class="period-group">
+        <span class="period-label">Período B</span>
+        <div class="field-group">
+          <label for="period-b-from">De</label>
+          <input
+            id="period-b-from"
+            type="date"
+            [value]="periodBFrom()"
+            (change)="periodBFrom.set(getInputValue($event))"
+            data-testid="period-b-from"
+          />
+        </div>
+        <div class="field-group">
+          <label for="period-b-to">Até</label>
+          <input
+            id="period-b-to"
+            type="date"
+            [value]="periodBTo()"
+            (change)="periodBTo.set(getInputValue($event))"
+            data-testid="period-b-to"
+          />
+        </div>
+      </div>
+
+      <button
+        class="btn-primary"
+        type="button"
+        (click)="onCompare()"
+        data-testid="btn-compare"
+      >
+        Comparar
+      </button>
+    </div>
+
+    @if (comparisonError()) {
+      <div class="validation-error" data-testid="comparison-error">{{ comparisonError() }}</div>
+    }
+
+    @if (isComparisonLoading()) {
+      <div class="skeleton skeleton-chart" data-testid="comparison-loading"></div>
+    } @else if (periodComparison()) {
+      @if (periodComparison()?.improvementPct != null) {
+        <div class="improvement-card" data-testid="improvement-card">
+          <span>Evolução: {{ periodComparison()!.improvementPct | number:'1.1-1' }}%</span>
+        </div>
+      }
+
+      <div class="comparison-charts" data-testid="comparison-charts">
+        <div class="comparison-chart-wrap">
+          <h4>Período A</h4>
+          <app-line-chart
+            [labels]="periodALabels()"
+            [values]="periodAValues()"
+            [referenceValue]="worldClassRefValue()"
+            yLabel="OEE (%)"
+            data-testid="period-a-chart"
+          />
+        </div>
+        <div class="comparison-chart-wrap">
+          <h4>Período B</h4>
+          <app-line-chart
+            [labels]="periodBLabels()"
+            [values]="periodBValues()"
+            [referenceValue]="worldClassRefValue()"
+            yLabel="OEE (%)"
+            data-testid="period-b-chart"
+          />
+        </div>
+      </div>
+    }
+  </div>
+
+</div>

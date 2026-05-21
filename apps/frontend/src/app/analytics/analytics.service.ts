@@ -28,6 +28,30 @@ export interface WoSummaryResponse {
   byType: Record<string, number>;
 }
 
+export interface BenchmarkEntry {
+  label: string;
+  avgOee: number;
+  minOee: number;
+  maxOee: number;
+  stdDev: number | null;
+  sampleCount: number;
+  recordsWithoutShift?: number | null;
+}
+
+export interface BenchmarkResponse {
+  ranking: BenchmarkEntry[];
+  best: BenchmarkEntry | null;
+  worst: BenchmarkEntry | null;
+  overallAvg: number;
+  recordsWithoutShift?: number | null;
+}
+
+export interface PeriodComparisonResponse {
+  periodA: BenchmarkEntry[];
+  periodB: BenchmarkEntry[];
+  improvementPct: number | null;
+}
+
 @Injectable({ providedIn: 'root' })
 export class AnalyticsService {
   private readonly http = inject(HttpClient);
@@ -62,5 +86,34 @@ export class AnalyticsService {
     const params: Record<string, string> = {};
     if (shiftId) params['shiftId'] = shiftId;
     return this.http.get<WoSummaryResponse>(`${this.base}/maintenance/wo-summary`, { params });
+  }
+
+  getBenchmarkWorkers(from: string, to: string): Observable<BenchmarkResponse> {
+    return this.http.get<BenchmarkResponse>(`${this.base}/oee/benchmark/workers`, {
+      params: { from, to },
+    });
+  }
+
+  getBenchmarkShifts(from: string, to: string): Observable<BenchmarkResponse> {
+    return this.http.get<BenchmarkResponse>(`${this.base}/oee/benchmark/shifts`, {
+      params: { from, to },
+    });
+  }
+
+  getBenchmarkEquipmentType(from: string, to: string): Observable<BenchmarkResponse> {
+    return this.http.get<BenchmarkResponse>(`${this.base}/oee/benchmark/equipment-type`, {
+      params: { from, to },
+    });
+  }
+
+  getPeriodComparison(
+    fromA: string,
+    toA: string,
+    fromB: string,
+    toB: string,
+  ): Observable<PeriodComparisonResponse> {
+    return this.http.get<PeriodComparisonResponse>(`${this.base}/oee/benchmark/period-comparison`, {
+      params: { from: fromA, to: toA, fromB, toB },
+    });
   }
 }

@@ -156,6 +156,38 @@
   }
 }
 
+// ── Tab bar ────────────────────────────────────────────────────────────────
+
+.tab-bar {
+  display: flex;
+  gap: 0;
+  border-bottom: 2px solid #e2e8f0;
+  margin-bottom: 24px;
+}
+
+.tab-btn {
+  padding: 10px 24px;
+  background: none;
+  border: none;
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--msb-text-muted);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+
+  &:hover {
+    color: var(--msb-primary);
+  }
+
+  &--active {
+    color: var(--msb-primary);
+    border-bottom-color: var(--msb-primary);
+    font-weight: 600;
+  }
+}
+
 @media print {
   .btn-print,
   .field-group {
@@ -164,5 +196,9 @@
 
   .analytics-page {
     padding: 0;
+  }
+
+  .tab-bar {
+    display: none;
   }
 }

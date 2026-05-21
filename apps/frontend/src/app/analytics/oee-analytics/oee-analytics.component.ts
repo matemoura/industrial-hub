@@ -9,18 +9,22 @@ import {
 import { AnalyticsService, OeeTrendResponse } from '../analytics.service';
 import { LineChartComponent } from '../../shared/charts/line-chart/line-chart.component';
 import { AdminService, Shift } from '../../admin/admin.service';
+import { OeeBenchmarkComponent } from './oee-benchmark.component';
 
 @Component({
   selector: 'app-oee-analytics',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LineChartComponent],
+  imports: [LineChartComponent, OeeBenchmarkComponent],
   templateUrl: './oee-analytics.component.html',
   styleUrl: './oee-analytics.component.scss',
 })
 export class OeeAnalyticsComponent implements OnInit {
   private readonly analyticsService = inject(AnalyticsService);
   private readonly adminService = inject(AdminService);
+
+  // ── Tab navigation ────────────────────────────────────────────────────────
+  activeTab = signal<'trend' | 'benchmark'>('trend');
 
   readonly periodOptions = [4, 8, 12, 26, 52];
   selectedWeeks = signal(12);

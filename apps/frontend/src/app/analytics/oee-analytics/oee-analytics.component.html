@@ -1,91 +1,125 @@
 <div class="analytics-page">
   <div class="page-header">
     <h1>Analytics — OEE</h1>
-    <div class="header-actions">
-      <div class="field-group">
-        <label for="period-select">Período</label>
-        <select
-          id="period-select"
-          (change)="onPeriodChange($event)"
-          data-testid="period-select"
-        >
-          @for (w of periodOptions; track w) {
-            <option [value]="w" [selected]="w === selectedWeeks()">{{ w }} semanas</option>
-          }
-        </select>
-      </div>
-      <label class="toggle-label">
-        <input
-          type="checkbox"
-          [checked]="excludeDowntime()"
-          (change)="onToggleExcludeDowntime()"
-          data-testid="toggle-exclude-downtime"
-        >
-        Excluir paradas planejadas
-      </label>
-      @if (shifts().length > 0) {
+    @if (activeTab() === 'trend') {
+      <div class="header-actions">
         <div class="field-group">
-          <label for="shift-select">Turno</label>
+          <label for="period-select">Período</label>
           <select
-            id="shift-select"
-            (change)="onShiftChange($event)"
-            data-testid="shift-select"
+            id="period-select"
+            (change)="onPeriodChange($event)"
+            data-testid="period-select"
           >
-            <option value="">Todos os turnos</option>
-            @for (s of shifts(); track s.id) {
-              <option [value]="s.id">{{ s.name }}</option>
+            @for (w of periodOptions; track w) {
+              <option [value]="w" [selected]="w === selectedWeeks()">{{ w }} semanas</option>
             }
           </select>
         </div>
-      }
-      <button class="btn-print" (click)="print()" type="button" data-testid="print-btn">
-        Imprimir
-      </button>
-    </div>
+        <label class="toggle-label">
+          <input
+            type="checkbox"
+            [checked]="excludeDowntime()"
+            (change)="onToggleExcludeDowntime()"
+            data-testid="toggle-exclude-downtime"
+          >
+          Excluir paradas planejadas
+        </label>
+        @if (shifts().length > 0) {
+          <div class="field-group">
+            <label for="shift-select">Turno</label>
+            <select
+              id="shift-select"
+              (change)="onShiftChange($event)"
+              data-testid="shift-select"
+            >
+              <option value="">Todos os turnos</option>
+              @for (s of shifts(); track s.id) {
+                <option [value]="s.id">{{ s.name }}</option>
+              }
+            </select>
+          </div>
+        }
+        <button class="btn-print" (click)="print()" type="button" data-testid="print-btn">
+          Imprimir
+        </button>
+      </div>
+    }
   </div>
 
-  @if (loading()) {
-    <div class="skeleton-wrap" data-testid="loading-skeleton">
-      <div class="skeleton skeleton-chart"></div>
-      <div class="skeleton skeleton-table"></div>
-    </div>
-  } @else if (errorMsg()) {
-    <div class="error-msg" data-testid="error-msg">{{ errorMsg() }}</div>
-  } @else if (!hasData()) {
-    <div class="empty-state" data-testid="empty-state">
-      <p>Nenhum dado disponível para o período selecionado.</p>
-    </div>
-  } @else {
-    <div class="chart-card" data-testid="chart-area">
-      <h2>Tendência de OEE ({{ selectedWeeks() }} semanas)</h2>
-      <app-line-chart
-        [labels]="chartLabels()"
-        [values]="chartValues()"
-        [referenceValue]="65"
-        yLabel="OEE (%)"
-      />
-    </div>
+  <!-- ── Tab bar ──────────────────────────────────────────────────────────── -->
+  <div class="tab-bar" role="tablist">
+    <button
+      role="tab"
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'trend'"
+      (click)="activeTab.set('trend')"
+      data-testid="tab-trend"
+      aria-selected="activeTab() === 'trend'"
+    >
+      Tendência
+    </button>
+    <button
+      role="tab"
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'benchmark'"
+      (click)="activeTab.set('benchmark')"
+      data-testid="tab-benchmark"
+      aria-selected="activeTab() === 'benchmark'"
+    >
+      Benchmark
+    </button>
+  </div>
 
-    <div class="table-card" data-testid="data-table">
-      <h2>Dados por semana</h2>
-      <table class="data-table">
-        <thead>
-          <tr>
-            <th>Semana</th>
-            <th>OEE (%)</th>
-            <th>Amostras</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (row of tableRows(); track row.label) {
-            <tr [class.below-ref]="row.oee !== null && row.oee < 65">
-              <td>{{ row.label }}</td>
-              <td>{{ row.oee !== null ? row.oee + '%' : '—' }}</td>
-              <td>{{ row.samples }}</td>
+  <!-- ── Aba Tendência ─────────────────────────────────────────────────────── -->
+  @if (activeTab() === 'trend') {
+    @if (loading()) {
+      <div class="skeleton-wrap" data-testid="loading-skeleton">
+        <div class="skeleton skeleton-chart"></div>
+        <div class="skeleton skeleton-table"></div>
+      </div>
+    } @else if (errorMsg()) {
+      <div class="error-msg" data-testid="error-msg">{{ errorMsg() }}</div>
+    } @else if (!hasData()) {
+      <div class="empty-state" data-testid="empty-state">
+        <p>Nenhum dado disponível para o período selecionado.</p>
+      </div>
+    } @else {
+      <div class="chart-card" data-testid="chart-area">
+        <h2>Tendência de OEE ({{ selectedWeeks() }} semanas)</h2>
+        <app-line-chart
+          [labels]="chartLabels()"
+          [values]="chartValues()"
+          [referenceValue]="65"
+          yLabel="OEE (%)"
+        />
+      </div>
+
+      <div class="table-card" data-testid="data-table">
+        <h2>Dados por semana</h2>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Semana</th>
+              <th>OEE (%)</th>
+              <th>Amostras</th>
             </tr>
-          }
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody>
+            @for (row of tableRows(); track row.label) {
+              <tr [class.below-ref]="row.oee !== null && row.oee < 65">
+                <td>{{ row.label }}</td>
+                <td>{{ row.oee !== null ? row.oee + '%' : '—' }}</td>
+                <td>{{ row.samples }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  }
+
+  <!-- ── Aba Benchmark ─────────────────────────────────────────────────────── -->
+  @if (activeTab() === 'benchmark') {
+    <app-oee-benchmark data-testid="benchmark-tab-content" />
   }
 </div>
