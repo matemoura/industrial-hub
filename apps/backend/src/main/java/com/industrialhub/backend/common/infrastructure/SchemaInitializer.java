@@ -58,5 +58,19 @@ public class SchemaInitializer implements ApplicationRunner {
         } catch (Exception ignored) {
             // Column may not exist yet in fresh H2 test databases or already correct type
         }
+
+        // Sprint 23 — US-063/US-064: plant_id columns (nullable for retrocompatibility)
+        jdbc.execute("""
+                ALTER TABLE equipment
+                ADD COLUMN IF NOT EXISTS plant_id UUID
+                """);
+        jdbc.execute("""
+                ALTER TABLE non_conformance
+                ADD COLUMN IF NOT EXISTS plant_id UUID
+                """);
+        jdbc.execute("""
+                ALTER TABLE import_batch
+                ADD COLUMN IF NOT EXISTS plant_id UUID
+                """);
     }
 }

@@ -3,10 +3,11 @@ import { provideRouter } from '@angular/router';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { of, throwError, Subject } from 'rxjs';
-import { signal } from '@angular/core';
+import { signal, computed } from '@angular/core';
 import { NavComponent } from './nav.component';
 import { AuthService } from '../../auth/auth.service';
 import { NotificationService, Notification } from '../../notifications/notification.service';
+import { PlantService } from '../../admin/plants/plant.service';
 
 const MOCK_NOTIFICATIONS: Notification[] = [
   {
@@ -30,7 +31,19 @@ const MOCK_NOTIFICATIONS: Notification[] = [
 ];
 
 function makeAuthService(role: string) {
-  return { role: signal(role), logout: vi.fn() };
+  const roleSignal = signal(role);
+  return {
+    role: roleSignal,
+    isAuthenticated: computed(() => true),
+    logout: vi.fn(),
+  };
+}
+
+function makePlantService() {
+  return {
+    listPlants: vi.fn().mockReturnValue(of([])),
+    getUserPlants: vi.fn().mockReturnValue(of([])),
+  };
 }
 
 function makeNotificationService(unreadCount = 3, notifications = MOCK_NOTIFICATIONS) {
@@ -59,6 +72,7 @@ describe('NavComponent', () => {
         provideHttpClientTesting(),
         { provide: AuthService, useValue: makeAuthService(role) },
         { provide: NotificationService, useValue: notificationService },
+        { provide: PlantService, useValue: makePlantService() },
       ],
     }).compileComponents();
 
@@ -185,6 +199,7 @@ describe('NavComponent', () => {
           provideHttpClientTesting(),
           { provide: AuthService, useValue: makeAuthService('OPERATOR') },
           { provide: NotificationService, useValue: notificationService },
+          { provide: PlantService, useValue: makePlantService() },
         ],
       }).compileComponents();
       // Should not throw

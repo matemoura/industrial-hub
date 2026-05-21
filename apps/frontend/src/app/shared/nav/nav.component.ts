@@ -5,6 +5,7 @@ import {
   OnInit,
   inject,
   signal,
+  computed,
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -20,12 +21,15 @@ import {
   formatNotificationDate,
 } from '../../notifications/notification.utils';
 import { MaintenanceService } from '../../maintenance/maintenance.service';
+import { PlantService, PlantResponse } from '../../admin/plants/plant.service';
+import { PlantSelectorComponent, PlantOption } from '../plant-selector/plant-selector.component';
+import { PlantContextService } from '../plant-selector/plant-context.service';
 
 @Component({
   selector: 'app-nav',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, PlantSelectorComponent],
   templateUrl: './nav.component.html',
   styleUrl: './nav.component.scss',
 })
@@ -33,6 +37,8 @@ export class NavComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
   private readonly maintenanceService = inject(MaintenanceService);
+  private readonly plantService = inject(PlantService);
+  private readonly plantContextService = inject(PlantContextService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly role = this.authService.role;
@@ -46,6 +52,11 @@ export class NavComponent implements OnInit {
   readonly panelLoading = signal(false);
 
   readonly belowMinCount = signal<number>(0);
+
+  readonly userPlants = signal<PlantResponse[]>([]);
+  readonly plantOptions = computed<PlantOption[]>(() =>
+    this.userPlants().map((p) => ({ id: p.id, name: p.name, code: p.code })),
+  );
 
   ngOnInit(): void {
     interval(60_000)
@@ -69,6 +80,31 @@ export class NavComponent implements OnInit {
         next: (count) => this.belowMinCount.set(count),
         error: () => { /* polling falha silenciosamente */ },
       });
+
+    if (this.authService.isAuthenticated()) {
+      this.loadUserPlants();
+    }
+  }
+
+  private loadUserPlants(): void {
+    const role = this.role();
+    if (role === 'ADMIN') {
+      this.plantService.listPlants()
+        .pipe(takeUntilDestroyed(this.destroyRef))
+        .subscribe({
+          next: (plants) => {
+            this.userPlants.set(plants);
+            // Invalida seleção stale: se o UUID salvo não corresponde a uma planta ativa
+            const storedId = this.plantContextService.selectedPlantId();
+            if (storedId && !plants.find((p) => p.id === storedId)) {
+              this.plantContextService.setPlant(null);
+            }
+          },
+          error: () => { /* falha silenciosa — não impede nav */ },
+        });
+    }
+    // OPERATOR/SUPERVISOR: carregar via endpoint de plantas do usuário quando disponível
+    // Por ora ADMIN já carrega todas as plantas para o seletor
   }
 
   togglePanel(): void {

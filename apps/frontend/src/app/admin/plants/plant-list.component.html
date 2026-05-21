@@ -1,0 +1,292 @@
+<section class="plants-page">
+  <header class="page-header">
+    <div class="page-header__title">
+      <h1>Plantas</h1>
+      <p class="page-header__subtitle">Unidades produtivas do grupo MSB</p>
+    </div>
+    <div class="page-header__actions">
+      @if (!loading()) {
+        <button
+          class="btn btn--primary"
+          type="button"
+          data-testid="btn-new-plant"
+          (click)="openCreateDialog()"
+        >
+          + Nova Planta
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (successMsg()) {
+    <div class="alert alert--success" role="status" data-testid="success-msg">{{ successMsg() }}</div>
+  }
+
+  @if (errorMsg()) {
+    <div class="alert alert--error" role="alert" data-testid="error-state">
+      {{ errorMsg() }}
+      <button type="button" class="alert__dismiss" (click)="dismissError()" aria-label="Fechar">×</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="skeleton-list" data-testid="loading-state" aria-label="Carregando...">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (plants().length === 0) {
+    <div class="empty-state" data-testid="empty-state">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" stroke="#CBD5E1" stroke-width="2"/>
+        <path d="M16 28l6-12 6 12M18 24h10" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p>Nenhuma planta cadastrada.</p>
+      <button class="btn btn--primary" type="button" (click)="openCreateDialog()">
+        Cadastrar planta
+      </button>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table class="data-table" data-testid="plants-table" aria-label="Plantas cadastradas">
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Nome</th>
+            <th scope="col">Endereço</th>
+            <th scope="col">Fuso Horário</th>
+            <th scope="col">Padrão</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (plant of plants(); track plant.id) {
+            <tr data-testid="plant-row">
+              <td>
+                <span class="code-badge">{{ plant.code }}</span>
+              </td>
+              <td class="name-cell">{{ plant.name }}</td>
+              <td class="address-cell">{{ plant.address ?? '—' }}</td>
+              <td class="tz-cell">{{ plant.timezone }}</td>
+              <td class="default-cell">
+                @if (plant.isDefault) {
+                  <span class="default-icon" aria-label="Planta padrão" title="Planta padrão">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M3 8l3.5 3.5L13 5" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </span>
+                }
+              </td>
+              <td class="actions-cell">
+                <button
+                  class="btn btn--icon btn--ghost"
+                  type="button"
+                  data-testid="btn-edit"
+                  aria-label="Editar planta {{ plant.name }}"
+                  (click)="openEditDialog(plant)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+                <button
+                  class="btn btn--icon btn--danger-ghost"
+                  type="button"
+                  data-testid="btn-deactivate"
+                  aria-label="Desativar planta {{ plant.name }}"
+                  [disabled]="plant.isDefault"
+                  [title]="plant.isDefault ? 'A planta padrão não pode ser desativada' : 'Desativar planta'"
+                  (click)="deactivate(plant)"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M2 3.5h10M5.5 3.5V2h3v1.5M6 6v4M8 6v4M3 3.5l.5 8h7l.5-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<!-- Create Dialog -->
+@if (dialogMode() === 'create') {
+  <div class="dialog-backdrop" role="presentation" (click)="closeDialog()">
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialog-create-title"
+      data-testid="dialog-create"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="dialog__header">
+        <h2 id="dialog-create-title">Nova Planta</h2>
+        <button class="btn btn--icon btn--ghost" type="button" (click)="closeDialog()" aria-label="Fechar dialog">×</button>
+      </header>
+
+      <div class="dialog__body">
+        @if (formError()) {
+          <div class="alert alert--error" role="alert" data-testid="form-error">{{ formError() }}</div>
+        }
+
+        <div class="form-group">
+          <label for="create-code" class="form-label">Código <span aria-hidden="true">*</span></label>
+          <input
+            id="create-code"
+            type="text"
+            class="form-input"
+            data-testid="input-code"
+            maxlength="20"
+            placeholder="Ex: HQ"
+            [value]="formCode()"
+            (input)="updateFormCode($any($event.target).value)"
+          />
+          <span class="form-hint">Será convertido para maiúsculas automaticamente</span>
+        </div>
+
+        <div class="form-group">
+          <label for="create-name" class="form-label">Nome <span aria-hidden="true">*</span></label>
+          <input
+            id="create-name"
+            type="text"
+            class="form-input"
+            data-testid="input-name"
+            maxlength="200"
+            placeholder="Ex: Matriz São Paulo"
+            [ngModel]="formName()"
+            (ngModelChange)="formName.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="create-address" class="form-label">Endereço</label>
+          <input
+            id="create-address"
+            type="text"
+            class="form-input"
+            data-testid="input-address"
+            maxlength="500"
+            placeholder="Ex: Av. Industrial, 1000 — São Paulo, SP"
+            [ngModel]="formAddress()"
+            (ngModelChange)="formAddress.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="create-timezone" class="form-label">Fuso Horário</label>
+          <select
+            id="create-timezone"
+            class="form-select"
+            data-testid="select-timezone"
+            [ngModel]="formTimezone()"
+            (ngModelChange)="formTimezone.set($event)"
+          >
+            @for (tz of timezones; track tz) {
+              <option [value]="tz">{{ tz }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <footer class="dialog__footer">
+        <button class="btn btn--ghost" type="button" (click)="closeDialog()">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          type="button"
+          data-testid="btn-submit-create"
+          [disabled]="!isCreateValid() || submitting()"
+          (click)="submitCreate()"
+        >
+          {{ submitting() ? 'Salvando…' : 'Criar Planta' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- Edit Dialog -->
+@if (dialogMode() === 'edit') {
+  <div class="dialog-backdrop" role="presentation" (click)="closeDialog()">
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialog-edit-title"
+      data-testid="dialog-edit"
+      (click)="$event.stopPropagation()"
+    >
+      <header class="dialog__header">
+        <h2 id="dialog-edit-title">Editar Planta — {{ editingPlant()?.code }}</h2>
+        <button class="btn btn--icon btn--ghost" type="button" (click)="closeDialog()" aria-label="Fechar dialog">×</button>
+      </header>
+
+      <div class="dialog__body">
+        @if (formError()) {
+          <div class="alert alert--error" role="alert" data-testid="form-error-edit">{{ formError() }}</div>
+        }
+
+        <div class="form-group">
+          <label class="form-label">Código</label>
+          <span class="form-static" data-testid="static-code">{{ editingPlant()?.code }}</span>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-name" class="form-label">Nome <span aria-hidden="true">*</span></label>
+          <input
+            id="edit-name"
+            type="text"
+            class="form-input"
+            data-testid="input-name-edit"
+            maxlength="200"
+            [ngModel]="formName()"
+            (ngModelChange)="formName.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-address" class="form-label">Endereço</label>
+          <input
+            id="edit-address"
+            type="text"
+            class="form-input"
+            data-testid="input-address-edit"
+            maxlength="500"
+            [ngModel]="formAddress()"
+            (ngModelChange)="formAddress.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="edit-timezone" class="form-label">Fuso Horário</label>
+          <select
+            id="edit-timezone"
+            class="form-select"
+            data-testid="select-timezone-edit"
+            [ngModel]="formTimezone()"
+            (ngModelChange)="formTimezone.set($event)"
+          >
+            @for (tz of timezones; track tz) {
+              <option [value]="tz">{{ tz }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <footer class="dialog__footer">
+        <button class="btn btn--ghost" type="button" (click)="closeDialog()">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          type="button"
+          data-testid="btn-submit-edit"
+          [disabled]="!isEditValid() || submitting()"
+          (click)="submitEdit()"
+        >
+          {{ submitting() ? 'Salvando…' : 'Salvar Alterações' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

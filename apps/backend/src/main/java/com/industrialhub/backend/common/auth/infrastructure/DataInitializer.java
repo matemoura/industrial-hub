@@ -4,11 +4,17 @@ import com.industrialhub.backend.common.auth.domain.Role;
 import com.industrialhub.backend.common.auth.domain.User;
 import com.industrialhub.backend.common.domain.AlertMetric;
 import com.industrialhub.backend.common.domain.AlertThreshold;
+import com.industrialhub.backend.common.domain.Plant;
 import com.industrialhub.backend.common.domain.SlaClassifierField;
 import com.industrialhub.backend.common.domain.SlaEntityType;
 import com.industrialhub.backend.common.domain.SlaRule;
+import com.industrialhub.backend.common.domain.UserPlant;
 import com.industrialhub.backend.common.infrastructure.AlertThresholdRepository;
+import com.industrialhub.backend.common.infrastructure.PlantRepository;
 import com.industrialhub.backend.common.infrastructure.SlaRuleRepository;
+import com.industrialhub.backend.common.infrastructure.UserPlantRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.core.annotation.Order;
@@ -16,24 +22,33 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Component
 @Order(2)
 public class DataInitializer implements ApplicationRunner {
 
+    private static final Logger log = LoggerFactory.getLogger(DataInitializer.class);
+
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AlertThresholdRepository alertThresholdRepository;
     private final SlaRuleRepository slaRuleRepository;
+    private final PlantRepository plantRepository;
+    private final UserPlantRepository userPlantRepository;
 
     public DataInitializer(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            AlertThresholdRepository alertThresholdRepository,
-                           SlaRuleRepository slaRuleRepository) {
+                           SlaRuleRepository slaRuleRepository,
+                           PlantRepository plantRepository,
+                           UserPlantRepository userPlantRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.alertThresholdRepository = alertThresholdRepository;
         this.slaRuleRepository = slaRuleRepository;
+        this.plantRepository = plantRepository;
+        this.userPlantRepository = userPlantRepository;
     }
 
     @Override
@@ -44,6 +59,7 @@ public class DataInitializer implements ApplicationRunner {
 
         seedAlertThresholds();
         seedSlaRules();
+        seedHqPlant();
     }
 
     private void createIfAbsent(String username, String rawPassword, Role role, String email) {
@@ -94,5 +110,33 @@ public class DataInitializer implements ApplicationRunner {
         slaRuleRepository.save(SlaRule.builder()
             .entityType(SlaEntityType.WORK_ORDER).classifierField(SlaClassifierField.PRIORITY)
             .classifierValue("HIGH").slaHours(24).escalateByEmail(false).createdAt(now).build());
+    }
+
+    private void seedHqPlant() {
+        Plant hq = plantRepository.findByCode("HQ").orElseGet(() -> {
+            Plant newPlant = Plant.builder()
+                .code("HQ")
+                .name("Matriz")
+                .timezone("America/Sao_Paulo")
+                .active(true)
+                .isDefault(true)
+                .createdAt(LocalDateTime.now())
+                .build();
+            Plant saved = plantRepository.save(newPlant);
+            log.info("Planta HQ criada com id={}", saved.getId());
+            return saved;
+        });
+
+        // Associate all existing users to HQ plant if not already associated
+        List<User> allUsers = userRepository.findAll();
+        for (User user : allUsers) {
+            if (!userPlantRepository.existsByUserIdAndPlantId(user.getId(), hq.getId())) {
+                userPlantRepository.save(UserPlant.builder()
+                    .user(user)
+                    .plant(hq)
+                    .build());
+                log.info("Usuário '{}' associado à planta HQ", user.getUsername());
+            }
+        }
     }
 }

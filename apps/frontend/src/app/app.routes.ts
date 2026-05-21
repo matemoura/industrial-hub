@@ -43,6 +43,12 @@ export const routes: Routes = [
       import('./admin/sla-rules/sla-rules.component').then((m) => m.SlaRulesComponent),
   },
   {
+    path: 'admin/plants',
+    canActivate: [adminGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./admin/plants/plant-list.component').then((m) => m.PlantListComponent),
+  },
+  {
     path: 'dashboard',
     canActivate: [authGuard, mustChangePasswordGuard],
     loadComponent: () =>
