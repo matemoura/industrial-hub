@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { PlantContextService } from './plant-context.service';
 
 export const plantHeaderInterceptor: HttpInterceptorFn = (req, next) => {
-  if (!req.url.includes('/api/')) {
+  if (!req.url.includes('/api/') || req.url.includes('/api/v1/auth/')) {
     return next(req);
   }
 

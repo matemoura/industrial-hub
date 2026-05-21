@@ -36,10 +36,11 @@ public class AssignUserPlantsUseCase {
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new UserNotFoundException(userId));
 
-        // Batch fetch — eliminates N+1 queries
-        List<Plant> plants = plantRepository.findAllById(request.plantIds());
+        // Batch fetch — only active plants (eliminates N+1 queries and rejects inactive plants)
+        List<Plant> plants = plantRepository.findAllByIdInAndActiveTrue(request.plantIds());
 
-        // Verify all requested plants were found
+        // Verify all requested plants were found and active
+        // A missing ID may be either non-existent or inactive — both treated as PlantNotFoundException
         if (plants.size() != request.plantIds().size()) {
             Set<UUID> foundIds = plants.stream().map(Plant::getId).collect(Collectors.toSet());
             UUID missingId = request.plantIds().stream()
@@ -48,12 +49,6 @@ public class AssignUserPlantsUseCase {
                 .orElseThrow(); // cannot happen given the size check above
             throw new PlantNotFoundException(missingId);
         }
-
-        // Verify all plants are active
-        plants.stream()
-            .filter(p -> !p.isActive())
-            .findFirst()
-            .ifPresent(p -> { throw new PlantNotFoundException(p.getId()); });
 
         // Remove all existing associations and create new ones in bulk
         userPlantRepository.deleteByUserId(userId);

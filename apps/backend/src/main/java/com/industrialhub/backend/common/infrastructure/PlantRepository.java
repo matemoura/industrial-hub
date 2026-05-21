@@ -3,6 +3,7 @@ package com.industrialhub.backend.common.infrastructure;
 import com.industrialhub.backend.common.domain.Plant;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,4 +19,6 @@ public interface PlantRepository extends JpaRepository<Plant, UUID> {
     boolean existsByCodeAndIdNot(String code, UUID id);
 
     Optional<Plant> findByIsDefaultTrue();
+
+    List<Plant> findAllByIdInAndActiveTrue(Collection<UUID> ids);
 }

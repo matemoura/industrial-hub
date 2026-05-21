@@ -29,7 +29,7 @@ public class EmailEscalationService {
     @Value("${mail.enabled:false}")
     private boolean mailEnabled;
 
-    @Value("${spring.mail.username:noreply@industrialhub.com}")
+    @Value("${app.mail.from:noreply@industrialhub.com}")
     private String fromAddress;
 
     public EmailEscalationService(UserRepository userRepository) {

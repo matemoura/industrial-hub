@@ -59,7 +59,7 @@ class AssignUserPlantsUseCaseTest {
             .active(true).isDefault(false).createdAt(LocalDateTime.now()).build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(plantRepository.findAllById(List.of(plantId1, plantId2))).thenReturn(List.of(plant1, plant2));
+        when(plantRepository.findAllByIdInAndActiveTrue(List.of(plantId1, plantId2))).thenReturn(List.of(plant1, plant2));
         when(userPlantRepository.saveAll(anyList())).thenAnswer(inv -> inv.getArgument(0));
 
         AssignUserPlantsRequest request = new AssignUserPlantsRequest(List.of(plantId1, plantId2));
@@ -69,7 +69,7 @@ class AssignUserPlantsUseCaseTest {
         assertThat(result).extracting(PlantResponse::code).containsExactlyInAnyOrder("SP01", "RJ01");
 
         // Verify batch operations — no N+1
-        verify(plantRepository).findAllById(List.of(plantId1, plantId2));
+        verify(plantRepository).findAllByIdInAndActiveTrue(List.of(plantId1, plantId2));
         verify(userPlantRepository).deleteByUserId(userId);
         verify(userPlantRepository).saveAll(anyList());
         verify(userPlantRepository, never()).save(any(UserPlant.class)); // no individual saves
@@ -84,7 +84,7 @@ class AssignUserPlantsUseCaseTest {
             .id(userId).username("operator").role(Role.OPERATOR).active(true).build();
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(plantRepository.findAllById(List.of())).thenReturn(List.of());
+        when(plantRepository.findAllByIdInAndActiveTrue(List.of())).thenReturn(List.of());
         when(userPlantRepository.saveAll(List.of())).thenReturn(List.of());
 
         AssignUserPlantsRequest request = new AssignUserPlantsRequest(List.of());
@@ -124,7 +124,7 @@ class AssignUserPlantsUseCaseTest {
 
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
         // Only 1 of 2 plants found — batch returns partial result
-        when(plantRepository.findAllById(anyList())).thenReturn(List.of(existing));
+        when(plantRepository.findAllByIdInAndActiveTrue(anyList())).thenReturn(List.of(existing));
 
         AssignUserPlantsRequest request = new AssignUserPlantsRequest(
             List.of(existingPlantId, missingPlantId));
@@ -146,12 +146,9 @@ class AssignUserPlantsUseCaseTest {
         User user = User.builder()
             .id(userId).username("operator").role(Role.OPERATOR).active(true).build();
 
-        Plant inactivePlant = Plant.builder()
-            .id(inactivePlantId).code("OLD1").name("Old Plant")
-            .active(false).isDefault(false).createdAt(LocalDateTime.now()).build();
-
         when(userRepository.findById(userId)).thenReturn(Optional.of(user));
-        when(plantRepository.findAllById(List.of(inactivePlantId))).thenReturn(List.of(inactivePlant));
+        // findAllByIdInAndActiveTrue returns empty because plant is inactive
+        when(plantRepository.findAllByIdInAndActiveTrue(List.of(inactivePlantId))).thenReturn(List.of());
 
         AssignUserPlantsRequest request = new AssignUserPlantsRequest(List.of(inactivePlantId));
 
