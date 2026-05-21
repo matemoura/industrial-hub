@@ -1,0 +1,280 @@
+<section class="sla-rules-page">
+  <header class="page-header">
+    <div class="page-header__title">
+      <h1>Regras de SLA</h1>
+      <p class="page-header__subtitle">Configure prazos de atendimento por entidade e severidade/prioridade</p>
+    </div>
+    <div class="page-header__actions">
+      @if (!loading()) {
+        <button
+          class="btn btn--ghost"
+          type="button"
+          data-testid="btn-run-escalation"
+          [disabled]="runningEscalation()"
+          (click)="runEscalation()"
+        >
+          @if (runningEscalation()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Executando…
+          } @else {
+            Executar SLA agora
+          }
+        </button>
+        <button
+          class="btn btn--primary"
+          type="button"
+          data-testid="btn-new-rule"
+          (click)="openCreateDialog()"
+        >
+          + Nova Regra
+        </button>
+      }
+    </div>
+  </header>
+
+  @if (successMsg()) {
+    <div class="alert alert--success" role="status" data-testid="success-msg">{{ successMsg() }}</div>
+  }
+
+  @if (errorMsg()) {
+    <div class="alert alert--error" role="alert" data-testid="error-state">
+      {{ errorMsg() }}
+      <button type="button" class="alert__dismiss" (click)="dismissError()" aria-label="Fechar">×</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="skeleton-list" data-testid="loading-state" aria-label="Carregando...">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (rules().length === 0) {
+    <div class="empty-state" data-testid="empty-state">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <circle cx="24" cy="24" r="20" stroke="#CBD5E1" stroke-width="2"/>
+        <path d="M24 14v10M24 30v2" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+      <p>Nenhuma regra de SLA configurada.</p>
+      <button class="btn btn--primary" type="button" (click)="openCreateDialog()">
+        Criar primeira regra
+      </button>
+    </div>
+  } @else {
+    <div class="table-container">
+      <table class="data-table" data-testid="sla-rules-table" aria-label="Regras de SLA configuradas">
+        <thead>
+          <tr>
+            <th scope="col">Entidade</th>
+            <th scope="col">Campo</th>
+            <th scope="col">Valor</th>
+            <th scope="col">SLA (horas)</th>
+            <th scope="col">Email</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (rule of rules(); track rule.id) {
+            <tr data-testid="sla-rule-row">
+              <td>
+                <span class="entity-chip" [class.entity-chip--nc]="rule.entityType === 'NC'" [class.entity-chip--wo]="rule.entityType === 'WORK_ORDER'">
+                  {{ entityTypeLabels[rule.entityType] }}
+                </span>
+              </td>
+              <td>{{ classifierFieldLabels[rule.classifierField] }}</td>
+              <td class="value-cell">{{ rule.classifierValue }}</td>
+
+              @if (editState()?.id === rule.id) {
+                <!-- Inline edit mode -->
+                <td class="edit-cell">
+                  <input
+                    type="number"
+                    class="form-input form-input--inline"
+                    data-testid="input-sla-hours-edit"
+                    min="1"
+                    max="8760"
+                    [value]="editState()!.slaHours ?? ''"
+                    (input)="updateEditHours($any($event.target).value)"
+                  />
+                </td>
+                <td class="edit-cell">
+                  <label class="form-label form-label--checkbox">
+                    <input
+                      type="checkbox"
+                      data-testid="toggle-email-edit"
+                      [checked]="editState()!.escalateByEmail"
+                      (change)="updateEditEmail($any($event.target).checked)"
+                    />
+                  </label>
+                </td>
+                <td class="actions-cell">
+                  <button
+                    class="btn btn--primary btn--sm"
+                    type="button"
+                    data-testid="btn-save-edit"
+                    [disabled]="!isEditValid() || submitting()"
+                    (click)="saveEdit()"
+                  >
+                    {{ submitting() ? '…' : 'Salvar' }}
+                  </button>
+                  <button
+                    class="btn btn--ghost btn--sm"
+                    type="button"
+                    data-testid="btn-cancel-edit"
+                    (click)="cancelEdit()"
+                  >
+                    Cancelar
+                  </button>
+                </td>
+              } @else {
+                <!-- Read mode -->
+                <td class="value-cell">{{ rule.slaHours }}h</td>
+                <td class="email-cell">
+                  @if (rule.escalateByEmail) {
+                    <span class="icon icon--check" aria-label="Email habilitado">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M3 8l3.5 3.5L13 5" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </span>
+                  } @else {
+                    <span class="icon icon--x" aria-label="Email desabilitado">
+                      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                        <path d="M4 4l8 8M12 4l-8 8" stroke="#EF4444" stroke-width="2" stroke-linecap="round"/>
+                      </svg>
+                    </span>
+                  }
+                </td>
+                <td class="actions-cell">
+                  <button
+                    class="btn btn--icon btn--ghost"
+                    type="button"
+                    data-testid="btn-edit"
+                    aria-label="Editar regra SLA"
+                    (click)="startEdit(rule)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                  <button
+                    class="btn btn--icon btn--danger-ghost"
+                    type="button"
+                    data-testid="btn-deactivate"
+                    aria-label="Desativar regra SLA"
+                    (click)="deactivate(rule)"
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M2 3.5h10M5.5 3.5V2h3v1.5M6 6v4M8 6v4M3 3.5l.5 8h7l.5-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<!-- Create Dialog -->
+@if (dialogMode() === 'create') {
+  <div class="dialog-backdrop" role="presentation" (click)="closeDialog()">
+    <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-create-title" (click)="$event.stopPropagation()" data-testid="dialog-create">
+      <header class="dialog__header">
+        <h2 id="dialog-create-title">Nova Regra de SLA</h2>
+        <button class="btn btn--icon btn--ghost" type="button" (click)="closeDialog()" aria-label="Fechar dialog">×</button>
+      </header>
+
+      <div class="dialog__body">
+        @if (formError()) {
+          <div class="alert alert--error" role="alert">{{ formError() }}</div>
+        }
+
+        <div class="form-group">
+          <label for="create-entity-type" class="form-label">Entidade <span aria-hidden="true">*</span></label>
+          <select
+            id="create-entity-type"
+            class="form-select"
+            data-testid="select-entity-type"
+            [ngModel]="formEntityType()"
+            (ngModelChange)="formEntityType.set($event)"
+          >
+            @for (et of entityTypes; track et) {
+              <option [value]="et">{{ entityTypeLabels[et] }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="create-classifier-field" class="form-label">Campo classificador <span aria-hidden="true">*</span></label>
+          <select
+            id="create-classifier-field"
+            class="form-select"
+            data-testid="select-classifier-field"
+            [ngModel]="formClassifierField()"
+            (ngModelChange)="formClassifierField.set($event)"
+          >
+            @for (cf of classifierFields; track cf) {
+              <option [value]="cf">{{ classifierFieldLabels[cf] }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="create-classifier-value" class="form-label">Valor (ex: CRITICAL, URGENT) <span aria-hidden="true">*</span></label>
+          <input
+            id="create-classifier-value"
+            type="text"
+            class="form-input"
+            data-testid="input-classifier-value"
+            maxlength="30"
+            placeholder="Ex: CRITICAL"
+            [ngModel]="formClassifierValue()"
+            (ngModelChange)="formClassifierValue.set($event)"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="create-sla-hours" class="form-label">SLA em horas (1–8760) <span aria-hidden="true">*</span></label>
+          <input
+            id="create-sla-hours"
+            type="number"
+            class="form-input"
+            data-testid="input-sla-hours"
+            min="1"
+            max="8760"
+            placeholder="Ex: 48"
+            [ngModel]="formSlaHours()"
+            (ngModelChange)="formSlaHours.set($event)"
+          />
+        </div>
+
+        <div class="form-group form-group--inline">
+          <label class="form-label form-label--checkbox">
+            <input
+              type="checkbox"
+              data-testid="toggle-email"
+              [ngModel]="formEscalateByEmail()"
+              (ngModelChange)="formEscalateByEmail.set($event)"
+            />
+            Escalar por email ao vencer
+          </label>
+        </div>
+      </div>
+
+      <footer class="dialog__footer">
+        <button class="btn btn--ghost" type="button" (click)="closeDialog()">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          type="button"
+          data-testid="btn-submit-create"
+          [disabled]="!isFormValid() || submitting()"
+          (click)="submitCreate()"
+        >
+          {{ submitting() ? 'Salvando…' : 'Criar Regra' }}
+        </button>
+      </footer>
+    </div>
+  </div>
+}

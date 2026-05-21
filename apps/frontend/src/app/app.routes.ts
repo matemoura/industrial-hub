@@ -37,6 +37,12 @@ export const routes: Routes = [
       import('./admin/shifts/shift-list.component').then((m) => m.ShiftListComponent),
   },
   {
+    path: 'admin/sla-rules',
+    canActivate: [adminGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./admin/sla-rules/sla-rules.component').then((m) => m.SlaRulesComponent),
+  },
+  {
     path: 'dashboard',
     canActivate: [authGuard, mustChangePasswordGuard],
     loadComponent: () =>

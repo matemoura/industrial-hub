@@ -66,6 +66,8 @@ public class SecurityConfig {
                     .hasAnyRole("SUPERVISOR", "ADMIN")
                 // User management: ADMIN only
                 .requestMatchers("/api/v1/admin/users/**").hasRole("ADMIN")
+                // SLA rules and escalation: ADMIN only
+                .requestMatchers("/api/v1/admin/sla-rules/**").hasRole("ADMIN")
                 // Admin shifts: URL-level OPERATOR+
                 .requestMatchers("/api/v1/admin/shifts/**")
                     .hasAnyRole("OPERATOR", "SUPERVISOR", "ADMIN")

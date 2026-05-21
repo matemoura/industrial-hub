@@ -31,5 +31,32 @@ public class SchemaInitializer implements ApplicationRunner {
                 ALTER TABLE users
                 ADD COLUMN IF NOT EXISTS must_change_password BOOLEAN NOT NULL DEFAULT FALSE
                 """);
+
+        // Sprint 22 — US-062: slaBreached columns on non_conformance and work_order
+        jdbc.execute("""
+                ALTER TABLE non_conformance
+                ADD COLUMN IF NOT EXISTS sla_breached BOOLEAN NOT NULL DEFAULT FALSE
+                """);
+        jdbc.execute("""
+                ALTER TABLE non_conformance
+                ADD COLUMN IF NOT EXISTS sla_breached_at TIMESTAMP
+                """);
+        jdbc.execute("""
+                ALTER TABLE work_order
+                ADD COLUMN IF NOT EXISTS sla_breached BOOLEAN NOT NULL DEFAULT FALSE
+                """);
+        jdbc.execute("""
+                ALTER TABLE work_order
+                ADD COLUMN IF NOT EXISTS sla_breached_at TIMESTAMP
+                """);
+
+        // Sprint 22 — US-091 SEC-068: spare_part.unit to VARCHAR(20)
+        try {
+            jdbc.execute("""
+                    ALTER TABLE spare_part ALTER COLUMN unit TYPE VARCHAR(20)
+                    """);
+        } catch (Exception ignored) {
+            // Column may not exist yet in fresh H2 test databases or already correct type
+        }
     }
 }
