@@ -1,5 +1,6 @@
 package com.industrialhub.backend.qms.domain;
 
+import com.industrialhub.backend.common.domain.Plant;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -71,4 +72,8 @@ public class NonConformance {
 
     @OneToOne(mappedBy = "nonConformance", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private RootCauseAnalysis rca;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plant_id")
+    private Plant plant;
 }

@@ -1,0 +1,25 @@
+@if (shouldShow()) {
+  <div class="plant-selector" role="group" aria-label="Filtrar por planta" data-testid="plant-selector">
+    <button
+      class="plant-chip"
+      [class.plant-chip--active]="selectedPlantId() === null"
+      type="button"
+      data-testid="chip-all"
+      (click)="selectPlant(null)"
+    >
+      Todas
+    </button>
+    @for (plant of plants(); track plant.id) {
+      <button
+        class="plant-chip"
+        [class.plant-chip--active]="selectedPlantId() === plant.id"
+        type="button"
+        [attr.data-testid]="'chip-' + plant.id"
+        [attr.aria-pressed]="selectedPlantId() === plant.id"
+        (click)="selectPlant(plant.id)"
+      >
+        {{ plant.name }}
+      </button>
+    }
+  </div>
+}

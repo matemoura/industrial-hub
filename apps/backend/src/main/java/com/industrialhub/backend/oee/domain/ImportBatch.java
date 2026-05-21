@@ -1,5 +1,6 @@
 package com.industrialhub.backend.oee.domain;
 
+import com.industrialhub.backend.common.domain.Plant;
 import com.industrialhub.backend.common.domain.Shift;
 import jakarta.persistence.*;
 import lombok.*;
@@ -39,4 +40,8 @@ public class ImportBatch {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "shift_id")
     private Shift shift; // nullable
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plant_id")
+    private Plant plant;
 }

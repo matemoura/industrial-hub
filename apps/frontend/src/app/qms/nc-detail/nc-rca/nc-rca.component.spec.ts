@@ -12,6 +12,7 @@ const BASE_NC: NcResponse = {
   status: 'IN_ANALYSIS',
   reportedBy: 'op1',
   reportedAt: '2026-05-01T10:00:00',
+  slaBreached: false,
   description: null,
   closedAt: null,
   closedBy: null,

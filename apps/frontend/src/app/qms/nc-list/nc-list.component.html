@@ -9,6 +9,15 @@
     <a routerLink="/qms/non-conformances/new" class="btn btn--primary">+ Nova NC</a>
   </div>
 
+  @if (plantContext.selectedPlantId()) {
+    <div class="plant-filter-chip" data-testid="plant-filter-chip" role="status">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+        <path d="M6 1a1 1 0 0 1 1 1v.2A4 4 0 0 1 10 6v2l1 1.5H1L2 8V6a4 4 0 0 1 3-3.8V2a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.2"/>
+      </svg>
+      Filtrando por planta
+    </div>
+  }
+
   @if (kpi(); as k) {
     <div class="kpi-grid">
       <div class="kpi-card kpi-card--amber">

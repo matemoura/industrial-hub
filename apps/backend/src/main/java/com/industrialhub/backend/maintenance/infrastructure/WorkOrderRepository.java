@@ -162,4 +162,24 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
         @Param("priority") WorkOrderPriority priority,
         @Param("statuses") List<WorkOrderStatus> statuses,
         @Param("cutoff") LocalDateTime cutoff);
+
+    @EntityGraph(attributePaths = {"equipment"})
+    @Query("""
+        SELECT w FROM WorkOrder w
+        WHERE (:equipmentId IS NULL OR w.equipment.id = :equipmentId)
+          AND (:type IS NULL OR w.type = :type)
+          AND (:status IS NULL OR w.status = :status)
+          AND (:priority IS NULL OR w.priority = :priority)
+          AND (:slaBreached IS NULL OR w.slaBreached = :slaBreached)
+          AND w.equipment.plant.id IN :plantIds
+    """)
+    Page<WorkOrder> findWithFiltersAndPlantIds(
+        @Param("equipmentId") UUID equipmentId,
+        @Param("type") WorkOrderType type,
+        @Param("status") WorkOrderStatus status,
+        @Param("priority") WorkOrderPriority priority,
+        @Param("slaBreached") Boolean slaBreached,
+        @Param("plantIds") List<UUID> plantIds,
+        Pageable pageable
+    );
 }

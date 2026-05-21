@@ -13,6 +13,7 @@ import {
 } from '../qms.service';
 import { AuthService } from '../../auth/auth.service';
 import { SlaBreachedChipComponent } from '../../shared/sla-breached-chip/sla-breached-chip.component';
+import { PlantContextService } from '../../shared/plant-selector/plant-context.service';
 
 @Component({
   selector: 'app-nc-list',
@@ -26,6 +27,7 @@ export class NcListComponent implements OnInit {
   private readonly qmsService = inject(QmsService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
+  readonly plantContext = inject(PlantContextService);
 
   readonly role = this.authService.role;
 

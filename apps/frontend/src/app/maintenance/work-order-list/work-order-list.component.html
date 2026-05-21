@@ -4,6 +4,12 @@
     <h2>Ordens de Serviço</h2>
   </div>
 
+  @if (plantContext.selectedPlantId()) {
+    <div class="plant-filter-chip" data-testid="plant-filter-chip" role="status">
+      Filtrando por planta
+    </div>
+  }
+
   @if (globalMetrics(); as m) {
     <div class="global-metrics">
       <div class="metric-card">

@@ -19,6 +19,7 @@ import {
   UpdateSparePartStockPayload,
 } from '../maintenance.service';
 import { AuthService } from '../../auth/auth.service';
+import { PlantContextService } from '../../shared/plant-selector/plant-context.service';
 
 type DialogMode = 'create' | 'edit' | 'stock' | null;
 
@@ -35,6 +36,7 @@ export class SparePartListComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  readonly plantContext = inject(PlantContextService);
 
   readonly isAdmin = computed(() => this.authService.role() === 'ADMIN');
   readonly canEdit = computed(() => {

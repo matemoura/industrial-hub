@@ -1,5 +1,7 @@
 package com.industrialhub.backend.common.security;
 
+import com.industrialhub.backend.common.presentation.PlantContextFilter;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,6 +28,9 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
+
+    @Autowired
+    private PlantContextFilter plantContextFilter;
 
     @Value("${app.security.cors.allowed-origins:http://localhost:4200}")
     private String allowedOrigins;
@@ -75,7 +80,8 @@ public class SecurityConfig {
                 .anyRequest().authenticated()
             )
             .addFilterBefore(securityHeadersFilter(), UsernamePasswordAuthenticationFilter.class)
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
+            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+            .addFilterAfter(plantContextFilter, JwtAuthenticationFilter.class);
 
         return http.build();
     }

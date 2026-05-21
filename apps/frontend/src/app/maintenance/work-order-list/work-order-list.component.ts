@@ -13,6 +13,7 @@ import {
 } from '../maintenance.service';
 import { AdminService, Shift } from '../../admin/admin.service';
 import { SlaBreachedChipComponent } from '../../shared/sla-breached-chip/sla-breached-chip.component';
+import { PlantContextService } from '../../shared/plant-selector/plant-context.service';
 
 @Component({
   selector: 'app-work-order-list',
@@ -26,6 +27,7 @@ export class WorkOrderListComponent implements OnInit {
   private readonly maintenanceService = inject(MaintenanceService);
   private readonly adminService = inject(AdminService);
   private readonly router = inject(Router);
+  readonly plantContext = inject(PlantContextService);
 
   page = signal<PageResponse<WorkOrderResponse> | null>(null);
   loading = signal(false);

@@ -1,5 +1,6 @@
 package com.industrialhub.backend.maintenance.domain;
 
+import com.industrialhub.backend.common.domain.Plant;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -44,4 +45,8 @@ public class Equipment {
 
     @Builder.Default
     private boolean active = true;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plant_id")
+    private Plant plant;
 }

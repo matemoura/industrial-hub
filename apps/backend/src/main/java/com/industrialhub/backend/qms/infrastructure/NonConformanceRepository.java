@@ -12,6 +12,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -85,4 +86,21 @@ public interface NonConformanceRepository extends JpaRepository<NonConformance, 
 
     @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.severity = :severity AND nc.status = :status")
     long countBySeverityAndStatus(@Param("severity") NcSeverity severity, @Param("status") NcStatus status);
+
+    @Query("""
+        SELECT nc FROM NonConformance nc
+        WHERE (:status IS NULL OR nc.status = :status)
+        AND (:severity IS NULL OR nc.severity = :severity)
+        AND (:type IS NULL OR nc.type = :type)
+        AND (:slaBreached IS NULL OR nc.slaBreached = :slaBreached)
+        AND nc.plant.id IN :plantIds
+        """)
+    Page<NonConformance> findAllFilteredByPlantIds(
+        @Param("status") NcStatus status,
+        @Param("severity") NcSeverity severity,
+        @Param("type") NcType type,
+        @Param("slaBreached") Boolean slaBreached,
+        @Param("plantIds") Collection<UUID> plantIds,
+        Pageable pageable
+    );
 }
