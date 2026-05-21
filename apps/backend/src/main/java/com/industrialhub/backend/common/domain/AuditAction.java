@@ -46,5 +46,13 @@ public enum AuditAction {
     SLA_RULE_UPDATED,
     SLA_RULE_DELETED,
     // US-062 — Escalation
-    SLA_BREACHED
+    SLA_BREACHED,
+    // US-092 SEC-077 — Manual escalation audit
+    ESCALATION_RUN_MANUAL,
+    // US-063 — Plant management
+    PLANT_CREATED,
+    PLANT_UPDATED,
+    PLANT_DEACTIVATED,
+    USER_PLANT_ASSIGNED,
+    USER_PLANT_REMOVED
 }

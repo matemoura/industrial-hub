@@ -59,6 +59,17 @@
                 }
               </td>
               <td class="actions-cell">
+                @if (canManagePlants()) {
+                  <button
+                    class="btn-action btn-plants"
+                    type="button"
+                    (click)="openPlantsDialog(user)"
+                    [attr.aria-label]="'Gerenciar plantas de ' + user.username"
+                    data-testid="btn-manage-plants"
+                  >
+                    Plantas
+                  </button>
+                }
                 <button
                   class="btn-action"
                   [class.btn-deactivate]="user.active"
@@ -135,6 +146,64 @@
       <div class="dialog-actions">
         <button class="btn-secondary" (click)="showRoleDialog.set(false)" type="button">Cancelar</button>
         <button class="btn-primary" (click)="submitRoleChange()" type="button">Confirmar</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showPlantsDialog() && canManagePlants()) {
+  <div
+    class="dialog-overlay"
+    (click)="showPlantsDialog.set(false)"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="plants-dialog-title"
+    data-testid="plants-dialog"
+  >
+    <div class="dialog dialog--wide" (click)="$event.stopPropagation()">
+      <h2 class="dialog-title" id="plants-dialog-title">
+        Plantas Vinculadas — {{ selectedUser()?.username }}
+      </h2>
+
+      @if (plantsLoading()) {
+        <div class="loading-state" data-testid="plants-loading">Carregando plantas…</div>
+      } @else {
+        <section class="user-plants-section" data-testid="user-plants-section">
+          @if (userPlants().length === 0) {
+            <p class="empty-state" data-testid="plants-empty-state">Nenhuma planta vinculada.</p>
+          } @else {
+            <div class="plants-chips" data-testid="plants-chips">
+              @for (plant of userPlants(); track plant.id) {
+                <span class="chip chip-plant" data-testid="plant-chip">
+                  {{ plant.name }} ({{ plant.code }})
+                </span>
+              }
+            </div>
+          }
+
+          @if (availablePlants().length > 0) {
+            <div class="field plants-field">
+              <label for="add-plant-select" class="field-label">Adicionar planta</label>
+              <select
+                id="add-plant-select"
+                class="plants-select"
+                data-testid="add-plant-select"
+                (change)="assignPlant($any($event.target).value); $any($event.target).value = ''"
+              >
+                <option value="" disabled selected>Selecione uma planta…</option>
+                @for (plant of availablePlants(); track plant.id) {
+                  <option [value]="plant.id">{{ plant.name }} ({{ plant.code }})</option>
+                }
+              </select>
+            </div>
+          } @else if (userPlants().length > 0) {
+            <p class="hint-text">Todas as plantas ativas já estão vinculadas.</p>
+          }
+        </section>
+      }
+
+      <div class="dialog-actions">
+        <button class="btn-primary" (click)="showPlantsDialog.set(false)" type="button">Fechar</button>
       </div>
     </div>
   </div>

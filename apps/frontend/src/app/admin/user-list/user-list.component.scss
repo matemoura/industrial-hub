@@ -289,3 +289,76 @@
   gap: 0.75rem;
   justify-content: flex-end;
 }
+
+// Plants dialog (AC#18)
+.dialog--wide {
+  max-width: 560px;
+}
+
+.btn-plants {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #7dd3fc;
+  margin-right: 0.375rem;
+}
+
+.user-plants-section {
+  margin-bottom: 1.25rem;
+}
+
+.plants-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.chip-plant {
+  background: #e0f2fe;
+  color: #0369a1;
+  padding: 0.3rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+}
+
+.plants-field {
+  margin-top: 1rem;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
+  margin-bottom: 0.375rem;
+}
+
+.plants-select {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+  color: #1e293b;
+  outline: none;
+  transition: border-color 0.15s;
+  cursor: pointer;
+
+  &:focus {
+    border-color: #0099b8;
+  }
+}
+
+.hint-text {
+  font-size: 0.8125rem;
+  color: #64748b;
+  margin-top: 0.75rem;
+}
+
+.loading-state {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+  font-size: 0.875rem;
+}

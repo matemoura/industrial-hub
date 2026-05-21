@@ -1,6 +1,7 @@
 package com.industrialhub.backend.common.application.usecase;
 
 import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.application.EmailEscalationService;
 import com.industrialhub.backend.common.application.NotificationService;
 import com.industrialhub.backend.common.application.dto.EscalationRunResponse;
 import com.industrialhub.backend.common.domain.AuditAction;
@@ -35,8 +36,9 @@ public class EscalationUseCase {
     private final WorkOrderRepository workOrderRepository;
     private final NotificationService notificationService;
     private final AuditService auditService;
+    private final EmailEscalationService emailEscalationService;
 
-    public EscalationRunResponse execute() {
+    public EscalationRunResponse execute(String triggeredBy) {
         List<SlaRule> rules = slaRuleRepository.findByActiveTrue();
         int breachedNcs = 0;
         int breachedWorkOrders = 0;
@@ -66,10 +68,15 @@ public class EscalationUseCase {
                     notificationService.broadcast("SLA Vencido: NC #" + nc.getId(), msg,
                         NotificationSeverity.CRITICAL);
 
-                    auditService.log("system", AuditAction.SLA_BREACHED, "NonConformance",
+                    auditService.log(triggeredBy, AuditAction.SLA_BREACHED, "NonConformance",
                         nc.getId().toString(),
                         Map.of("slaHours", rule.getSlaHours(),
                                "classifierValue", rule.getClassifierValue()));
+
+                    if (rule.isEscalateByEmail()) {
+                        emailEscalationService.notifySlaBreached(
+                            "NC", nc.getId().toString(), nc.getTitle(), rule.getSlaHours());
+                    }
                 }
             } else if (rule.getEntityType() == SlaEntityType.WORK_ORDER) {
                 List<WorkOrder> candidates = workOrderRepository.findBreachCandidates(deadline);
@@ -90,10 +97,15 @@ public class EscalationUseCase {
                     notificationService.broadcast("SLA Vencido: OS #" + wo.getId(), msg,
                         NotificationSeverity.CRITICAL);
 
-                    auditService.log("system", AuditAction.SLA_BREACHED, "WorkOrder",
+                    auditService.log(triggeredBy, AuditAction.SLA_BREACHED, "WorkOrder",
                         wo.getId().toString(),
                         Map.of("slaHours", rule.getSlaHours(),
                                "classifierValue", rule.getClassifierValue()));
+
+                    if (rule.isEscalateByEmail()) {
+                        emailEscalationService.notifySlaBreached(
+                            "OS", wo.getId().toString(), wo.getTitle(), rule.getSlaHours());
+                    }
                 }
             }
         }

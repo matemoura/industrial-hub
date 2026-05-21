@@ -1,6 +1,10 @@
 package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.common.domain.AlertThresholdNotFoundException;
+import com.industrialhub.backend.common.domain.PlantNotFoundException;
+import com.industrialhub.backend.common.domain.PlantDuplicateCodeException;
+import com.industrialhub.backend.common.domain.EscalationCooldownException;
+import com.industrialhub.backend.common.domain.InvalidClassifierValueException;
 import com.industrialhub.backend.common.domain.AttachmentNotFoundException;
 import com.industrialhub.backend.common.domain.SlaRuleDuplicateException;
 import com.industrialhub.backend.common.domain.SlaRuleNotFoundException;
@@ -460,6 +464,39 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_GATEWAY)
     public Map<String, String> handleStorage(StorageException ex) {
         return Map.of("message", ex.getMessage());
+    }
+
+    @ExceptionHandler(PlantNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handlePlantNotFound(PlantNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(PlantDuplicateCodeException.class)
+    public ResponseEntity<Map<String, Object>> handlePlantDuplicateCode(PlantDuplicateCodeException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(EscalationCooldownException.class)
+    public ResponseEntity<Map<String, Object>> handleEscalationCooldown(EscalationCooldownException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
+                "message", ex.getMessage(),
+                "secondsRemaining", ex.getSecondsRemaining(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InvalidClassifierValueException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidClassifierValue(InvalidClassifierValueException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
     }
 
     @ExceptionHandler(Exception.class)

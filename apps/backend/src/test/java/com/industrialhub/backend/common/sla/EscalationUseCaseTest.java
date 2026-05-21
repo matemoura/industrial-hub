@@ -1,6 +1,7 @@
 package com.industrialhub.backend.common.sla;
 
 import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.application.EmailEscalationService;
 import com.industrialhub.backend.common.application.NotificationService;
 import com.industrialhub.backend.common.application.dto.EscalationRunResponse;
 import com.industrialhub.backend.common.application.usecase.EscalationUseCase;
@@ -43,6 +44,7 @@ class EscalationUseCaseTest {
     @Mock WorkOrderRepository workOrderRepository;
     @Mock NotificationService notificationService;
     @Mock AuditService auditService;
+    @Mock EmailEscalationService emailEscalationService;
     @InjectMocks EscalationUseCase useCase;
 
     private SlaRule ncCriticalRule48h() {
@@ -80,7 +82,7 @@ class EscalationUseCaseTest {
         when(slaRuleRepository.findByActiveTrue()).thenReturn(List.of(rule));
         when(ncRepository.findBreachCandidates(any())).thenReturn(List.of(nc));
 
-        EscalationRunResponse result = useCase.execute();
+        EscalationRunResponse result = useCase.execute("system");
 
         assertThat(result.breachedNcs()).isEqualTo(1);
         assertThat(result.breachedWorkOrders()).isEqualTo(0);
@@ -102,7 +104,7 @@ class EscalationUseCaseTest {
         // Repository returns empty because slaBreached=false filter excludes it
         when(ncRepository.findBreachCandidates(any())).thenReturn(List.of());
 
-        EscalationRunResponse result = useCase.execute();
+        EscalationRunResponse result = useCase.execute("system");
 
         assertThat(result.breachedNcs()).isEqualTo(0);
         verify(ncRepository, never()).save(any());
@@ -118,7 +120,7 @@ class EscalationUseCaseTest {
         // Query already filters out CLOSED — returns empty
         when(ncRepository.findBreachCandidates(any())).thenReturn(List.of());
 
-        EscalationRunResponse result = useCase.execute();
+        EscalationRunResponse result = useCase.execute("system");
 
         assertThat(result.breachedNcs()).isEqualTo(0);
         verify(ncRepository, never()).save(any());
@@ -138,7 +140,7 @@ class EscalationUseCaseTest {
         when(slaRuleRepository.findByActiveTrue()).thenReturn(List.of(rule));
         when(ncRepository.findBreachCandidates(any())).thenReturn(List.of(nc));
 
-        EscalationRunResponse result = useCase.execute();
+        EscalationRunResponse result = useCase.execute("system");
 
         assertThat(result.breachedNcs()).isEqualTo(0);
         verify(ncRepository, never()).save(any());
@@ -172,7 +174,7 @@ class EscalationUseCaseTest {
         when(slaRuleRepository.findByActiveTrue()).thenReturn(List.of(rule));
         when(workOrderRepository.findBreachCandidates(any())).thenReturn(List.of(wo));
 
-        EscalationRunResponse result = useCase.execute();
+        EscalationRunResponse result = useCase.execute("system");
 
         assertThat(result.breachedWorkOrders()).isEqualTo(1);
         assertThat(result.breachedNcs()).isEqualTo(0);
@@ -208,7 +210,7 @@ class EscalationUseCaseTest {
         when(ncRepository.findBreachCandidates(any())).thenReturn(List.of(nc1, nc2));
         when(workOrderRepository.findBreachCandidates(any())).thenReturn(List.of(wo1));
 
-        EscalationRunResponse result = useCase.execute();
+        EscalationRunResponse result = useCase.execute("system");
 
         assertThat(result.breachedNcs()).isEqualTo(2);
         assertThat(result.breachedWorkOrders()).isEqualTo(1);
@@ -219,7 +221,7 @@ class EscalationUseCaseTest {
     void execute_noActiveRules_returnsZeros() {
         when(slaRuleRepository.findByActiveTrue()).thenReturn(List.of());
 
-        EscalationRunResponse result = useCase.execute();
+        EscalationRunResponse result = useCase.execute("system");
 
         assertThat(result.breachedNcs()).isEqualTo(0);
         assertThat(result.breachedWorkOrders()).isEqualTo(0);

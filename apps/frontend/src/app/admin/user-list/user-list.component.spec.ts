@@ -5,11 +5,27 @@ import { provideRouter } from '@angular/router';
 import { vi } from 'vitest';
 import { UserListComponent } from './user-list.component';
 import { UserResponse } from '../user.service';
+import { PlantResponse } from '../plants/plant.service';
+import { AuthService } from '../../auth/auth.service';
 
 const USERS: UserResponse[] = [
   { id: '1', username: 'admin', email: 'admin@msb.com', role: 'ADMIN', active: true, mustChangePassword: false },
   { id: '2', username: 'op', email: 'op@msb.com', role: 'OPERATOR', active: false, mustChangePassword: true },
 ];
+
+const MOCK_PLANTS: PlantResponse[] = [
+  { id: 'plant-001', code: 'HQ', name: 'Matriz', address: null, timezone: 'America/Sao_Paulo', isDefault: true, active: true },
+  { id: 'plant-002', code: 'FIL', name: 'Filial Rio', address: null, timezone: 'America/Sao_Paulo', isDefault: false, active: true },
+];
+
+function makeAuthService(role: 'ADMIN' | 'OPERATOR' | 'SUPERVISOR' = 'ADMIN') {
+  return {
+    role: vi.fn().mockReturnValue(role),
+    isAuthenticated: vi.fn().mockReturnValue(true),
+    username: vi.fn().mockReturnValue('testuser'),
+    mustChangePassword: vi.fn().mockReturnValue(false),
+  };
+}
 
 describe('UserListComponent', () => {
   let httpTesting: HttpTestingController;
@@ -22,6 +38,7 @@ describe('UserListComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideRouter([]),
+        { provide: AuthService, useValue: makeAuthService('ADMIN') },
       ],
     }).compileComponents();
 
@@ -172,5 +189,85 @@ describe('UserListComponent', () => {
 
     comp.submitRoleChange();
     httpTesting.expectNone('/api/v1/admin/users/undefined/role');
+  });
+
+  describe('AC#18 — Seção Plantas Vinculadas', () => {
+    it('canManagePlants returns true when role is ADMIN', () => {
+      httpTesting.expectOne('/api/v1/admin/users').flush([]);
+      expect(comp.canManagePlants()).toBe(true);
+    });
+
+    it('openPlantsDialog loads user plants and all plants', () => {
+      httpTesting.expectOne('/api/v1/admin/users').flush(USERS);
+
+      comp.openPlantsDialog(USERS[0]);
+      expect(comp.showPlantsDialog()).toBe(true);
+      expect(comp.selectedUser()).toBe(USERS[0]);
+      expect(comp.plantsLoading()).toBe(true);
+
+      httpTesting.expectOne('/api/v1/admin/users/1/plants').flush([MOCK_PLANTS[0]]);
+      httpTesting.expectOne('/api/v1/admin/plants').flush(MOCK_PLANTS);
+
+      expect(comp.userPlants()).toHaveLength(1);
+      expect(comp.userPlants()[0].id).toBe('plant-001');
+      // availablePlants filtra os já atribuídos
+      expect(comp.availablePlants()).toHaveLength(1);
+      expect(comp.availablePlants()[0].id).toBe('plant-002');
+      expect(comp.plantsLoading()).toBe(false);
+    });
+
+    it('assignPlant calls PUT with updated plant list and reloads', () => {
+      httpTesting.expectOne('/api/v1/admin/users').flush(USERS);
+
+      comp.openPlantsDialog(USERS[0]);
+      httpTesting.expectOne('/api/v1/admin/users/1/plants').flush([MOCK_PLANTS[0]]);
+      httpTesting.expectOne('/api/v1/admin/plants').flush(MOCK_PLANTS);
+
+      comp.assignPlant('plant-002');
+      httpTesting
+        .expectOne({ method: 'PUT', url: '/api/v1/admin/users/1/plants' })
+        .flush(null, { status: 204, statusText: 'No Content' });
+
+      // Recarrega plantas do usuário após vinculação
+      httpTesting.expectOne('/api/v1/admin/users/1/plants').flush(MOCK_PLANTS);
+      httpTesting.expectOne('/api/v1/admin/plants').flush([]);
+
+      expect(comp.successMessage()).toBe('Planta vinculada com sucesso.');
+    });
+
+    it('assignPlant does not call API if plantId already assigned', () => {
+      httpTesting.expectOne('/api/v1/admin/users').flush(USERS);
+
+      comp.openPlantsDialog(USERS[0]);
+      httpTesting.expectOne('/api/v1/admin/users/1/plants').flush([MOCK_PLANTS[0]]);
+      httpTesting.expectOne('/api/v1/admin/plants').flush(MOCK_PLANTS);
+
+      comp.assignPlant('plant-001'); // já está vinculado
+      httpTesting.expectNone('/api/v1/admin/users/1/plants');
+    });
+
+    it('OPERATOR cannot manage plants (canManagePlants returns false)', async () => {
+      httpTesting.expectOne('/api/v1/admin/users').flush([]);
+      TestBed.resetTestingModule();
+      await TestBed.configureTestingModule({
+        imports: [UserListComponent],
+        providers: [
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideRouter([]),
+          { provide: AuthService, useValue: makeAuthService('OPERATOR') },
+        ],
+      }).compileComponents();
+
+      const opHttpTesting = TestBed.inject(HttpTestingController);
+      const opFixture = TestBed.createComponent(UserListComponent);
+      opFixture.detectChanges();
+      const opComp = opFixture.componentInstance;
+      opHttpTesting.expectOne('/api/v1/admin/users').flush(USERS);
+
+      expect(opComp.canManagePlants()).toBe(false);
+
+      opHttpTesting.verify();
+    });
   });
 });

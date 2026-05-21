@@ -18,7 +18,7 @@ public class EscalationJob {
     @Scheduled(cron = "0 0 * * * *", zone = "America/Sao_Paulo")
     public void run() {
         log.info("EscalationJob iniciado");
-        EscalationRunResponse result = escalationUseCase.execute();
+        EscalationRunResponse result = escalationUseCase.execute("system");
         log.info("EscalationJob concluído: {} NCs e {} OSs marcadas",
             result.breachedNcs(), result.breachedWorkOrders());
     }
