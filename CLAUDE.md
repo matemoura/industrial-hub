@@ -94,7 +94,7 @@ Font: Inter (sans-serif), professional industrial look
 | OEE (Overall Equipment Effectiveness) | `oee/` | 1–3, 17 | ✅ done |
 | Authentication | `common/auth/` | 4 | ✅ done |
 | QMS (Quality Management System) | `qms/` | 5–6, 13–14 | ✅ done |
-| Maintenance (TPM) | `maintenance/` | 7–8, 15 | ✅ done |
+| Maintenance (TPM) | `maintenance/` | 7–8, 15, 20 | ✅ done |
 | Cross-module KPI + Reports + Analytics | `common/kpi/`, `common/presentation/` | 9–10, 16 | ✅ done |
 | Security Hardening | `common/security/` | 11 | ✅ done |
 | User Management | `common/auth/` | 12 | ✅ done |
