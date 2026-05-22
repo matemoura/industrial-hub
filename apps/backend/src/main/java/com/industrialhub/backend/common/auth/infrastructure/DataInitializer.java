@@ -4,12 +4,14 @@ import com.industrialhub.backend.common.auth.domain.Role;
 import com.industrialhub.backend.common.auth.domain.User;
 import com.industrialhub.backend.common.domain.AlertMetric;
 import com.industrialhub.backend.common.domain.AlertThreshold;
+import com.industrialhub.backend.common.domain.ConsentRecord;
 import com.industrialhub.backend.common.domain.Plant;
 import com.industrialhub.backend.common.domain.SlaClassifierField;
 import com.industrialhub.backend.common.domain.SlaEntityType;
 import com.industrialhub.backend.common.domain.SlaRule;
 import com.industrialhub.backend.common.domain.UserPlant;
 import com.industrialhub.backend.common.infrastructure.AlertThresholdRepository;
+import com.industrialhub.backend.common.infrastructure.ConsentRecordRepository;
 import com.industrialhub.backend.common.infrastructure.PlantRepository;
 import com.industrialhub.backend.common.infrastructure.SlaRuleRepository;
 import com.industrialhub.backend.common.infrastructure.UserPlantRepository;
@@ -36,19 +38,22 @@ public class DataInitializer implements ApplicationRunner {
     private final SlaRuleRepository slaRuleRepository;
     private final PlantRepository plantRepository;
     private final UserPlantRepository userPlantRepository;
+    private final ConsentRecordRepository consentRecordRepository;
 
     public DataInitializer(UserRepository userRepository,
                            PasswordEncoder passwordEncoder,
                            AlertThresholdRepository alertThresholdRepository,
                            SlaRuleRepository slaRuleRepository,
                            PlantRepository plantRepository,
-                           UserPlantRepository userPlantRepository) {
+                           UserPlantRepository userPlantRepository,
+                           ConsentRecordRepository consentRecordRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.alertThresholdRepository = alertThresholdRepository;
         this.slaRuleRepository = slaRuleRepository;
         this.plantRepository = plantRepository;
         this.userPlantRepository = userPlantRepository;
+        this.consentRecordRepository = consentRecordRepository;
     }
 
     @Override
@@ -60,6 +65,7 @@ public class DataInitializer implements ApplicationRunner {
         seedAlertThresholds();
         seedSlaRules();
         seedHqPlant();
+        seedConsentRecords();
     }
 
     private void createIfAbsent(String username, String rawPassword, Role role, String email) {
@@ -110,6 +116,23 @@ public class DataInitializer implements ApplicationRunner {
         slaRuleRepository.save(SlaRule.builder()
             .entityType(SlaEntityType.WORK_ORDER).classifierField(SlaClassifierField.PRIORITY)
             .classifierValue("HIGH").slaHours(24).escalateByEmail(false).createdAt(now).build());
+    }
+
+    /** Creates ConsentRecord (v1.0) for every user that does not have one yet. US-067 AC#14. */
+    private void seedConsentRecords() {
+        List<User> allUsers = userRepository.findAll();
+        LocalDateTime now = LocalDateTime.now();
+        for (User user : allUsers) {
+            if (!consentRecordRepository.existsByUsername(user.getUsername())) {
+                consentRecordRepository.save(ConsentRecord.builder()
+                    .username(user.getUsername())
+                    .consentVersion("v1.0")
+                    .consentedAt(now)
+                    .ipAddress(null)
+                    .build());
+                log.info("ConsentRecord created for user '{}'", user.getUsername());
+            }
+        }
     }
 
     private void seedHqPlant() {

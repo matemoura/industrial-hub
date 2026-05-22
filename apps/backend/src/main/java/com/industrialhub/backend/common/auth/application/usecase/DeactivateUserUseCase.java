@@ -8,6 +8,7 @@ import com.industrialhub.backend.common.auth.infrastructure.UserRepository;
 import com.industrialhub.backend.common.domain.AuditAction;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +35,7 @@ public class DeactivateUserUseCase {
         }
 
         user.setActive(false);
+        user.setDeactivatedAt(LocalDateTime.now());
         userRepository.save(user);
 
         auditService.log(adminUsername, AuditAction.USER_DEACTIVATED, "User",

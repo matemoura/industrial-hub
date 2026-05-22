@@ -1,6 +1,10 @@
 package com.industrialhub.backend.common;
 
 import com.industrialhub.backend.common.domain.AlertThresholdNotFoundException;
+import com.industrialhub.backend.common.domain.CannotAnonymizeActiveAdminException;
+import com.industrialhub.backend.common.domain.DataRetentionCooldownException;
+import com.industrialhub.backend.common.domain.SelfAnonymizationException;
+import com.industrialhub.backend.common.domain.UserAlreadyAnonymizedException;
 import com.industrialhub.backend.common.domain.PlantNotFoundException;
 import com.industrialhub.backend.common.domain.PlantDuplicateCodeException;
 import com.industrialhub.backend.common.domain.EscalationCooldownException;
@@ -495,6 +499,39 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleInvalidClassifierValue(InvalidClassifierValueException ex) {
         return ResponseEntity.badRequest().body(Map.of(
                 "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(UserAlreadyAnonymizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUserAlreadyAnonymized(UserAlreadyAnonymizedException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(SelfAnonymizationException.class)
+    public ResponseEntity<Map<String, Object>> handleSelfAnonymization(SelfAnonymizationException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(CannotAnonymizeActiveAdminException.class)
+    public ResponseEntity<Map<String, Object>> handleCannotAnonymizeActiveAdmin(CannotAnonymizeActiveAdminException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(DataRetentionCooldownException.class)
+    public ResponseEntity<Map<String, Object>> handleDataRetentionCooldown(DataRetentionCooldownException ex) {
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
+                "message", ex.getMessage(),
+                "secondsRemaining", ex.getSecondsRemaining(),
                 "timestamp", Instant.now().toString()
         ));
     }

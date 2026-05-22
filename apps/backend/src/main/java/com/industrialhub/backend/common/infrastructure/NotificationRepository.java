@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 public interface NotificationRepository extends JpaRepository<Notification, UUID> {
@@ -42,4 +43,17 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
         AND n.readAt IS NULL
     """)
     int markAllReadForUser(@Param("username") String username, @Param("now") LocalDateTime now);
+
+    /** Finds notifications older than the given cutoff for physical deletion. */
+    @Query("SELECT n FROM Notification n WHERE n.createdAt < :cutoff")
+    List<Notification> findOlderThan(@Param("cutoff") LocalDateTime cutoff);
+
+    /** Count of notifications older than the given cutoff (dry-run preview). */
+    @Query("SELECT COUNT(n) FROM Notification n WHERE n.createdAt < :cutoff")
+    long countOlderThan(@Param("cutoff") LocalDateTime cutoff);
+
+    /** Physical delete of notifications older than the given cutoff. */
+    @Modifying
+    @Query("DELETE FROM Notification n WHERE n.createdAt < :cutoff")
+    int deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
 }

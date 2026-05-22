@@ -132,6 +132,17 @@ public interface WorkOrderRepository extends JpaRepository<WorkOrder, UUID> {
     """)
     List<WorkOrder> findAllCompletedCorrectiveForMttr();
 
+    /** Finds work orders older than cutoff whose openedBy is not yet anonymized (for retention job). */
+    @Query("SELECT w FROM WorkOrder w WHERE w.openedAt < :cutoff AND w.openedBy <> '[anonimizado]'")
+    List<WorkOrder> findEligibleForAnonymization(@Param("cutoff") LocalDateTime cutoff);
+
+    /** Count of work orders eligible for anonymization (dry-run preview). */
+    @Query("SELECT COUNT(w) FROM WorkOrder w WHERE w.openedAt < :cutoff AND w.openedBy <> '[anonimizado]'")
+    long countEligibleForAnonymization(@Param("cutoff") LocalDateTime cutoff);
+
+    /** Finds work orders opened by a specific username (for data export and individual anonymization). */
+    List<WorkOrder> findByOpenedByOrderByOpenedAtDesc(String openedBy);
+
     @Query("SELECT wo.status, COUNT(wo) FROM WorkOrder wo GROUP BY wo.status")
     List<Object[]> countByStatus();
 

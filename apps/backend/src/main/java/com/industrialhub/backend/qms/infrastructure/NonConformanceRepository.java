@@ -87,6 +87,17 @@ public interface NonConformanceRepository extends JpaRepository<NonConformance, 
     @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.severity = :severity AND nc.status = :status")
     long countBySeverityAndStatus(@Param("severity") NcSeverity severity, @Param("status") NcStatus status);
 
+    /** Finds NCs older than cutoff whose reportedBy is not yet anonymized (for retention job). */
+    @Query("SELECT nc FROM NonConformance nc WHERE nc.reportedAt < :cutoff AND nc.reportedBy <> '[anonimizado]'")
+    List<NonConformance> findEligibleForAnonymization(@Param("cutoff") LocalDateTime cutoff);
+
+    /** Count of NCs eligible for anonymization (dry-run preview). */
+    @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.reportedAt < :cutoff AND nc.reportedBy <> '[anonimizado]'")
+    long countEligibleForAnonymization(@Param("cutoff") LocalDateTime cutoff);
+
+    /** Finds NCs reported by a specific username (for data export and individual anonymization). */
+    List<NonConformance> findByReportedByOrderByReportedAtDesc(String reportedBy);
+
     @Query("""
         SELECT nc FROM NonConformance nc
         WHERE (:status IS NULL OR nc.status = :status)

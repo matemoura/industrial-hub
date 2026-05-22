@@ -59,6 +59,12 @@ public class SchemaInitializer implements ApplicationRunner {
             // Column may not exist yet in fresh H2 test databases or already correct type
         }
 
+        // Sprint 25 — BUG-S25-01: users.deactivated_at for retention cutoff accuracy
+        jdbc.execute("""
+                ALTER TABLE users
+                ADD COLUMN IF NOT EXISTS deactivated_at TIMESTAMP
+                """);
+
         // Sprint 23 — US-063/US-064: plant_id columns (nullable for retrocompatibility)
         jdbc.execute("""
                 ALTER TABLE equipment

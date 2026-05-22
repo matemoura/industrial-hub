@@ -54,5 +54,9 @@ public enum AuditAction {
     PLANT_UPDATED,
     PLANT_DEACTIVATED,
     USER_PLANT_ASSIGNED,
-    USER_PLANT_REMOVED
+    USER_PLANT_REMOVED,
+    // US-067 — LGPD data retention
+    DATA_RETENTION_EXECUTED,
+    // US-068 — Right to erasure
+    USER_ANONYMIZED
 }

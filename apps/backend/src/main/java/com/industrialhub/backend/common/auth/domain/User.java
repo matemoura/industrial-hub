@@ -3,6 +3,7 @@ package com.industrialhub.backend.common.auth.domain;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -37,4 +38,7 @@ public class User {
     @Builder.Default
     @Column(nullable = false)
     private boolean mustChangePassword = false;
+
+    @Column(name = "deactivated_at")
+    private LocalDateTime deactivatedAt;
 }
