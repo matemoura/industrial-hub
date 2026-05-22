@@ -176,6 +176,57 @@ describe('OeeAnalyticsComponent', () => {
     expect(service.getOeeTrend.mock.calls.length).toBe(callsBefore + 1);
   });
 
+  // ─── SEC-083 — loadShifts() falha → errorMsg preenchida ──────────────────
+  it('(SEC-083-a) quando getShifts() falha → errorMsg() contém mensagem de erro', async () => {
+    await TestBed.resetTestingModule();
+    const failingAdminService = {
+      getShifts: vi.fn().mockReturnValue(throwError(() => new Error('network error'))),
+    };
+    const analyticsService = makeService();
+
+    await TestBed.configureTestingModule({
+      imports: [OeeAnalyticsComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AnalyticsService, useValue: analyticsService },
+        { provide: AdminService, useValue: failingAdminService },
+      ],
+    }).compileComponents();
+
+    const f = TestBed.createComponent(OeeAnalyticsComponent);
+    f.detectChanges();
+
+    expect(f.componentInstance.shiftsErrorMsg()).toBe('Erro ao carregar turnos.');
+  });
+
+  it('(SEC-083-b) quando getShifts() falha → console.error não é chamado', async () => {
+    await TestBed.resetTestingModule();
+    const consoleSpy = vi.spyOn(console, 'error');
+    const failingAdminService = {
+      getShifts: vi.fn().mockReturnValue(throwError(() => new Error('network error'))),
+    };
+    const analyticsService = makeService();
+
+    await TestBed.configureTestingModule({
+      imports: [OeeAnalyticsComponent],
+      providers: [
+        provideRouter([]),
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: AnalyticsService, useValue: analyticsService },
+        { provide: AdminService, useValue: failingAdminService },
+      ],
+    }).compileComponents();
+
+    const f = TestBed.createComponent(OeeAnalyticsComponent);
+    f.detectChanges();
+
+    expect(consoleSpy).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
   // ─── US-056 (a) dropdown exibido quando shifts() tem 2 itens ──────────────
   it('(US-056-a) deve exibir dropdown de turno quando shifts() tem 2 itens', async () => {
     const f = await resetWithServices(MOCK_OEE_TREND, MOCK_SHIFTS);

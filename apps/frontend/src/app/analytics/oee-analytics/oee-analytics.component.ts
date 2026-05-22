@@ -36,6 +36,7 @@ export class OeeAnalyticsComponent implements OnInit {
   // Shift filter
   shifts = signal<Shift[]>([]);
   selectedShiftId = signal<string | null>(null);
+  readonly shiftsErrorMsg = signal<string | null>(null);
 
   readonly chartLabels = computed(() => this.data()?.weekLabels ?? []);
   readonly chartValues = computed(
@@ -61,7 +62,7 @@ export class OeeAnalyticsComponent implements OnInit {
   loadShifts(): void {
     this.adminService.getShifts().subscribe({
       next: (list) => this.shifts.set(list),
-      error: (err) => console.error('Erro ao carregar turnos', err),
+      error: () => this.shiftsErrorMsg.set('Erro ao carregar turnos.'),
     });
   }
 
