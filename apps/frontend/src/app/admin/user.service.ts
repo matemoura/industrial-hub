@@ -64,4 +64,8 @@ export class UserService {
   changePassword(request: ChangePasswordRequest): Observable<ChangePasswordResponse> {
     return this.http.put<ChangePasswordResponse>('/api/v1/users/me/password', request);
   }
+
+  exportMyData(): Observable<Blob> {
+    return this.http.get('/api/v1/users/me/data-export', { responseType: 'blob' });
+  }
 }

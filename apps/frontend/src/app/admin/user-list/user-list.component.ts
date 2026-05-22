@@ -13,6 +13,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { UserResponse, UserService, CreateUserRequest } from '../user.service';
 import { PlantResponse, PlantService } from '../plants/plant.service';
 import { AuthService } from '../../auth/auth.service';
+import { AdminService } from '../admin.service';
 
 @Component({
   selector: 'app-user-list',
@@ -26,7 +27,10 @@ export class UserListComponent implements OnInit {
   private readonly userService = inject(UserService);
   private readonly plantService = inject(PlantService);
   private readonly authService = inject(AuthService);
+  private readonly adminService = inject(AdminService);
   private readonly destroyRef = inject(DestroyRef);
+
+  readonly currentUsername = computed(() => this.authService.username() ?? '');
 
   readonly users = signal<UserResponse[]>([]);
   readonly loading = signal(true);
@@ -36,7 +40,17 @@ export class UserListComponent implements OnInit {
   readonly showCreateDialog = signal(false);
   readonly showRoleDialog = signal(false);
   readonly showPlantsDialog = signal(false);
+  readonly showAnonDialog = signal(false);
   readonly selectedUser = signal<UserResponse | null>(null);
+
+  // Anonymize dialog (AC#14 — US-068)
+  readonly anonTarget = signal<UserResponse | null>(null);
+  readonly anonConfirmText = signal('');
+  readonly anonLoading = signal(false);
+  readonly anonError = signal<string | null>(null);
+  readonly anonConfirmValid = computed(
+    () => this.anonConfirmText() === this.anonTarget()?.username,
+  );
 
   // Plants section (AC#18)
   readonly canManagePlants = computed(() => this.authService.role() === 'ADMIN');
@@ -188,6 +202,50 @@ export class UserListComponent implements OnInit {
         this.loadUsers();
       },
       error: (err) => this.error.set(err?.error?.message ?? 'Erro ao alterar status.'),
+    });
+  }
+
+  // ─── Anonymize (AC#14 — US-068) ──────────────────────────────────────────
+
+  isOwnAccount(user: UserResponse): boolean {
+    return user.username === this.currentUsername();
+  }
+
+  isAlreadyAnonymized(user: UserResponse): boolean {
+    return user.username.startsWith('[usuario-');
+  }
+
+  openAnonDialog(user: UserResponse): void {
+    this.anonTarget.set(user);
+    this.anonConfirmText.set('');
+    this.anonError.set(null);
+    this.showAnonDialog.set(true);
+  }
+
+  closeAnonDialog(): void {
+    this.showAnonDialog.set(false);
+    this.anonTarget.set(null);
+    this.anonConfirmText.set('');
+    this.anonError.set(null);
+  }
+
+  submitAnonymize(): void {
+    const user = this.anonTarget();
+    if (!user || !this.anonConfirmValid()) return;
+
+    this.anonLoading.set(true);
+    this.anonError.set(null);
+    this.adminService.anonymizeUser(user.id).subscribe({
+      next: () => {
+        this.anonLoading.set(false);
+        this.closeAnonDialog();
+        this.showSuccess('Usuário anonimizado com sucesso.');
+        this.loadUsers();
+      },
+      error: (err: { error?: { message?: string } }) => {
+        this.anonLoading.set(false);
+        this.anonError.set(err?.error?.message ?? 'Erro ao anonimizar usuário.');
+      },
     });
   }
 

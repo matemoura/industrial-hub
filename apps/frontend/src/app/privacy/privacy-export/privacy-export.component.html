@@ -1,0 +1,65 @@
+<div class="page-wrapper">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Exportar Meus Dados</h1>
+      <p class="page-subtitle">
+        Baixe um arquivo JSON com todos os seus dados pessoais armazenados no sistema, incluindo
+        perfil, não-conformidades registradas, ordens de serviço abertas e logs de auditoria.
+      </p>
+    </div>
+  </div>
+
+  @if (successMsg()) {
+    <div class="alert alert-success" role="alert" data-testid="success-msg">{{ successMsg() }}</div>
+  }
+
+  @if (errorMsg()) {
+    <div class="alert alert-error" role="alert" data-testid="error-msg">{{ errorMsg() }}</div>
+  }
+
+  <div class="export-card">
+    <div class="export-icon" aria-hidden="true">
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <circle cx="24" cy="24" r="22" fill="#e0f2fe" stroke="#7dd3fc" stroke-width="1.5"/>
+        <path d="M24 14v14M18 22l6 6 6-6" stroke="#0369a1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M16 34h16" stroke="#0369a1" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <div class="export-info">
+      <h2 class="export-title">Exportação de Dados Pessoais (LGPD)</h2>
+      <p class="export-description">
+        Ao clicar em "Exportar meus dados", o sistema irá gerar um arquivo JSON com todas as
+        informações associadas à sua conta. O download será iniciado automaticamente.
+      </p>
+      <ul class="export-list">
+        <li>Perfil: username, e-mail, role</li>
+        <li>Não-conformidades registradas por você</li>
+        <li>Ordens de serviço abertas por você</li>
+        <li>Entradas de log de auditoria associadas à sua conta</li>
+      </ul>
+    </div>
+    <button
+      class="btn-export"
+      type="button"
+      data-testid="btn-export"
+      [disabled]="loading()"
+      (click)="exportData()"
+      aria-label="Exportar meus dados pessoais"
+    >
+      @if (loading()) {
+        <span class="btn-spinner" aria-hidden="true"></span>
+        Exportando…
+      } @else {
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 2v9M4 7l4 4 4-4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 13h12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Exportar meus dados
+      }
+    </button>
+  </div>
+
+  <p class="privacy-note">
+    Em caso de dúvidas sobre seus dados, entre em contato com o administrador do sistema.
+  </p>
+</div>

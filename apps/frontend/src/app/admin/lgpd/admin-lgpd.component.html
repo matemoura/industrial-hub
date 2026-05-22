@@ -1,0 +1,209 @@
+<div class="page-wrapper">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">LGPD — Conformidade e Privacidade</h1>
+      <p class="page-subtitle">Gestão de dados pessoais, retenção e direito ao esquecimento</p>
+    </div>
+    <button
+      class="btn-danger"
+      type="button"
+      data-testid="btn-run-retention"
+      (click)="openRunDialog()"
+    >
+      Executar Retenção
+    </button>
+  </div>
+
+  @if (successMsg()) {
+    <div class="alert alert-success" role="alert" data-testid="success-msg">{{ successMsg() }}</div>
+  }
+  @if (errorMsg()) {
+    <div class="alert alert-error" role="alert" data-testid="global-error">{{ errorMsg() }}</div>
+  }
+
+  <!-- ── Card: Candidatos à Retenção ──────────────────────────────────────── -->
+  <section class="card" data-testid="retention-section">
+    <h2 class="card-title">Candidatos à Retenção Automática</h2>
+
+    @if (previewLoading()) {
+      <div class="loading-state" data-testid="preview-loading">Carregando candidatos…</div>
+    } @else if (previewError()) {
+      <div class="alert alert-error" data-testid="preview-error">{{ previewError() }}</div>
+    } @else if (!hasItems()) {
+      <div class="empty-state" data-testid="empty-state">
+        <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+          <circle cx="20" cy="20" r="18" stroke="#cbd5e1" stroke-width="1.5"/>
+          <path d="M20 13v8M20 25v1" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <p>Nenhum candidato no momento</p>
+      </div>
+    } @else {
+      <div class="table-card">
+        <table class="data-table" data-testid="preview-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>Motivo</th>
+              <th>Tipo</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of previewItems(); track item.entityId) {
+              <tr data-testid="preview-row">
+                <td>{{ item.username }}</td>
+                <td>{{ item.reason }}</td>
+                <td>
+                  <span class="chip chip-type">{{ entityTypeLabel(item.entityType) }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+
+  <!-- ── Card: Usuários / Anonimizar ─────────────────────────────────────── -->
+  <section class="card" data-testid="users-section">
+    <h2 class="card-title">Usuários — Anonimização Imediata</h2>
+
+    @if (usersLoading()) {
+      <div class="loading-state" data-testid="users-loading">Carregando usuários…</div>
+    } @else if (usersError()) {
+      <div class="alert alert-error" data-testid="users-error">{{ usersError() }}</div>
+    } @else {
+      <div class="table-card">
+        <table class="data-table" data-testid="users-table">
+          <thead>
+            <tr>
+              <th>Username</th>
+              <th>E-mail</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (user of users(); track user.id) {
+              <tr data-testid="user-row">
+                <td class="username-cell">{{ user.username }}</td>
+                <td>{{ user.email }}</td>
+                <td>
+                  <span class="chip chip-role chip-{{ user.role | lowercase }}">{{ user.role }}</span>
+                </td>
+                <td>
+                  <span class="chip" [class.chip-active]="user.active" [class.chip-inactive]="!user.active">
+                    {{ user.active ? 'Ativo' : 'Inativo' }}
+                  </span>
+                </td>
+                <td class="actions-cell">
+                  @if (isAlreadyAnonymized(user)) {
+                    <span class="chip chip-anonymized" data-testid="chip-anonymized">Anonimizado</span>
+                  } @else if (!isOwnAccount(user)) {
+                    <button
+                      class="btn-action btn-anon"
+                      type="button"
+                      data-testid="btn-anonymize"
+                      (click)="openAnonDialog(user)"
+                      [attr.aria-label]="'Anonimizar ' + user.username"
+                    >
+                      Anonimizar
+                    </button>
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</div>
+
+<!-- ── Dialog: Confirmar Retenção ─────────────────────────────────────────── -->
+@if (showRunDialog()) {
+  <div
+    class="dialog-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="run-dialog-title"
+    data-testid="run-dialog"
+    (click)="showRunDialog.set(false)"
+  >
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <h2 class="dialog-title" id="run-dialog-title">Executar Retenção de Dados</h2>
+      <div class="dialog-body">
+        <p class="dialog-warning">
+          Esta operação é <strong>irreversível</strong>. Dados de usuários inativos há mais de 2 anos
+          serão anonimizados e notificações antigas serão removidas. Deseja continuar?
+        </p>
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-secondary" type="button" (click)="showRunDialog.set(false)">Cancelar</button>
+        <button
+          class="btn-danger"
+          type="button"
+          data-testid="btn-confirm-retention"
+          [disabled]="runLoading()"
+          (click)="confirmRunRetention()"
+        >
+          @if (runLoading()) { Executando… } @else { Executar Retenção }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Dialog: Confirmar Anonimização ─────────────────────────────────────── -->
+@if (showAnonDialog()) {
+  <div
+    class="dialog-overlay"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="anon-dialog-title"
+    data-testid="anon-dialog"
+    (click)="closeAnonDialog()"
+  >
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <h2 class="dialog-title" id="anon-dialog-title">
+        Anonimizar usuário — {{ anonTarget()?.username }}
+      </h2>
+      <div class="dialog-body">
+        <p class="dialog-warning">
+          Esta ação é <strong>irreversível</strong>. Todos os dados pessoais do usuário
+          <strong>{{ anonTarget()?.username }}</strong> serão anonimizados.
+        </p>
+        <p class="dialog-instruction">
+          Para confirmar, digite o username do usuário abaixo:
+        </p>
+        <div class="field">
+          <label for="anon-confirm-input">Username</label>
+          <input
+            id="anon-confirm-input"
+            type="text"
+            [ngModel]="anonConfirmText()"
+            (ngModelChange)="anonConfirmText.set($event)"
+            placeholder="Digite o username para confirmar"
+            autocomplete="off"
+            data-testid="anon-confirm-input"
+          />
+        </div>
+        @if (anonError()) {
+          <div class="alert alert-error" data-testid="anon-error">{{ anonError() }}</div>
+        }
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-secondary" type="button" (click)="closeAnonDialog()">Cancelar</button>
+        <button
+          class="btn-danger"
+          type="button"
+          data-testid="btn-confirm-anon"
+          [disabled]="!anonConfirmValid() || anonLoading()"
+          (click)="submitAnonymize()"
+        >
+          @if (anonLoading()) { Anonimizando… } @else { Confirmar Anonimização }
+        </button>
+      </div>
+    </div>
+  </div>
+}

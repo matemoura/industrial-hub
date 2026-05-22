@@ -79,6 +79,19 @@
                 >
                   {{ user.active ? 'Desativar' : 'Reativar' }}
                 </button>
+                @if (isAlreadyAnonymized(user)) {
+                  <span class="chip chip-anon" data-testid="chip-anonymized">Anonimizado</span>
+                } @else if (!isOwnAccount(user)) {
+                  <button
+                    class="btn-action btn-anon"
+                    type="button"
+                    data-testid="btn-anonymize"
+                    (click)="openAnonDialog(user)"
+                    [attr.aria-label]="'Anonimizar ' + user.username"
+                  >
+                    Anonimizar
+                  </button>
+                }
               </td>
             </tr>
           }
@@ -204,6 +217,57 @@
 
       <div class="dialog-actions">
         <button class="btn-primary" (click)="showPlantsDialog.set(false)" type="button">Fechar</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showAnonDialog()) {
+  <div
+    class="dialog-overlay"
+    (click)="closeAnonDialog()"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="anon-dialog-title"
+    data-testid="anon-dialog"
+  >
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <h2 class="dialog-title" id="anon-dialog-title">
+        Anonimizar usuário — {{ anonTarget()?.username }}
+      </h2>
+      <div class="dialog-body">
+        <p class="dialog-warning">
+          Esta ação é <strong>irreversível</strong>. Todos os dados pessoais do usuário
+          <strong>{{ anonTarget()?.username }}</strong> serão anonimizados.
+        </p>
+        <p>Para confirmar, digite o username do usuário:</p>
+        <div class="field">
+          <label for="anon-confirm-input">Username</label>
+          <input
+            id="anon-confirm-input"
+            type="text"
+            [ngModel]="anonConfirmText()"
+            (ngModelChange)="anonConfirmText.set($event)"
+            placeholder="Digite o username"
+            autocomplete="off"
+            data-testid="anon-confirm-input"
+          />
+        </div>
+        @if (anonError()) {
+          <div class="alert alert-error" data-testid="anon-error">{{ anonError() }}</div>
+        }
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-secondary" type="button" (click)="closeAnonDialog()">Cancelar</button>
+        <button
+          class="btn-action btn-anon"
+          type="button"
+          data-testid="btn-confirm-anon"
+          [disabled]="!anonConfirmValid() || anonLoading()"
+          (click)="submitAnonymize()"
+        >
+          @if (anonLoading()) { Anonimizando… } @else { Confirmar Anonimização }
+        </button>
       </div>
     </div>
   </div>

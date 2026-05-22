@@ -2,6 +2,37 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+// ─── LGPD / Data Retention ───────────────────────────────────────────────────
+
+export interface AnonymizeResponse {
+  anonymized: boolean;
+  affectedEntities: {
+    auditLogs: number;
+    nonConformances: number;
+    workOrders: number;
+  };
+}
+
+export interface RetentionPreviewItem {
+  entityId: string;
+  username: string;
+  reason: string;
+  entityType: 'USER' | 'AUDIT_LOG' | 'NON_CONFORMANCE' | 'WORK_ORDER' | 'NOTIFICATION';
+}
+
+export interface RetentionPreviewResponse {
+  items: RetentionPreviewItem[];
+  totalUsers: number;
+  totalAuditLogs: number;
+  totalNotifications: number;
+}
+
+export interface RetentionRunResponse {
+  anonymizedUsers: number;
+  removedNotifications: number;
+  clearedAuditLogs: number;
+}
+
 // ─── Shift ────────────────────────────────────────────────────────────────────
 
 export interface Shift {
@@ -57,6 +88,8 @@ export interface UpdateAlertThresholdPayload {
 
 const SHIFTS_BASE = '/api/v1/admin/shifts';
 const BASE = '/api/v1/admin/alert-thresholds';
+const USERS_BASE = '/api/v1/admin/users';
+const RETENTION_BASE = '/api/v1/admin/data-retention';
 
 @Injectable({ providedIn: 'root' })
 export class AdminService {
@@ -96,5 +129,19 @@ export class AdminService {
 
   deleteThreshold(id: string): Observable<void> {
     return this.http.delete<void>(`${BASE}/${id}`);
+  }
+
+  // ─── LGPD — Anonimização e Retenção ──────────────────────────────────────
+
+  anonymizeUser(id: string): Observable<AnonymizeResponse> {
+    return this.http.post<AnonymizeResponse>(`${USERS_BASE}/${id}/anonymize`, {});
+  }
+
+  getRetentionPreview(): Observable<RetentionPreviewResponse> {
+    return this.http.get<RetentionPreviewResponse>(`${RETENTION_BASE}/preview`);
+  }
+
+  runRetention(): Observable<RetentionRunResponse> {
+    return this.http.post<RetentionRunResponse>(`${RETENTION_BASE}/run-now`, {});
   }
 }

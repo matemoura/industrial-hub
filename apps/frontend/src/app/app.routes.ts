@@ -49,6 +49,20 @@ export const routes: Routes = [
       import('./admin/plants/plant-list.component').then((m) => m.PlantListComponent),
   },
   {
+    path: 'admin/lgpd',
+    canActivate: [adminGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./admin/lgpd/admin-lgpd.component').then((m) => m.AdminLgpdComponent),
+  },
+  {
+    path: 'privacy/export',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./privacy/privacy-export/privacy-export.component').then(
+        (m) => m.PrivacyExportComponent,
+      ),
+  },
+  {
     path: 'dashboard',
     canActivate: [authGuard, mustChangePasswordGuard],
     loadComponent: () =>

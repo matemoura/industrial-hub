@@ -1,14 +1,20 @@
 package com.industrialhub.backend.common.auth.presentation;
 
+import com.industrialhub.backend.common.application.dto.UserDataExportResponse;
+import com.industrialhub.backend.common.application.usecase.DataExportUseCase;
 import com.industrialhub.backend.common.auth.application.dto.*;
 import com.industrialhub.backend.common.auth.application.usecase.*;
 import jakarta.validation.Valid;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -21,19 +27,22 @@ public class UserController {
     private final DeactivateUserUseCase deactivateUser;
     private final ReactivateUserUseCase reactivateUser;
     private final ChangeOwnPasswordUseCase changeOwnPassword;
+    private final DataExportUseCase dataExportUseCase;
 
     public UserController(GetUserListUseCase getUserList,
                           CreateUserUseCase createUser,
                           UpdateUserRoleUseCase updateUserRole,
                           DeactivateUserUseCase deactivateUser,
                           ReactivateUserUseCase reactivateUser,
-                          ChangeOwnPasswordUseCase changeOwnPassword) {
+                          ChangeOwnPasswordUseCase changeOwnPassword,
+                          DataExportUseCase dataExportUseCase) {
         this.getUserList = getUserList;
         this.createUser = createUser;
         this.updateUserRole = updateUserRole;
         this.deactivateUser = deactivateUser;
         this.reactivateUser = reactivateUser;
         this.changeOwnPassword = changeOwnPassword;
+        this.dataExportUseCase = dataExportUseCase;
     }
 
     @GetMapping("/api/v1/admin/users")
@@ -76,5 +85,19 @@ public class UserController {
     public ResponseEntity<LoginResponseDto> changePassword(@Valid @RequestBody ChangePasswordRequest request,
                                                            Authentication auth) {
         return ResponseEntity.ok(changeOwnPassword.execute(auth.getName(), request));
+    }
+
+    /**
+     * GET /api/v1/users/me/data-export
+     * Exports all personal data for the authenticated user as a JSON attachment.
+     */
+    @GetMapping("/api/v1/users/me/data-export")
+    public ResponseEntity<UserDataExportResponse> exportMyData(Authentication auth) {
+        UserDataExportResponse export = dataExportUseCase.execute(auth.getName());
+        String filename = "dados-pessoais-" + auth.getName() + "-" + LocalDate.now() + ".json";
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+        return ResponseEntity.ok().headers(headers).body(export);
     }
 }
