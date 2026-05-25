@@ -51,6 +51,8 @@ import com.industrialhub.backend.qms.domain.SupplierDuplicateCodeException;
 import com.industrialhub.backend.qms.domain.SupplierNotFoundException;
 import com.industrialhub.backend.qms.domain.SupplierRequiredForNcException;
 import com.industrialhub.backend.common.domain.EvaluateNowCooldownException;
+import com.industrialhub.backend.common.webhook.domain.WebhookInvalidUrlException;
+import com.industrialhub.backend.common.webhook.domain.WebhookNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -522,6 +524,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CannotAnonymizeActiveAdminException.class)
     public ResponseEntity<Map<String, Object>> handleCannotAnonymizeActiveAdmin(CannotAnonymizeActiveAdminException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(WebhookNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleWebhookNotFound(WebhookNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(WebhookInvalidUrlException.class)
+    public ResponseEntity<Map<String, Object>> handleWebhookInvalidUrl(WebhookInvalidUrlException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));

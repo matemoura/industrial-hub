@@ -58,5 +58,11 @@ public enum AuditAction {
     // US-067 — LGPD data retention
     DATA_RETENTION_EXECUTED,
     // US-068 — Right to erasure
-    USER_ANONYMIZED
+    USER_ANONYMIZED,
+    // SEC-095 — Webhook audit
+    WEBHOOK_CREATED,
+    WEBHOOK_UPDATED,
+    WEBHOOK_DELETED,
+    WEBHOOK_ACTIVATED,
+    WEBHOOK_TESTED
 }
