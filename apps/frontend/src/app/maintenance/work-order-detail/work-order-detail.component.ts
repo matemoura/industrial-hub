@@ -22,6 +22,7 @@ import {
 import { AuthService } from '../../auth/auth.service';
 import { AttachmentListComponent } from '../../shared/attachment/attachment-list.component';
 import { SlaBreachedChipComponent } from '../../shared/sla-breached-chip/sla-breached-chip.component';
+import { NetworkStatusService } from '../../shared/offline/network-status.service';
 
 @Component({
   selector: 'app-work-order-detail',
@@ -37,6 +38,7 @@ export class WorkOrderDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly fb = inject(FormBuilder);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly networkStatus = inject(NetworkStatusService);
 
   readonly canEdit = computed(() => {
     const r = this.authService.role();
@@ -69,6 +71,11 @@ export class WorkOrderDetailComponent implements OnInit {
   };
 
   ngOnInit(): void {
+    if (!this.networkStatus.isOnline()) {
+      this.loading.set(false);
+      this.showSnackbar('Sem conexão. Não é possível carregar os dados offline.', 'error');
+      return;
+    }
     const id = this.route.snapshot.paramMap.get('id') ?? '';
     this.workOrderId.set(id);
     this.loadWorkOrder(id);

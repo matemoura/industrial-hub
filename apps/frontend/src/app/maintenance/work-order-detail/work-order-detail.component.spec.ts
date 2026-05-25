@@ -12,6 +12,7 @@ import {
 } from '../maintenance.service';
 import { AuthService } from '../../auth/auth.service';
 import { AttachmentService } from '../../shared/attachment/attachment.service';
+import { NetworkStatusService } from '../../shared/offline/network-status.service';
 
 const WO: WorkOrderResponse = {
   id: 'wo-1',
@@ -70,6 +71,7 @@ describe('WorkOrderDetailComponent', () => {
     role = 'OPERATOR',
     parts: WorkOrderPartResponse[] = [PART1, PART2],
     listWorkOrderParts?: ReturnType<typeof vi.fn>,
+    online = true,
   ) {
     const listWOParts = listWorkOrderParts ?? vi.fn().mockReturnValue(of(parts));
     const service = {
@@ -89,6 +91,7 @@ describe('WorkOrderDetailComponent', () => {
         { provide: MaintenanceService, useValue: service },
         { provide: AuthService, useValue: makeAuthService(role) },
         { provide: ActivatedRoute, useValue: makeRoute('wo-1') },
+        { provide: NetworkStatusService, useValue: { isOnline: signal(online) } },
         {
           provide: AttachmentService,
           useValue: {
@@ -162,5 +165,15 @@ describe('WorkOrderDetailComponent', () => {
 
     const confirmBtn = fixture.nativeElement.querySelector('[data-testid="btn-confirm-remove"]');
     expect(confirmBtn).toBeTruthy();
+  });
+
+  // MF-S26-01 — offline guard: no API calls, snackbar shown
+  it('should show offline snackbar and skip API calls when offline', () => {
+    const service = setup('OPERATOR', [PART1], undefined, false);
+    expect((service.getWorkOrder as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+    expect((service.listWorkOrderParts as ReturnType<typeof vi.fn>).mock.calls.length).toBe(0);
+    const snackbar = fixture.nativeElement.querySelector('[data-testid="snackbar"]');
+    expect(snackbar).toBeTruthy();
+    expect(snackbar.textContent).toContain('Sem conexão');
   });
 });

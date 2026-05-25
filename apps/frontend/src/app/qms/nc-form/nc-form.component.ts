@@ -2,6 +2,8 @@ import { ChangeDetectionStrategy, Component, OnInit, inject, signal, computed } 
 import { FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { NcType, NcSeverity, QmsService, SupplierResponse } from '../qms.service';
+import { NetworkStatusService } from '../../shared/offline/network-status.service';
+import { OfflineQueueService } from '../../shared/offline/offline-queue.service';
 
 @Component({
   selector: 'app-nc-form',
@@ -14,6 +16,8 @@ import { NcType, NcSeverity, QmsService, SupplierResponse } from '../qms.service
 export class NcFormComponent implements OnInit {
   private readonly qmsService = inject(QmsService);
   private readonly router = inject(Router);
+  private readonly networkStatus = inject(NetworkStatusService);
+  private readonly offlineQueue = inject(OfflineQueueService);
 
   title = signal('');
   type = signal<NcType | ''>('');
@@ -22,6 +26,7 @@ export class NcFormComponent implements OnInit {
   supplierId = signal('');
   loading = signal(false);
   errorMsg = signal<string | null>(null);
+  offlineMsg = signal<string | null>(null);
 
   suppliers = signal<SupplierResponse[]>([]);
 
@@ -69,28 +74,37 @@ export class NcFormComponent implements OnInit {
   submit(): void {
     if (!this.isValid || this.loading()) return;
 
+    const payload = {
+      title: this.title().trim(),
+      type: this.type() as NcType,
+      severity: this.severity() as NcSeverity,
+      description: this.description().trim() || undefined,
+      supplierId: this.isSupplierType() ? this.supplierId() : undefined,
+    };
+
+    if (!this.networkStatus.isOnline()) {
+      void this.offlineQueue.enqueue(payload).then(() => {
+        this.offlineMsg.set(
+          'Sem conexão. NC salva localmente — será enviada quando a conexão retornar.',
+        );
+      });
+      return;
+    }
+
     this.loading.set(true);
     this.errorMsg.set(null);
 
-    this.qmsService
-      .createNc({
-        title: this.title().trim(),
-        type: this.type() as NcType,
-        severity: this.severity() as NcSeverity,
-        description: this.description().trim() || undefined,
-        supplierId: this.isSupplierType() ? this.supplierId() : undefined,
-      })
-      .subscribe({
-        next: () => {
-          this.loading.set(false);
-          this.router.navigate(['/qms/non-conformances'], {
-            state: { toast: 'Não-conformidade registrada com sucesso' },
-          });
-        },
-        error: (err) => {
-          this.errorMsg.set(err?.error?.message ?? 'Erro ao registrar NC. Tente novamente.');
-          this.loading.set(false);
-        },
-      });
+    this.qmsService.createNc(payload).subscribe({
+      next: () => {
+        this.loading.set(false);
+        this.router.navigate(['/qms/non-conformances'], {
+          state: { toast: 'Não-conformidade registrada com sucesso' },
+        });
+      },
+      error: (err) => {
+        this.errorMsg.set(err?.error?.message ?? 'Erro ao registrar NC. Tente novamente.');
+        this.loading.set(false);
+      },
+    });
   }
 }

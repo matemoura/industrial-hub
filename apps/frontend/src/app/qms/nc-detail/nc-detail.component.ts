@@ -6,6 +6,7 @@ import { AuthService } from '../../auth/auth.service';
 import { NcRcaComponent } from './nc-rca/nc-rca.component';
 import { AttachmentListComponent } from '../../shared/attachment/attachment-list.component';
 import { SlaBreachedChipComponent } from '../../shared/sla-breached-chip/sla-breached-chip.component';
+import { NetworkStatusService } from '../../shared/offline/network-status.service';
 
 @Component({
   selector: 'app-nc-detail',
@@ -19,6 +20,7 @@ export class NcDetailComponent implements OnInit {
   private readonly qmsService = inject(QmsService);
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
+  private readonly networkStatus = inject(NetworkStatusService);
 
   readonly role = this.authService.role;
 
@@ -65,6 +67,11 @@ export class NcDetailComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    if (!this.networkStatus.isOnline()) {
+      this.errorMsg.set('Sem conexão. Não é possível carregar os dados offline.');
+      this.loading.set(false);
+      return;
+    }
     const id = this.route.snapshot.paramMap.get('id')!;
     this.loadNc(id);
     this.loadActions(id);
