@@ -104,6 +104,7 @@ Font: Inter (sans-serif), professional industrial look
 | SLA Rules + Escalation | `common/` | 22 | ✅ done |
 | Multi-plant Support | `common/` | 23 | ✅ done |
 | LGPD / Privacy | `common/` | 25 | ✅ done |
+| PWA / Offline | `apps/frontend/` | 26 | ✅ done |
 
 ## Key Conventions
 

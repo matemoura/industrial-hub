@@ -1,0 +1,546 @@
+<section class="webhooks-page">
+  <header class="page-header">
+    <div class="page-header__title">
+      <h1>Webhooks</h1>
+      <p class="page-header__subtitle">Gerencie integrações outbound com sistemas externos via webhooks</p>
+    </div>
+    <div class="page-header__actions">
+      @if (!isLoading()) {
+        <button
+          class="btn btn--primary"
+          type="button"
+          data-testid="btn-new-webhook"
+          (click)="openCreateDialog()"
+        >
+          + Nova Subscription
+        </button>
+      }
+    </div>
+  </header>
+
+  <!-- Alerts -->
+  @if (successMsg()) {
+    <div class="alert alert--success" role="status" data-testid="success-msg">{{ successMsg() }}</div>
+  }
+
+  @if (errorMsg()) {
+    <div class="alert alert--error" role="alert" data-testid="error-msg">
+      {{ errorMsg() }}
+      <button type="button" class="alert__dismiss" (click)="dismissError()" aria-label="Fechar">×</button>
+    </div>
+  }
+
+  <!-- Loading skeleton -->
+  @if (isLoading()) {
+    <div class="skeleton-list" data-testid="loading-skeleton" aria-label="Carregando webhooks...">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (subscriptions().length === 0) {
+    <!-- Empty state -->
+    <div class="empty-state" data-testid="empty-state">
+      <svg width="56" height="56" viewBox="0 0 56 56" fill="none" aria-hidden="true">
+        <circle cx="28" cy="28" r="24" stroke="#CBD5E1" stroke-width="2"/>
+        <path d="M20 28h16M28 20v16" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M36 22l-8 8-4-4" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <p class="empty-state__title">Nenhuma subscription configurada</p>
+      <p class="empty-state__subtitle">Crie uma subscription para receber eventos do sistema em sistemas externos.</p>
+      <button class="btn btn--primary" type="button" (click)="openCreateDialog()">
+        Criar primeira subscription
+      </button>
+    </div>
+  } @else {
+    <!-- Table -->
+    <div class="table-container">
+      <table class="data-table" data-testid="webhooks-table" aria-label="Subscriptions de webhook">
+        <thead>
+          <tr>
+            <th scope="col">URL</th>
+            <th scope="col">Eventos</th>
+            <th scope="col">Status</th>
+            <th scope="col">Última Entrega</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (sub of subscriptions(); track sub.id) {
+            <tr data-testid="webhook-row">
+              <!-- URL -->
+              <td class="url-cell">
+                <span
+                  class="url-text"
+                  [title]="sub.url"
+                  data-testid="webhook-url"
+                >
+                  {{ truncateUrl(sub.url) }}
+                </span>
+                @if (sub.hasSecret) {
+                  <span class="secret-badge" aria-label="Assinatura HMAC ativa" title="Secret configurado">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                      <rect x="2" y="5" width="8" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/>
+                      <path d="M4 5V3.5a2 2 0 0 1 4 0V5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                    </svg>
+                  </span>
+                }
+                @if (sub.description) {
+                  <span class="desc-text">{{ sub.description }}</span>
+                }
+              </td>
+
+              <!-- Events chips -->
+              <td class="events-cell" data-testid="webhook-events">
+                <div class="events-chips">
+                  @for (ev of sub.events; track ev) {
+                    <span
+                      class="event-chip"
+                      [style.background]="eventMetaMap[ev].color + '18'"
+                      [style.color]="eventMetaMap[ev].color"
+                      [title]="eventMetaMap[ev].label"
+                    >
+                      {{ eventMetaMap[ev].label }}
+                    </span>
+                  }
+                </div>
+              </td>
+
+              <!-- Status -->
+              <td data-testid="webhook-status">
+                @if (sub.active) {
+                  <span class="chip chip--success">Ativo</span>
+                } @else {
+                  <span class="chip chip--error">Inativo</span>
+                }
+              </td>
+
+              <!-- Last delivery (placeholder — loaded via deliveries panel) -->
+              <td class="delivery-cell" data-testid="webhook-last-delivery">
+                <span class="http-code http-code--null">—</span>
+              </td>
+
+              <!-- Actions -->
+              <td class="actions-cell">
+                <!-- Test -->
+                <button
+                  class="btn btn--icon btn--ghost"
+                  type="button"
+                  [attr.data-testid]="'btn-test-' + sub.id"
+                  [disabled]="testingId() === sub.id"
+                  (click)="testWebhook(sub)"
+                  aria-label="Testar webhook"
+                  title="Testar"
+                >
+                  @if (testingId() === sub.id) {
+                    <span class="spinner" aria-hidden="true"></span>
+                  } @else {
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M5 2.5l6 4.5-6 4.5V2.5z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  }
+                </button>
+
+                <!-- History -->
+                <button
+                  class="btn btn--icon btn--ghost"
+                  type="button"
+                  [attr.data-testid]="'btn-history-' + sub.id"
+                  (click)="openDeliveriesPanel(sub)"
+                  aria-label="Ver histórico de entregas"
+                  title="Histórico"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.4"/>
+                    <path d="M7 4.5V7l2 1.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+
+                <!-- Edit -->
+                <button
+                  class="btn btn--icon btn--ghost"
+                  type="button"
+                  [attr.data-testid]="'btn-edit-' + sub.id"
+                  (click)="openEditDialog(sub)"
+                  aria-label="Editar webhook"
+                  title="Editar"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                    <path d="M9.5 2.5l2 2-7 7H2.5v-2l7-7z" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </button>
+
+                <!-- Reactivate (only when inactive) -->
+                @if (!sub.active) {
+                  <button
+                    class="btn btn--icon btn--ghost btn--activate"
+                    type="button"
+                    [attr.data-testid]="'btn-activate-' + sub.id"
+                    [disabled]="activatingId() === sub.id"
+                    (click)="activateWebhook(sub)"
+                    aria-label="Reativar webhook"
+                    title="Reativar"
+                  >
+                    @if (activatingId() === sub.id) {
+                      <span class="spinner" aria-hidden="true"></span>
+                    } @else {
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                        <path d="M2 7a5 5 0 1 0 1.5-3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+                        <path d="M2 3.5V7h3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    }
+                  </button>
+                }
+
+                <!-- Delete -->
+                <button
+                  class="btn btn--icon btn--danger-ghost"
+                  type="button"
+                  [attr.data-testid]="'btn-delete-' + sub.id"
+                  [disabled]="deletingId() === sub.id"
+                  (click)="openDeleteConfirm(sub)"
+                  aria-label="Excluir webhook"
+                  title="Excluir"
+                >
+                  @if (deletingId() === sub.id) {
+                    <span class="spinner" aria-hidden="true"></span>
+                  } @else {
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                      <path d="M2 3.5h10M5.5 3.5V2h3v1.5M6 6v4M8 6v4M3 3.5l.5 8h7l.5-8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  }
+                </button>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</section>
+
+<!-- ─── Create / Edit Dialog ─────────────────────────────────────────────── -->
+@if (dialogMode() !== null) {
+  <div class="dialog-backdrop" role="presentation" data-testid="dialog-backdrop" (click)="closeDialog()">
+    <div
+      class="dialog"
+      role="dialog"
+      aria-modal="true"
+      [attr.aria-labelledby]="dialogMode() === 'create' ? 'dialog-create-title' : 'dialog-edit-title'"
+      (click)="$event.stopPropagation()"
+      data-testid="webhook-dialog"
+    >
+      <header class="dialog__header">
+        <h2 [id]="dialogMode() === 'create' ? 'dialog-create-title' : 'dialog-edit-title'">
+          {{ dialogMode() === 'create' ? 'Nova Subscription' : 'Editar Subscription' }}
+        </h2>
+        <button
+          class="btn btn--icon btn--ghost"
+          type="button"
+          (click)="closeDialog()"
+          aria-label="Fechar dialog"
+          data-testid="btn-close-dialog"
+        >×</button>
+      </header>
+
+      <div class="dialog__body">
+        @if (formError()) {
+          <div class="alert alert--error" role="alert" data-testid="dialog-error">{{ formError() }}</div>
+        }
+
+        <!-- URL -->
+        <div class="form-group">
+          <label for="webhook-url" class="form-label">URL <span aria-hidden="true">*</span></label>
+          <input
+            id="webhook-url"
+            type="url"
+            class="form-input"
+            data-testid="input-webhook-url"
+            placeholder="https://erp.exemplo.com/webhook"
+            autocomplete="off"
+            [ngModel]="formUrl()"
+            (ngModelChange)="formUrl.set($event)"
+          />
+          @if (formUrl().trim().length > 0 && !formUrl().trim().startsWith('https://') && !formUrl().trim().startsWith('http://')) {
+            <span class="form-hint form-hint--error" role="alert">URL deve começar com https://</span>
+          }
+        </div>
+
+        <!-- Secret -->
+        <div class="form-group">
+          <label for="webhook-secret" class="form-label">Secret HMAC (opcional)</label>
+          <div class="input-with-toggle">
+            <input
+              id="webhook-secret"
+              [type]="showSecret() ? 'text' : 'password'"
+              class="form-input"
+              data-testid="input-webhook-secret"
+              [placeholder]="dialogMode() === 'edit' ? '••••••  (deixe vazio para não alterar)' : 'Deixe vazio para desativar assinatura'"
+              autocomplete="new-password"
+              [ngModel]="formSecret()"
+              (ngModelChange)="formSecret.set($event)"
+            />
+            <button
+              type="button"
+              class="toggle-secret-btn"
+              data-testid="btn-toggle-secret"
+              (click)="showSecret.set(!showSecret())"
+              [attr.aria-label]="showSecret() ? 'Ocultar secret' : 'Mostrar secret'"
+            >
+              @if (showSecret()) {
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" stroke="currentColor" stroke-width="1.3"/>
+                  <circle cx="7" cy="7" r="1.5" stroke="currentColor" stroke-width="1.3"/>
+                  <path d="M2 2l10 10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+                </svg>
+              } @else {
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                  <path d="M1 7s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z" stroke="currentColor" stroke-width="1.3"/>
+                  <circle cx="7" cy="7" r="1.5" stroke="currentColor" stroke-width="1.3"/>
+                </svg>
+              }
+            </button>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+          <label for="webhook-description" class="form-label">Descrição (opcional)</label>
+          <textarea
+            id="webhook-description"
+            class="form-textarea"
+            data-testid="input-webhook-description"
+            rows="2"
+            placeholder="Ex: ERP Dynamics — NCs críticas"
+            maxlength="255"
+            [ngModel]="formDescription()"
+            (ngModelChange)="formDescription.set($event)"
+          ></textarea>
+        </div>
+
+        <!-- Events checkboxes -->
+        <div class="form-group">
+          <span class="form-label">Eventos <span aria-hidden="true">*</span></span>
+          @if (selectedEventCount() === 0) {
+            <span class="form-hint form-hint--error" role="alert" data-testid="events-required-hint">
+              Selecione pelo menos um evento
+            </span>
+          }
+
+          <!-- QMS category -->
+          <div class="event-category" data-testid="event-category-qms">
+            <span class="event-category__label">QMS</span>
+            <div class="event-category__items">
+              @for (item of qmsEvents(); track item.meta.value) {
+                <label class="form-label form-label--checkbox">
+                  <input
+                    type="checkbox"
+                    [attr.data-testid]="'checkbox-event-' + item.meta.value"
+                    [checked]="item.checked"
+                    (change)="toggleEventCheck(item.meta.value)"
+                  />
+                  {{ item.meta.label }}
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- Manutenção category -->
+          <div class="event-category" data-testid="event-category-maintenance">
+            <span class="event-category__label">Manutenção</span>
+            <div class="event-category__items">
+              @for (item of maintenanceEvents(); track item.meta.value) {
+                <label class="form-label form-label--checkbox">
+                  <input
+                    type="checkbox"
+                    [attr.data-testid]="'checkbox-event-' + item.meta.value"
+                    [checked]="item.checked"
+                    (change)="toggleEventCheck(item.meta.value)"
+                  />
+                  {{ item.meta.label }}
+                </label>
+              }
+            </div>
+          </div>
+
+          <!-- SLA category -->
+          <div class="event-category" data-testid="event-category-sla">
+            <span class="event-category__label">SLA</span>
+            <div class="event-category__items">
+              @for (item of slaEvents(); track item.meta.value) {
+                <label class="form-label form-label--checkbox">
+                  <input
+                    type="checkbox"
+                    [attr.data-testid]="'checkbox-event-' + item.meta.value"
+                    [checked]="item.checked"
+                    (change)="toggleEventCheck(item.meta.value)"
+                  />
+                  {{ item.meta.label }}
+                </label>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="dialog__footer">
+        <button
+          class="btn btn--ghost"
+          type="button"
+          data-testid="btn-cancel-dialog"
+          (click)="closeDialog()"
+        >
+          Cancelar
+        </button>
+        <button
+          class="btn btn--primary"
+          type="button"
+          data-testid="btn-submit-dialog"
+          [disabled]="!isFormValid() || formSubmitting()"
+          (click)="submitForm()"
+        >
+          @if (formSubmitting()) {
+            <span class="spinner" aria-hidden="true"></span>
+            Salvando…
+          } @else {
+            {{ dialogMode() === 'create' ? 'Criar Subscription' : 'Salvar Alterações' }}
+          }
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ─── Delete Confirm Dialog ─────────────────────────────────────────────── -->
+@if (deleteTarget()) {
+  <div class="dialog-backdrop" role="presentation" data-testid="delete-backdrop" (click)="cancelDelete()">
+    <div
+      class="dialog dialog--sm"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="dialog-delete-title"
+      (click)="$event.stopPropagation()"
+      data-testid="delete-dialog"
+    >
+      <header class="dialog__header">
+        <h2 id="dialog-delete-title">Excluir Webhook</h2>
+        <button
+          class="btn btn--icon btn--ghost"
+          type="button"
+          (click)="cancelDelete()"
+          aria-label="Fechar dialog"
+        >×</button>
+      </header>
+      <div class="dialog__body">
+        <p class="dialog__confirm-text">
+          Excluir webhook
+          <strong>{{ truncateUrl(deleteTarget()!.url, 50) }}</strong>?
+          Esta ação não pode ser desfeita.
+        </p>
+      </div>
+      <footer class="dialog__footer">
+        <button
+          class="btn btn--ghost"
+          type="button"
+          data-testid="btn-cancel-delete"
+          (click)="cancelDelete()"
+        >
+          Cancelar
+        </button>
+        <button
+          class="btn btn--danger"
+          type="button"
+          data-testid="btn-confirm-delete"
+          (click)="confirmDelete()"
+        >
+          Excluir
+        </button>
+      </footer>
+    </div>
+  </div>
+}
+
+<!-- ─── Deliveries Side Panel ─────────────────────────────────────────────── -->
+@if (deliveriesTarget()) {
+  <div class="panel-backdrop" role="presentation" data-testid="deliveries-backdrop" (click)="closeDeliveriesPanel()">
+    <aside
+      class="side-panel"
+      role="complementary"
+      aria-label="Histórico de entregas"
+      (click)="$event.stopPropagation()"
+      data-testid="deliveries-panel"
+    >
+      <header class="side-panel__header">
+        <div>
+          <h2 class="side-panel__title">Histórico de Entregas</h2>
+          <p class="side-panel__subtitle">{{ truncateUrl(deliveriesTarget()!.url, 45) }}</p>
+        </div>
+        <button
+          class="btn btn--icon btn--ghost"
+          type="button"
+          (click)="closeDeliveriesPanel()"
+          aria-label="Fechar painel"
+          data-testid="btn-close-deliveries"
+        >×</button>
+      </header>
+
+      <div class="side-panel__body">
+        @if (deliveriesLoading()) {
+          <div class="skeleton-list" aria-label="Carregando entregas...">
+            @for (i of [1, 2, 3, 4, 5]; track i) {
+              <div class="skeleton-row skeleton-row--sm"></div>
+            }
+          </div>
+        } @else if (deliveries().length === 0) {
+          <div class="empty-state empty-state--sm" data-testid="deliveries-empty">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <circle cx="20" cy="20" r="17" stroke="#CBD5E1" stroke-width="1.5"/>
+              <path d="M20 12v9M20 25v2" stroke="#CBD5E1" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <p>Nenhuma entrega registrada ainda</p>
+          </div>
+        } @else {
+          <table class="data-table data-table--compact" data-testid="deliveries-table" aria-label="Histórico de entregas">
+            <thead>
+              <tr>
+                <th scope="col">#</th>
+                <th scope="col">Evento</th>
+                <th scope="col">Status</th>
+                <th scope="col">Código</th>
+                <th scope="col">Duração</th>
+                <th scope="col">Data</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (d of deliveries(); track d.id) {
+                <tr data-testid="delivery-row">
+                  <td class="attempt-cell">{{ d.attempt }}</td>
+                  <td>
+                    <span
+                      class="event-chip"
+                      [style.background]="eventMetaMap[d.event]?.color + '18'"
+                      [style.color]="eventMetaMap[d.event]?.color"
+                    >
+                      {{ eventMetaMap[d.event]?.label ?? d.event }}
+                    </span>
+                  </td>
+                  <td>
+                    <span [class]="deliveryStatusClass(d.status)">
+                      {{ deliveryStatusLabel(d.status) }}
+                    </span>
+                  </td>
+                  <td>
+                    <span [class]="responseCodeClass(d.responseCode)">
+                      {{ d.responseCode ?? '—' }}
+                    </span>
+                  </td>
+                  <td class="duration-cell">{{ d.durationMs }}ms</td>
+                  <td class="date-cell">{{ formatDate(d.createdAt) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </aside>
+  </div>
+}

@@ -78,5 +78,53 @@ public class SchemaInitializer implements ApplicationRunner {
                 ALTER TABLE import_batch
                 ADD COLUMN IF NOT EXISTS plant_id UUID
                 """);
+
+        // Sprint 27 — US-071/US-072: Webhook tables
+        // Use Hibernate ddl-auto to create these tables — SchemaInitializer is only for
+        // ALTER TABLE patches not supported by Hibernate. The JPA entities define the schema.
+        // Explicitly create here only if Hibernate has not created them yet (handles edge cases).
+        try {
+            jdbc.execute("SELECT 1 FROM webhook_subscription LIMIT 1");
+        } catch (Exception e) {
+            // Table doesn't exist — Hibernate ddl-auto=update should have created it.
+            // If it didn't (e.g. H2 mode), create minimal structure.
+            try {
+                jdbc.execute("""
+                        CREATE TABLE IF NOT EXISTS webhook_subscription (
+                            id          UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                            url         VARCHAR(500) NOT NULL,
+                            secret      VARCHAR(100),
+                            active      BOOLEAN NOT NULL DEFAULT TRUE,
+                            description VARCHAR(255),
+                            created_by  VARCHAR(50) NOT NULL,
+                            created_at  TIMESTAMP NOT NULL,
+                            updated_at  TIMESTAMP,
+                            disabled_at TIMESTAMP
+                        )
+                        """);
+                jdbc.execute("""
+                        CREATE TABLE IF NOT EXISTS webhook_subscription_events (
+                            webhook_id UUID NOT NULL,
+                            event_type VARCHAR(50) NOT NULL,
+                            PRIMARY KEY (webhook_id, event_type)
+                        )
+                        """);
+                jdbc.execute("""
+                        CREATE TABLE IF NOT EXISTS webhook_delivery (
+                            id              UUID DEFAULT RANDOM_UUID() PRIMARY KEY,
+                            subscription_id UUID NOT NULL,
+                            event           VARCHAR(50) NOT NULL,
+                            attempt         INT NOT NULL,
+                            response_code   INT,
+                            duration_ms     BIGINT,
+                            status          VARCHAR(20) NOT NULL,
+                            error_message   TEXT,
+                            created_at      TIMESTAMP NOT NULL
+                        )
+                        """);
+            } catch (Exception ignored) {
+                // Already handled by Hibernate or not needed
+            }
+        }
     }
 }

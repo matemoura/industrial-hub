@@ -55,6 +55,12 @@ export const routes: Routes = [
       import('./admin/lgpd/admin-lgpd.component').then((m) => m.AdminLgpdComponent),
   },
   {
+    path: 'admin/webhooks',
+    canActivate: [adminGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./admin/webhooks/webhooks.component').then((m) => m.WebhooksComponent),
+  },
+  {
     path: 'privacy/export',
     canActivate: [authGuard, mustChangePasswordGuard],
     loadComponent: () =>
