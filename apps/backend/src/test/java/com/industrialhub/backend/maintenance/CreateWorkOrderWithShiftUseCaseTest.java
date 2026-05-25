@@ -2,6 +2,7 @@ package com.industrialhub.backend.maintenance;
 
 import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.common.application.usecase.ShiftResolverService;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.common.domain.Shift;
 import com.industrialhub.backend.common.infrastructure.ShiftRepository;
 import com.industrialhub.backend.maintenance.application.dto.CreateWorkOrderRequest;
@@ -50,6 +51,9 @@ class CreateWorkOrderWithShiftUseCaseTest {
     @Mock
     private AuditService auditService;
 
+    @Mock
+    private WebhookDispatchService webhookDispatchService;
+
     private CreateWorkOrderUseCase useCase;
 
     private Equipment equipment;
@@ -57,7 +61,7 @@ class CreateWorkOrderWithShiftUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new CreateWorkOrderUseCase(
-                equipmentRepository, workOrderRepository, shiftRepository, shiftResolverService, auditService);
+                equipmentRepository, workOrderRepository, shiftRepository, shiftResolverService, auditService, webhookDispatchService);
 
         equipment = Equipment.builder()
                 .id(UUID.randomUUID())

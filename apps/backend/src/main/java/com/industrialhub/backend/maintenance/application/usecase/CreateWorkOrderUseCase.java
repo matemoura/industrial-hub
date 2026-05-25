@@ -1,9 +1,12 @@
 package com.industrialhub.backend.maintenance.application.usecase;
 
 import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.application.dto.webhook.WorkOrderWebhookPayload;
 import com.industrialhub.backend.common.application.usecase.ShiftResolverService;
 import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.common.domain.Shift;
+import com.industrialhub.backend.common.webhook.domain.WebhookEvent;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.common.infrastructure.ShiftRepository;
 import com.industrialhub.backend.maintenance.application.dto.CreateWorkOrderRequest;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderResponse;
@@ -31,17 +34,20 @@ public class CreateWorkOrderUseCase {
     private final ShiftRepository shiftRepository;
     private final ShiftResolverService shiftResolverService;
     private final AuditService auditService;
+    private final WebhookDispatchService webhookDispatchService;
 
     public CreateWorkOrderUseCase(EquipmentRepository equipmentRepository,
                                    WorkOrderRepository workOrderRepository,
                                    ShiftRepository shiftRepository,
                                    ShiftResolverService shiftResolverService,
-                                   AuditService auditService) {
+                                   AuditService auditService,
+                                   WebhookDispatchService webhookDispatchService) {
         this.equipmentRepository = equipmentRepository;
         this.workOrderRepository = workOrderRepository;
         this.shiftRepository = shiftRepository;
         this.shiftResolverService = shiftResolverService;
         this.auditService = auditService;
+        this.webhookDispatchService = webhookDispatchService;
     }
 
     @Transactional
@@ -75,6 +81,8 @@ public class CreateWorkOrderUseCase {
 
         auditService.log(username, AuditAction.WORK_ORDER_CREATED, "WorkOrder", saved.getId(),
                 Map.of("type", saved.getType().name(), "equipmentId", request.equipmentId().toString()));
+
+        webhookDispatchService.dispatch(WebhookEvent.WORK_ORDER_CREATED, WorkOrderWebhookPayload.from(saved));
 
         return WorkOrderResponse.from(saved);
     }

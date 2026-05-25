@@ -4,8 +4,11 @@ import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.common.application.EmailEscalationService;
 import com.industrialhub.backend.common.application.NotificationService;
 import com.industrialhub.backend.common.application.dto.EscalationRunResponse;
+import com.industrialhub.backend.common.application.dto.webhook.SlaBreachWebhookPayload;
 import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.common.domain.NotificationSeverity;
+import com.industrialhub.backend.common.webhook.domain.WebhookEvent;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.common.domain.SlaClassifierField;
 import com.industrialhub.backend.common.domain.SlaEntityType;
 import com.industrialhub.backend.common.domain.SlaRule;
@@ -37,6 +40,7 @@ public class EscalationUseCase {
     private final NotificationService notificationService;
     private final AuditService auditService;
     private final EmailEscalationService emailEscalationService;
+    private final WebhookDispatchService webhookDispatchService;
 
     public EscalationRunResponse execute(String triggeredBy) {
         List<SlaRule> rules = slaRuleRepository.findByActiveTrue();
@@ -77,6 +81,9 @@ public class EscalationUseCase {
                         emailEscalationService.notifySlaBreached(
                             "NC", nc.getId().toString(), nc.getTitle(), rule.getSlaHours());
                     }
+                    webhookDispatchService.dispatch(WebhookEvent.SLA_BREACHED,
+                        new SlaBreachWebhookPayload(rule.getId(), "NonConformance",
+                            nc.getId().toString(), rule.getClassifierValue(), now));
                 }
             } else if (rule.getEntityType() == SlaEntityType.WORK_ORDER) {
                 List<WorkOrder> candidates = workOrderRepository.findBreachCandidates(deadline);
@@ -106,6 +113,9 @@ public class EscalationUseCase {
                         emailEscalationService.notifySlaBreached(
                             "OS", wo.getId().toString(), wo.getTitle(), rule.getSlaHours());
                     }
+                    webhookDispatchService.dispatch(WebhookEvent.SLA_BREACHED,
+                        new SlaBreachWebhookPayload(rule.getId(), "WorkOrder",
+                            wo.getId().toString(), rule.getClassifierValue(), now));
                 }
             }
         }

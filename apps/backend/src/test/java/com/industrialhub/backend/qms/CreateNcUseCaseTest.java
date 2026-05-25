@@ -1,6 +1,7 @@
 package com.industrialhub.backend.qms;
 
 import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.qms.application.dto.CreateNcRequest;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.application.usecase.CreateNcUseCase;
@@ -45,11 +46,14 @@ class CreateNcUseCaseTest {
     @Mock
     private AuditService auditService;
 
+    @Mock
+    private WebhookDispatchService webhookDispatchService;
+
     private CreateNcUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new CreateNcUseCase(repository, supplierRepository, emailService, auditService);
+        useCase = new CreateNcUseCase(repository, supplierRepository, emailService, auditService, webhookDispatchService);
     }
 
     @Test

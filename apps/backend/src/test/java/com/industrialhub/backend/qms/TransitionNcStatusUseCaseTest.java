@@ -1,6 +1,7 @@
 package com.industrialhub.backend.qms;
 
 import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.application.usecase.TransitionNcStatusUseCase;
 import com.industrialhub.backend.qms.domain.InvalidNcTransitionException;
@@ -34,11 +35,14 @@ class TransitionNcStatusUseCaseTest {
     @Mock
     private AuditService auditService;
 
+    @Mock
+    private WebhookDispatchService webhookDispatchService;
+
     private TransitionNcStatusUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new TransitionNcStatusUseCase(repository, auditService);
+        useCase = new TransitionNcStatusUseCase(repository, auditService, webhookDispatchService);
     }
 
     private NonConformance buildNc(NcStatus status) {

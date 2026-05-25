@@ -5,6 +5,7 @@ import com.industrialhub.backend.common.application.EmailEscalationService;
 import com.industrialhub.backend.common.application.NotificationService;
 import com.industrialhub.backend.common.application.dto.EscalationRunResponse;
 import com.industrialhub.backend.common.application.usecase.EscalationUseCase;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.common.domain.NotificationSeverity;
 import com.industrialhub.backend.common.domain.SlaClassifierField;
 import com.industrialhub.backend.common.domain.SlaEntityType;
@@ -45,6 +46,7 @@ class EscalationUseCaseTest {
     @Mock NotificationService notificationService;
     @Mock AuditService auditService;
     @Mock EmailEscalationService emailEscalationService;
+    @Mock WebhookDispatchService webhookDispatchService;
     @InjectMocks EscalationUseCase useCase;
 
     private SlaRule ncCriticalRule48h() {

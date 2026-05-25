@@ -1,7 +1,10 @@
 package com.industrialhub.backend.qms.application.usecase;
 
 import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.application.dto.webhook.NcWebhookPayload;
 import com.industrialhub.backend.common.domain.AuditAction;
+import com.industrialhub.backend.common.webhook.domain.WebhookEvent;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.qms.application.dto.CreateNcRequest;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.domain.NonConformance;
@@ -26,15 +29,18 @@ public class CreateNcUseCase {
     private final SupplierRepository supplierRepository;
     private final QmsEmailService emailService;
     private final AuditService auditService;
+    private final WebhookDispatchService webhookDispatchService;
 
     public CreateNcUseCase(NonConformanceRepository repository,
                            SupplierRepository supplierRepository,
                            QmsEmailService emailService,
-                           AuditService auditService) {
+                           AuditService auditService,
+                           WebhookDispatchService webhookDispatchService) {
         this.repository = repository;
         this.supplierRepository = supplierRepository;
         this.emailService = emailService;
         this.auditService = auditService;
+        this.webhookDispatchService = webhookDispatchService;
     }
 
     @Transactional
@@ -67,6 +73,11 @@ public class CreateNcUseCase {
 
         auditService.log(reportedBy, AuditAction.NC_CREATED, "NonConformance", saved.getId(),
                 Map.of("title", saved.getTitle(), "severity", saved.getSeverity().name()));
+
+        webhookDispatchService.dispatch(WebhookEvent.NC_CREATED, NcWebhookPayload.from(saved));
+        if (saved.getSeverity() == NcSeverity.CRITICAL) {
+            webhookDispatchService.dispatch(WebhookEvent.NC_CRITICAL_OPENED, NcWebhookPayload.from(saved));
+        }
 
         return NcResponse.from(saved);
     }

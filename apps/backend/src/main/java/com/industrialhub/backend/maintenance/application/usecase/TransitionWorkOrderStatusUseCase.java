@@ -1,7 +1,10 @@
 package com.industrialhub.backend.maintenance.application.usecase;
 
 import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.application.dto.webhook.WorkOrderStatusChangedWebhookPayload;
 import com.industrialhub.backend.common.domain.AuditAction;
+import com.industrialhub.backend.common.webhook.domain.WebhookEvent;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.maintenance.application.dto.WorkOrderResponse;
 import com.industrialhub.backend.maintenance.domain.Equipment;
 import com.industrialhub.backend.maintenance.domain.EquipmentStatus;
@@ -33,13 +36,16 @@ public class TransitionWorkOrderStatusUseCase {
     private final WorkOrderRepository workOrderRepository;
     private final EquipmentRepository equipmentRepository;
     private final AuditService auditService;
+    private final WebhookDispatchService webhookDispatchService;
 
     public TransitionWorkOrderStatusUseCase(WorkOrderRepository workOrderRepository,
                                              EquipmentRepository equipmentRepository,
-                                             AuditService auditService) {
+                                             AuditService auditService,
+                                             WebhookDispatchService webhookDispatchService) {
         this.workOrderRepository = workOrderRepository;
         this.equipmentRepository = equipmentRepository;
         this.auditService = auditService;
+        this.webhookDispatchService = webhookDispatchService;
     }
 
     @Transactional
@@ -74,6 +80,9 @@ public class TransitionWorkOrderStatusUseCase {
 
         auditService.log(username, AuditAction.WORK_ORDER_STATUS_CHANGED, "WorkOrder", id,
                 Map.of("from", previousStatus.name(), "to", targetStatus.name()));
+
+        webhookDispatchService.dispatch(WebhookEvent.WORK_ORDER_STATUS_CHANGED,
+                new WorkOrderStatusChangedWebhookPayload(id, saved.getTitle(), previousStatus, targetStatus, username));
 
         return WorkOrderResponse.from(saved);
     }

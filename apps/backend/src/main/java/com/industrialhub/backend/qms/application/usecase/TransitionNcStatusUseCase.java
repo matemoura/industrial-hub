@@ -1,7 +1,10 @@
 package com.industrialhub.backend.qms.application.usecase;
 
 import com.industrialhub.backend.common.application.AuditService;
+import com.industrialhub.backend.common.application.dto.webhook.NcStatusChangedWebhookPayload;
 import com.industrialhub.backend.common.domain.AuditAction;
+import com.industrialhub.backend.common.webhook.domain.WebhookEvent;
+import com.industrialhub.backend.common.webhook.service.WebhookDispatchService;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.domain.InvalidNcTransitionException;
 import com.industrialhub.backend.qms.domain.NcNotFoundException;
@@ -27,10 +30,14 @@ public class TransitionNcStatusUseCase {
 
     private final NonConformanceRepository repository;
     private final AuditService auditService;
+    private final WebhookDispatchService webhookDispatchService;
 
-    public TransitionNcStatusUseCase(NonConformanceRepository repository, AuditService auditService) {
+    public TransitionNcStatusUseCase(NonConformanceRepository repository,
+                                      AuditService auditService,
+                                      WebhookDispatchService webhookDispatchService) {
         this.repository = repository;
         this.auditService = auditService;
+        this.webhookDispatchService = webhookDispatchService;
     }
 
     @Transactional
@@ -58,6 +65,9 @@ public class TransitionNcStatusUseCase {
 
         auditService.log(username, AuditAction.NC_STATUS_CHANGED, "NonConformance", id,
                 Map.of("from", previousStatus.name(), "to", targetStatus.name()));
+
+        webhookDispatchService.dispatch(WebhookEvent.NC_STATUS_CHANGED,
+                new NcStatusChangedWebhookPayload(id, nc.getTitle(), previousStatus, targetStatus, username));
 
         return response;
     }
