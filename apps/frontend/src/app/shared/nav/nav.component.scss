@@ -1,3 +1,18 @@
+.sync-snackbar {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #323232;
+  color: #fff;
+  padding: 0.6rem 1.25rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  z-index: 9999;
+  pointer-events: none;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+}
+
 .main-nav {
   display: flex;
   align-items: center;

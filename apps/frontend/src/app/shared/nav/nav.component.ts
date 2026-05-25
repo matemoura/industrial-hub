@@ -9,13 +9,17 @@ import {
 } from '@angular/core';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { interval } from 'rxjs';
+import { interval, timer } from 'rxjs';
 import { startWith, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../auth/auth.service';
 import {
   Notification,
   NotificationService,
 } from '../../notifications/notification.service';
+import { PwaUpdateService } from '../pwa/pwa-update.service';
+import { PwaInstallService } from '../pwa/pwa-install.service';
+import { OfflineQueueService } from '../offline/offline-queue.service';
+import { OfflineSyncService, SyncResult } from '../offline/offline-sync.service';
 import {
   severityColor,
   formatNotificationDate,
@@ -40,6 +44,10 @@ export class NavComponent implements OnInit {
   private readonly plantService = inject(PlantService);
   private readonly plantContextService = inject(PlantContextService);
   private readonly destroyRef = inject(DestroyRef);
+  readonly pwaUpdate = inject(PwaUpdateService);
+  readonly pwaInstall = inject(PwaInstallService);
+  readonly offlineQueue = inject(OfflineQueueService);
+  private readonly offlineSync = inject(OfflineSyncService);
 
   readonly role = this.authService.role;
 
@@ -52,6 +60,7 @@ export class NavComponent implements OnInit {
   readonly panelLoading = signal(false);
 
   readonly belowMinCount = signal<number>(0);
+  readonly syncMsg = signal<string | null>(null);
 
   readonly userPlants = signal<PlantResponse[]>([]);
   readonly plantOptions = computed<PlantOption[]>(() =>
@@ -59,6 +68,22 @@ export class NavComponent implements OnInit {
   );
 
   ngOnInit(): void {
+    void this.offlineQueue.initCount();
+    this.offlineSync.startSync();
+
+    this.offlineSync.synced$
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((result: SyncResult) => {
+        const msg = result.failed > 0
+          ? `${result.synced} NC(s) sincronizada(s); ${result.failed} falharam após 3 tentativas`
+          : `${result.synced} NC(s) sincronizada(s) com sucesso`;
+        const duration = result.failed > 0 ? 8000 : 5000;
+        this.syncMsg.set(msg);
+        timer(duration)
+          .pipe(takeUntilDestroyed(this.destroyRef))
+          .subscribe(() => this.syncMsg.set(null));
+      });
+
     interval(60_000)
       .pipe(
         startWith(0),

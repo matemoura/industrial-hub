@@ -8,6 +8,9 @@ import { NavComponent } from './nav.component';
 import { AuthService } from '../../auth/auth.service';
 import { NotificationService, Notification } from '../../notifications/notification.service';
 import { PlantService } from '../../admin/plants/plant.service';
+import { SwUpdate, VersionEvent } from '@angular/service-worker';
+import { OfflineQueueService } from '../offline/offline-queue.service';
+import { OfflineSyncService } from '../offline/offline-sync.service';
 
 const MOCK_NOTIFICATIONS: Notification[] = [
   {
@@ -46,6 +49,37 @@ function makePlantService() {
   };
 }
 
+function makeSwUpdate() {
+  return {
+    isEnabled: false,
+    versionUpdates: new Subject<VersionEvent>(),
+    unrecoverable: new Subject<{ type: string; reason: string }>(),
+    activateUpdate: vi.fn().mockResolvedValue(true),
+  };
+}
+
+function makeOfflineQueueService() {
+  return {
+    pendingCount: signal(0),
+    initCount: vi.fn().mockResolvedValue(undefined),
+    enqueue: vi.fn().mockResolvedValue(undefined),
+    getAll: vi.fn().mockResolvedValue([]),
+    dequeueAll: vi.fn().mockResolvedValue([]),
+    remove: vi.fn().mockResolvedValue(undefined),
+    updateAttempts: vi.fn().mockResolvedValue(undefined),
+    clearAll: vi.fn().mockResolvedValue(undefined),
+  };
+}
+
+function makeOfflineSyncService() {
+  return {
+    startSync: vi.fn(),
+    drainQueue: vi.fn().mockResolvedValue(undefined),
+    synced$: new Subject<number>(),
+    lastSyncAt: signal<Date | null>(null),
+  };
+}
+
 function makeNotificationService(unreadCount = 3, notifications = MOCK_NOTIFICATIONS) {
   return {
     getUnreadCount: vi.fn().mockReturnValue(of({ count: unreadCount })),
@@ -73,6 +107,9 @@ describe('NavComponent', () => {
         { provide: AuthService, useValue: makeAuthService(role) },
         { provide: NotificationService, useValue: notificationService },
         { provide: PlantService, useValue: makePlantService() },
+        { provide: SwUpdate, useValue: makeSwUpdate() },
+        { provide: OfflineQueueService, useValue: makeOfflineQueueService() },
+        { provide: OfflineSyncService, useValue: makeOfflineSyncService() },
       ],
     }).compileComponents();
 
@@ -200,6 +237,9 @@ describe('NavComponent', () => {
           { provide: AuthService, useValue: makeAuthService('OPERATOR') },
           { provide: NotificationService, useValue: notificationService },
           { provide: PlantService, useValue: makePlantService() },
+          { provide: SwUpdate, useValue: makeSwUpdate() },
+          { provide: OfflineQueueService, useValue: makeOfflineQueueService() },
+          { provide: OfflineSyncService, useValue: makeOfflineSyncService() },
         ],
       }).compileComponents();
       // Should not throw

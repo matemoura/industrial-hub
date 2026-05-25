@@ -1,3 +1,16 @@
+@if (pwaUpdate.updateAvailable()) {
+  <div class="update-banner" data-testid="pwa-update-banner" role="alert">
+    Nova versão disponível.
+    <button type="button" (click)="pwaUpdate.applyUpdate()">Atualizar</button>
+  </div>
+}
+
+@if (syncMsg()) {
+  <div class="sync-snackbar" data-testid="sync-snackbar" role="status" aria-live="polite">
+    {{ syncMsg() }}
+  </div>
+}
+
 <nav class="main-nav" role="navigation" aria-label="Navegação principal">
   <div class="nav-brand">
     <span class="brand-mark" aria-hidden="true">MSB</span>
@@ -11,7 +24,14 @@
     <a routerLink="/indirect-activities" routerLinkActive="active">Atividades Indiretas</a>
     <a routerLink="/processes" routerLinkActive="active">Processos</a>
     <a routerLink="/summary" routerLinkActive="active">Resumo</a>
-    <a routerLink="/qms/non-conformances" routerLinkActive="active">Não-Conformidades</a>
+    <a routerLink="/qms/non-conformances" routerLinkActive="active" class="nav-link-badge-wrapper">
+      Não-Conformidades
+      @if (offlineQueue.pendingCount() > 0) {
+        <span class="nav-offline-badge" data-testid="nc-offline-badge" aria-label="{{ offlineQueue.pendingCount() }} NCs aguardando sincronização">
+          {{ offlineQueue.pendingCount() }}
+        </span>
+      }
+    </a>
     <a routerLink="/maintenance/equipment" routerLinkActive="active" class="nav-link-badge-wrapper">
       Manutenção
       @if (belowMinCount() > 0) {
@@ -140,6 +160,12 @@
         <div class="notification-backdrop" role="presentation" (click)="closePanel()"></div>
       }
     </div>
+
+    @if (pwaInstall.canInstall()) {
+      <button type="button" class="pwa-install-btn" data-testid="pwa-install-btn" (click)="pwaInstall.install()" aria-label="Instalar App">
+        Instalar App
+      </button>
+    }
 
     <a routerLink="/change-password" class="change-password-link" aria-label="Alterar senha">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
