@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicReference;
 @RequiredArgsConstructor
 public class DataRetentionController {
 
-    private static final Duration RUN_NOW_COOLDOWN = Duration.ofMinutes(5);
+    private static final Duration RUN_NOW_COOLDOWN = Duration.ofMinutes(60);
 
     private final AtomicReference<Instant> lastRunAt = new AtomicReference<>(Instant.EPOCH);
 

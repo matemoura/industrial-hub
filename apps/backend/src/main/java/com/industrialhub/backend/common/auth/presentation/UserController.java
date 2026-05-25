@@ -94,7 +94,8 @@ public class UserController {
     @GetMapping("/api/v1/users/me/data-export")
     public ResponseEntity<UserDataExportResponse> exportMyData(Authentication auth) {
         UserDataExportResponse export = dataExportUseCase.execute(auth.getName());
-        String filename = "dados-pessoais-" + auth.getName() + "-" + LocalDate.now() + ".json";
+        String safeUsername = auth.getName().replaceAll("[^a-zA-Z0-9_\\-]", "_");
+        String filename = "dados-pessoais-" + safeUsername + "-" + LocalDate.now() + ".json";
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());

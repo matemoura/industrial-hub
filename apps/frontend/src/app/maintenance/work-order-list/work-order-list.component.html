@@ -87,6 +87,9 @@
         </select>
       </label>
     }
+    @if (shiftsErrorMsg()) {
+      <p class="error" data-testid="shifts-error-msg">{{ shiftsErrorMsg() }}</p>
+    }
 
     <label class="filter-field filter-field--checkbox">
       <input

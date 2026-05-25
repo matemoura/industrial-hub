@@ -95,11 +95,15 @@ Font: Inter (sans-serif), professional industrial look
 | Authentication | `common/auth/` | 4 | ✅ done |
 | QMS (Quality Management System) | `qms/` | 5–6, 13–14 | ✅ done |
 | Maintenance (TPM) | `maintenance/` | 7–8, 15, 20 | ✅ done |
-| Cross-module KPI + Reports + Analytics | `common/kpi/`, `common/presentation/` | 9–10, 16 | ✅ done |
+| Cross-module KPI + Reports + Analytics | `common/kpi/`, `common/presentation/` | 9–10, 16, 24 | ✅ done |
 | Security Hardening | `common/security/` | 11 | ✅ done |
 | User Management | `common/auth/` | 12 | ✅ done |
 | Alert Thresholds + Notifications | `common/` | 18 | ✅ done |
 | Shift Management | `common/` | 19 | ✅ done |
+| File Attachments | `common/` | 21 | ✅ done |
+| SLA Rules + Escalation | `common/` | 22 | ✅ done |
+| Multi-plant Support | `common/` | 23 | ✅ done |
+| LGPD / Privacy | `common/` | 25 | ✅ done |
 
 ## Key Conventions
 

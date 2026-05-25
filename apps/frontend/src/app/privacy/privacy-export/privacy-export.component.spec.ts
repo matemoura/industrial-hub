@@ -114,7 +114,7 @@ describe('PrivacyExportComponent', () => {
 
     const msg = f.nativeElement.querySelector('[data-testid="success-msg"]');
     expect(msg).toBeTruthy();
-    expect(msg.textContent).toContain('meus-dados-joao.silva.json');
+    expect(msg.textContent).toContain('meus-dados-joao_silva.json');
 
     vi.restoreAllMocks();
   });
@@ -150,7 +150,37 @@ describe('PrivacyExportComponent', () => {
     f.detectChanges();
 
     expect(capturedAnchor).not.toBeNull();
-    expect((capturedAnchor as unknown as HTMLAnchorElement).download).toBe('meus-dados-maria.santos.json');
+    expect((capturedAnchor as unknown as HTMLAnchorElement).download).toBe('meus-dados-maria_santos.json');
+
+    vi.restoreAllMocks();
+  });
+
+  it('(SEC-087) filename sanitiza caracteres especiais no username', async () => {
+    const userSvc = makeUserService();
+    const authSvc = makeAuthService('user with spaces');
+    const f = await createFixture(userSvc, authSvc);
+
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:test');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    let capturedAnchor: HTMLAnchorElement | null = null;
+    const origCreateElement = document.createElement.bind(document);
+    vi.spyOn(document, 'createElement').mockImplementation((tag: string) => {
+      const el = origCreateElement(tag);
+      if (tag === 'a') {
+        capturedAnchor = el as HTMLAnchorElement;
+        vi.spyOn(capturedAnchor, 'click').mockImplementation(() => undefined);
+      }
+      return el;
+    });
+
+    f.componentInstance.exportData();
+    f.detectChanges();
+
+    expect(capturedAnchor).not.toBeNull();
+    // Espaços devem ser substituídos por underscore
+    const download = (capturedAnchor as unknown as HTMLAnchorElement).download;
+    expect(download).toMatch(/^meus-dados-[a-zA-Z0-9_-]+\.json$/);
+    expect(download).not.toContain(' ');
 
     vi.restoreAllMocks();
   });

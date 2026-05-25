@@ -32,6 +32,7 @@ export class WorkOrderListComponent implements OnInit {
   page = signal<PageResponse<WorkOrderResponse> | null>(null);
   loading = signal(false);
   errorMsg = signal<string | null>(null);
+  readonly shiftsErrorMsg = signal<string>('');
 
   globalMetrics = signal<WorkOrderMetricsResponse | null>(null);
 
@@ -77,7 +78,7 @@ export class WorkOrderListComponent implements OnInit {
   loadShifts(): void {
     this.adminService.getShifts().subscribe({
       next: (list) => this.shifts.set(list),
-      error: (err) => console.error('Erro ao carregar turnos', err),
+      error: () => this.shiftsErrorMsg.set('Erro ao carregar turnos.'),
     });
   }
 

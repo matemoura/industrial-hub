@@ -1116,18 +1116,18 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 20 ⬜
+## Sprint 20 ✅
 **Objetivo**: Peças e insumos — catálogo, consumo em OSs e alertas de reposição
-**ADR**: ADR-014
-**Status**: pendente
+**ADR**: ADR-014, ADR-035
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-049 | Cadastro de peças (catálogo) | 3 | ⬜ pendente |
-| US-050 | Consumo de peças em ordens de serviço | 4 | ⬜ pendente |
-| US-051 | Alertas de estoque mínimo | 2 | ⬜ pendente |
-| US-090 | Tech debt Sprint 19 | 1 | ⬜ pendente |
+| US-049 | Cadastro de peças (catálogo) | 3 | ✅ concluído |
+| US-050 | Consumo de peças em ordens de serviço | 4 | ✅ concluído |
+| US-051 | Alertas de estoque mínimo | 2 | ✅ concluído |
+| US-090 | Tech debt Sprint 19 | 1 | ✅ concluído |
 
 **Total**: 10 pontos
 
@@ -1232,251 +1232,733 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 21 ⬜
-**Objetivo**: Anexos — upload de documentos e imagens em NCs e OSs
-**ADR**: ADR-018
-**Status**: pendente
+## Sprint 21 ✅
+**Objetivo**: Anexos — upload de documentos e imagens em NCs e OSs + tech debt Sprint 20
+**ADR**: ADR-018, ADR-036
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-059 | Backend de upload e storage de anexos (MinIO) | 5 | ⬜ pendente |
-| US-060 | Frontend de upload, listagem e download de anexos | 3 | ⬜ pendente |
+| US-059 | Backend de upload e storage de anexos (MinIO) | 5 | ✅ concluído |
+| US-060 | Frontend de upload, listagem e download de anexos | 3 | ✅ concluído |
 
 ---
 
 #### US-059 — Backend de attachments (5 pts)
 
 **Backend**
-1. `software.amazon.awssdk:s3` adicionado ao `pom.xml`; MinIO adicionado ao `docker-compose.yml`; bucket `industrial-hub-attachments` criado automaticamente no startup (via `S3Client.createBucketIfNotExists`)
-2. `POST /api/v1/attachments` (multipart/form-data) aceita campos: `entityType` (`NonConformance` | `WorkOrder`), `entityId` (UUID), `file` (binário); max 10 MB; tipos aceitos: `image/jpeg`, `image/png`, `image/webp`, `application/pdf`
-3. Tipo inválido retorna `400`; tamanho excedido retorna `413`
-4. Arquivo salvo em `{entityType.lower()}/{entityId}/{UUID}-{filename}` no bucket; `Attachment` persistido no banco; retorna `201 AttachmentResponse`
-5. `GET /api/v1/attachments?entityType=X&entityId=Y` lista anexos da entidade (OPERATOR+)
-6. `GET /api/v1/attachments/{id}/download-url` retorna `{ "url": "...", "expiresAt": "..." }` (URL pré-assinada S3, TTL 15 minutos) (OPERATOR+)
-7. `DELETE /api/v1/attachments/{id}` remove do storage e do banco (SUPERVISOR+); `204`
-8. `StorageService` abstrai `S3Client` — testável com mock; configuração por properties (`app.storage.*`)
+1. `software.amazon.awssdk:s3` adicionado ao `pom.xml` (BOM `software.amazon.awssdk:bom` para gerenciar versões); MinIO adicionado ao `docker-compose.yml` conforme ADR-036 Decisão 1; `StorageService` interface em `common/infrastructure/` com métodos `upload(String key, InputStream content, String contentType, long sizeBytes)`, `String generatePresignedUrl(String key, Duration ttl)`, `void delete(String key)`; implementação `S3StorageService` anotada `@Service @ConditionalOnProperty`; configuração via `@Value("${app.storage.*}")` conforme ADR-018 Decisão 1
+2. `Attachment` entity criada conforme ADR-018 Decisão 2: campos `id`, `entityType` (String), `entityId` (String), `storageKey`, `originalName`, `contentType`, `fileSizeBytes`, `uploadedBy`, `uploadedAt`; migration `V{N}__attachment.sql` cria tabela `attachment` com índice composto em `(entity_type, entity_id)`; `AttachmentRepository extends JpaRepository<Attachment, UUID>` com `List<Attachment> findByEntityTypeAndEntityIdOrderByUploadedAtDesc(String entityType, String entityId)`
+3. `POST /api/v1/attachments` (multipart/form-data, OPERATOR+); `@PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")`; campos do request: `entityType` (String), `entityId` (UUID), `file` (MultipartFile); fluxo conforme ADR-036 Decisão 2: (1) valida `file.contentType` contra whitelist `{image/jpeg, image/png, image/webp, application/pdf}` → `InvalidFileTypeException` (`400`) se inválido; (2) tamanho > 10 MB → `MaxUploadSizeExceededException` interceptada pelo `GlobalExceptionHandler` existente → `413 { "message": "Arquivo muito grande. Limite: 10 MB." }`; (3) gera `storageKey = "{entityType.lower()}/{entityId}/{UUID}-{originalFilename}"`; (4) `storageService.upload(key, inputStream, contentType, size)` → `StorageException` mapeada para `502 { "message": "Falha no upload. Tente novamente." }`; (5) `attachmentRepository.save(attachment)` → se falhar após S3 sucesso: `storageService.delete(key)` em best-effort no catch antes de propagar erro; retorna `201 AttachmentResponse`
+4. `AttachmentResponse` record: `id` (UUID), `originalName`, `contentType`, `fileSizeBytes`, `uploadedBy`, `uploadedAt` — campo `storageKey` **não exposto** ao cliente
+5. `GET /api/v1/attachments?entityType=X&entityId=Y` lista todos os `Attachment` da entidade ordenados por `uploadedAt DESC` (OPERATOR+); retorna `List<AttachmentResponse>` (pode ser `[]`); `entityType` ou `entityId` ausentes retornam `400`
+6. `GET /api/v1/attachments/{id}/download-url` retorna `DownloadUrlResponse { url, expiresAt }` com URL pré-assinada TTL 15 min via `storageService.generatePresignedUrl(key, Duration.ofMinutes(15))`; `404 { "message": "Anexo não encontrado" }` se id inexistente (OPERATOR+)
+7. `DELETE /api/v1/attachments/{id}` (SUPERVISOR+); `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`; (1) busca `Attachment` — `404` se não existir; (2) `storageService.delete(key)` — se falhar: continua (best-effort) conforme ADR-036 Decisão 3; (3) `attachmentRepository.delete(attachment)`; retorna `204`
+8. `AuditAction` enum: adicionar `ATTACHMENT_UPLOADED` e `ATTACHMENT_DELETED`; `UploadAttachmentUseCase` chama `auditService.log(username, ATTACHMENT_UPLOADED, "Attachment", id.toString(), Map.of("entityType", entityType, "entityId", entityId, "file", originalName))`; `DeleteAttachmentUseCase` idem com `ATTACHMENT_DELETED`
+9. Package conforme ADR-018 Decisão 4: `common/domain/Attachment.java`, `common/application/dto/AttachmentResponse.java`, `common/application/dto/DownloadUrlResponse.java`, `common/application/usecase/{Upload,Get,GetDownloadUrl,Delete}AttachmentUseCase.java`, `common/infrastructure/{AttachmentRepository,StorageService,S3StorageService}.java`, `common/presentation/AttachmentController.java`
+10. Exceções novas registradas no `GlobalExceptionHandler`: `AttachmentNotFoundException` → `404`; `InvalidFileTypeException` → `400`; `StorageException` → `502`
+11. Também abordar tech debt do Sprint 20 conforme ADR-036 Decisão 4: (a) `CreateSparePartUseCase` — mover `auditService.log()` para fora do `try-catch(DataIntegrityViolationException)` (SH-48); (b) `RemoveWorkOrderPartUseCase` — adicionar query `findWorkOrderIdByPartId` ao `WorkOrderPartRepository` para evitar lazy load extra (SH-49); (c) adicionar `GET /api/v1/maintenance/work-orders/{id}` com `GetWorkOrderDetailUseCase` para resolver SH-50 (workaround do `work-order-detail.component`)
+12. Teste `UploadAttachmentUseCaseTest`: (a) upload bem-sucedido — `storageService.upload()`, `save()` e `auditService.log(ATTACHMENT_UPLOADED)` chamados; `AttachmentResponse` retornado; (b) tipo inválido — `InvalidFileTypeException` lançado antes de chamar `storageService`; (c) S3 falha — `StorageException` propagada, `save()` não chamado; (d) DB falha após S3 sucesso — `storageService.delete()` chamado no cleanup (best-effort)
+13. Teste `DeleteAttachmentUseCaseTest`: (a) deleção bem-sucedida — `storageService.delete()` + `attachmentRepository.delete()` + `auditService.log(ATTACHMENT_DELETED)` chamados; (b) `AttachmentNotFoundException` quando id inexistente; (c) S3 falha no delete — `attachmentRepository.delete()` ainda é chamado (best-effort); `204` retornado
 
 ---
 
 #### US-060 — Frontend de anexos (3 pts)
 
-1. Seção "Anexos" na página de detalhe de NC e de OS
-2. Botão "Anexar Arquivo" (OPERATOR+): file picker limitado a imagens e PDF; validação client-side de tamanho (10 MB) antes do upload
-3. Progress bar durante upload; erro de upload exibe snackbar com mensagem da API
-4. Lista de anexos: ícone de tipo (PDF/imagem), nome original, tamanho formatado (KB/MB), data de upload, botão download
-5. Clique em "Download" → `GET /download-url` → `window.open(url)` (nova aba)
-6. Imagens: thumbnail 80×80px via URL pré-assinada do mesmo endpoint
-7. SUPERVISOR+: botão lixeira por anexo com confirmação; `DELETE` remove e atualiza lista
+1. `AttachmentService` standalone em `shared/` (ou `common/`): métodos `listAttachments(entityType: string, entityId: string): Observable<AttachmentResponse[]>`, `getDownloadUrl(id: string): Observable<DownloadUrlResponse>`, `uploadAttachment(entityType: string, entityId: string, file: File): Observable<AttachmentResponse>`, `deleteAttachment(id: string): Observable<void>`; interfaces `AttachmentResponse`, `DownloadUrlResponse` tipadas estritamente (sem `any`)
+2. Componente standalone reutilizável `AttachmentListComponent` com `input() entityType: string` e `input() entityId: string`; `ChangeDetectionStrategy.OnPush`; adicionado à página de detalhe de NC (`/qms/non-conformances/{id}`) e à página de detalhe de OS (`/maintenance/work-orders/{id}` — componente existente `WorkOrderDetailComponent`); `ngOnInit` carrega a lista via `listAttachments()`
+3. Lista de anexos: loading state — skeleton de 2 linhas enquanto `isLoading()=true`; empty state — "Nenhum anexo nesta entrada" com ícone `attach_file`; cada item exibe: ícone de tipo (`picture_as_pdf` para PDF, `image` para imagens), nome original, tamanho formatado (ex: "1.2 MB"), data de upload (`uploadedAt`), botão "Download"
+4. Thumbnails: para cada `Attachment` com `contentType.startsWith('image/')`, chama `getDownloadUrl(id)` no carregamento da lista e exibe `<img [src]="thumbUrls()[id]" width="80" height="80" loading="lazy">`; PDFs não têm thumbnail — apenas ícone `picture_as_pdf`; URLs de thumbnail armazenadas em `thumbUrls = signal<Record<string, string>>({})` (evita recálculo no OnPush)
+5. Botão "Anexar Arquivo" (qualquer usuário autenticado, `@if (canUpload())`): `<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp" #fileInput hidden>` acionado via `fileInput.click()` no método `onAttachClick()`; handler `onChange($event)`: (1) valida `file.size <= 10_485_760` — snackbar "Arquivo muito grande (máx 10 MB)" sem chamar API; (2) valida `file.type` contra whitelist — snackbar "Tipo não permitido" sem chamar API; (3) se válido: chama `uploadAttachment()`
+6. Feedback de upload: `isUploading = signal(false)`; `MatProgressBar` mode `indeterminate` visível durante upload; botão "Anexar Arquivo" com `[disabled]="isUploading()"`; sucesso: snackbar "Arquivo anexado com sucesso" + `listAttachments()` recarregado; erro `413`: snackbar "Arquivo muito grande (máx 10 MB)"; outros erros: snackbar com `err.error?.message ?? "Falha no upload"`
+7. Botão "Download" por item: `getDownloadUrl(id).subscribe(res => window.open(res.url, '_blank'))`; erro: snackbar "Falha ao gerar link de download. Tente novamente."
+8. Botão lixeira (SUPERVISOR+, `@if (canDelete())`): `window.confirm()` nativo de confirmação (não `MatDialog` — consistente com padrão do projeto); confirmar → `deleteAttachment(id)`; sucesso: item removido de `attachments()` (sem snackbar de sucesso — consistente com outros componentes); erro: sem snackbar (silenciado — SHOULD FIX diferido para Sprint 22)
+9. `ChangeDetectionStrategy.OnPush`, standalone, signals; `attachments = signal<AttachmentResponse[]>([])`, `isLoading = signal(false)`, `isUploading = signal(false)`, `thumbUrls = signal<Record<string, string>>({})`, `canUpload = computed(() => !!authService.role())`, `canDelete = computed(() => r === 'SUPERVISOR' || r === 'ADMIN')`
+10. Spec `attachment-list.component.spec.ts`: (a) lista exibe 2 anexos mockados com nome, tamanho e data; (b) empty state quando `attachments()` vazio; (c) arquivo > 10 MB não chama `uploadAttachment()` da API (validação client-side); (d) botão lixeira oculto para OPERATOR; (e) clique no lixeira abre `window.confirm()` de confirmação nativo (não `MatDialog` — consistente com outros componentes do projeto como `nc-detail` e `equipment-detail`); (f) snackbar de erro exibido quando upload falha com erro de API
 
 ---
 
-## Sprint 22 ⬜
-**Objetivo**: SLA configurável e escalação automática de itens vencidos
-**ADR**: ADR-019
-**Status**: pendente
+## Sprint 22 ✅
+**Objetivo**: SLA configurável e escalação automática de itens vencidos + tech debt de security do Sprint 21
+**ADR**: ADR-019, ADR-037
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-061 | Configuração de regras de SLA | 3 | ⬜ pendente |
-| US-062 | Job de escalação automática e sinalização de SLA vencido | 4 | ⬜ pendente |
+| US-061 | Configuração de regras de SLA | 3 | ✅ concluído |
+| US-062 | Job de escalação automática e sinalização de SLA vencido | 5 | ✅ concluído |
+| US-091 | Tech debt Sprint 21 — validação de anexos e segurança (SEC-067/068/071/072/073) | 2 | ✅ concluído |
+
+**Total**: 10 pts
+
+### Dependências
+- US-062 depende de US-061 (requer `SlaRule` entity + repositório + colunas `slaBreached` nas entidades)
+- US-091 é independente — pode ser desenvolvida em paralelo
 
 ---
 
-#### US-061 — Configuração de SLA (3 pts)
+#### US-061 — Configuração de regras de SLA (3 pts)
+
+> Permite que administradores definam prazos (SLA) por tipo de entidade e severidade/prioridade, tornando os acordos de nível de serviço configuráveis sem deploy.
 
 **Backend**
-1. `POST /api/v1/admin/sla-rules` cria `SlaRule` (ADMIN); campos: `entityType` (enum `SlaEntityType`: `NC`, `WORK_ORDER`), `classifierValue` (string — ex: "CRITICAL", "URGENT"), `slaHours` (int), `escalateByEmail` (bool)
-2. `GET /api/v1/admin/sla-rules` lista regras (ADMIN)
-3. `PUT /api/v1/admin/sla-rules/{id}` atualiza `slaHours` e `escalateByEmail`; retorna `200`
-4. `DELETE /api/v1/admin/sla-rules/{id}` remove regra; `204`
-5. Seed de regras default no `DataInitializer`: NC/CRITICAL→48h, NC/HIGH→72h, WO/URGENT→4h, WO/HIGH→24h
-6. Migration: tabela `sla_rule` + colunas `sla_breached BOOLEAN DEFAULT FALSE` e `sla_breached_at TIMESTAMP` em `non_conformance` e `work_order`
+
+1. Entidade `SlaRule` criada em `common/domain/SlaRule.java`: campos `id` (UUID), `entityType` (enum `SlaEntityType`: `NC`, `WORK_ORDER`), `classifierField` (enum `SlaClassifierField`: `SEVERITY`, `PRIORITY`), `classifierValue` (String, max 50 chars), `slaHours` (int, min 1), `escalateByEmail` (boolean, default false), `active` (boolean, default true), `createdAt` (LocalDateTime); constraint UNIQUE em `(entityType, classifierField, classifierValue)` para evitar regras duplicadas.
+2. Migration `V{N}__sla.sql`: (a) tabela `sla_rule` com as colunas acima + índice em `(entity_type, classifier_field, classifier_value)`; (b) colunas `sla_breached BOOLEAN NOT NULL DEFAULT FALSE` e `sla_breached_at TIMESTAMP` adicionadas a `non_conformance` e `work_order`; (c) índices parciais em `non_conformance(sla_breached) WHERE sla_breached = FALSE` e `work_order(sla_breached) WHERE sla_breached = FALSE` para performance do job de varredura.
+3. `POST /api/v1/admin/sla-rules` (ADMIN): aceita `CreateSlaRuleRequest { entityType, classifierField, classifierValue, slaHours, escalateByEmail }`; retorna `201 SlaRuleResponse`; `slaHours < 1` retorna `400 { "message": "slaHours deve ser >= 1" }`; combinação `(entityType, classifierField, classifierValue)` duplicada retorna `409 { "message": "Regra SLA já existe para esta combinação" }`.
+4. `GET /api/v1/admin/sla-rules` (ADMIN): retorna `List<SlaRuleResponse>` com todas as regras ativas, ordenadas por `entityType ASC, classifierValue ASC`.
+5. `PUT /api/v1/admin/sla-rules/{id}` (ADMIN): aceita `UpdateSlaRuleRequest { slaHours, escalateByEmail }`; atualiza apenas esses dois campos; retorna `200 SlaRuleResponse` ou `404`.
+6. `DELETE /api/v1/admin/sla-rules/{id}` (ADMIN): soft-delete (`active = false`); retorna `204` ou `404`.
+7. `SlaRuleResponse` record: `id`, `entityType`, `classifierField`, `classifierValue`, `slaHours`, `escalateByEmail`, `active`.
+8. `SlaRuleRepository extends JpaRepository<SlaRule, UUID>`: método `findAllByActiveTrueOrderByEntityTypeAscClassifierValueAsc()` para listagem; método `existsByEntityTypeAndClassifierFieldAndClassifierValueAndActiveTrue()` para checar duplicata.
+9. Seed no `DataInitializer` (executa apenas se tabela `sla_rule` estiver vazia): NC/SEVERITY/CRITICAL→48h/escalateByEmail=true, NC/SEVERITY/HIGH→72h/escalateByEmail=false, WORK_ORDER/PRIORITY/URGENT→4h/escalateByEmail=true, WORK_ORDER/PRIORITY/HIGH→24h/escalateByEmail=false.
+10. `AuditAction` enum: adicionar `SLA_RULE_CREATED`, `SLA_RULE_UPDATED`, `SLA_RULE_DELETED`; use cases de CRUD chamam `auditService.log()` com `entityType = "SlaRule"` e `entityId = id.toString()`.
 
 **Frontend**
-7. Rota `/admin/sla-rules` (ADMIN): tabela com entidade, classificador, SLA (horas), email, botões editar/excluir
-8. Formulário de criação: select entityType, input classifierValue, input slaHours, toggle email
-9. Inline edit por linha (slaHours + toggle email) com botão salvar
+
+11. Rota lazy `/admin/sla-rules` (ADMIN, protegida por `AuthGuard` com role ADMIN): tabela com colunas Entidade, Campo, Valor, SLA (horas), Email (ícone check/cross), ações (Editar / Desativar); `ChangeDetectionStrategy.OnPush`, standalone.
+12. Botão "Nova Regra" abre `MatDialog` com formulário: select `entityType` (NC / Ordem de Serviço), select `classifierField` (Severidade / Prioridade), input `classifierValue` (ex: "CRITICAL"), input numérico `slaHours` (min 1), toggle `escalateByEmail`; botão "Salvar" desabilitado enquanto formulário inválido; sucesso: dialog fecha + snackbar "Regra SLA criada" + tabela recarregada.
+13. Inline edit: botão "Editar" em cada linha abre linha em modo de edição com os campos `slaHours` e `escalateByEmail` editáveis; botão "Salvar" e "Cancelar" inline; sucesso: snackbar "Regra SLA atualizada"; erro `404`: snackbar com mensagem da API.
+14. Botão "Desativar" pede confirmação via `window.confirm()` nativo antes de chamar `DELETE`; sucesso: linha removida da tabela; snackbar "Regra SLA desativada".
+15. Erro de carregamento da tabela exibe mensagem "Não foi possível carregar as regras de SLA" com botão "Tentar novamente".
+16. Spec `sla-rules.component.spec.ts`: (a) tabela exibe 2 regras mockadas com entityType, slaHours; (b) botão salvar desabilitado com slaHours < 1; (c) chamada PUT disparada ao salvar inline edit; (d) confirmação antes de DELETE.
 
 ---
 
-#### US-062 — Job de escalação automática (4 pts)
+#### US-062 — Job de escalação automática e sinalização de SLA vencido (5 pts)
 
-**Backend**
-1. `EscalationJob` com `@Scheduled(cron = "0 0 * * * *")` chama `EscalationUseCase.execute()`
-2. Para cada `SlaRule` ativa, busca entidades abertas com `(reportedAt/openedAt + slaHours) < now()` e `slaBreached = false`
-3. Para cada item encontrado: seta `slaBreached = true`, `slaBreachedAt = now()`, persiste
-4. Cria `Notification` via `NotificationService` (ADR-013): severity=CRITICAL, broadcast para SUPERVISOR+
-5. Se `escalateByEmail = true`: envia email para SUPERVISOR+ (assíncrono, via JavaMailSender)
-6. Idempotente: entidades com `slaBreached = true` já não são reprocessadas
-7. `POST /api/v1/admin/sla-rules/run-now` (ADMIN) dispara `EscalationUseCase` imediatamente; retorna `{ "breachedNcs": N, "breachedWorkOrders": M }`
-8. `GET /api/v1/qms/non-conformances?slaBreached=true` e `GET /api/v1/maintenance/work-orders?slaBreached=true` (novos filtros)
+> Avalia automaticamente a cada hora quais NCs e OSs estão com SLA vencido e gera notificações/emails; sinaliza visualmente os itens vencidos nas listagens e no dashboard.
+
+**Backend — Job e Use Case**
+
+1. `EscalationUseCase` em `common/application/usecase/EscalationUseCase.java`: método `execute()` retorna `EscalationResult { int breachedNcs, int breachedWorkOrders }`.
+2. Para cada `SlaRule` ativa com `entityType = NC`: busca via `NonConformanceRepository` NCs com `status != CLOSED`, `slaBreached = false` e `(reportedAt + slaHours horas) <= LocalDateTime.now()`; JPQL: `SELECT nc FROM NonConformance nc WHERE nc.status <> 'CLOSED' AND nc.slaBreached = false AND nc.reportedAt <= :deadline`; `deadline` calculado como `LocalDateTime.now().minusHours(rule.getSlaHours())` para cada regra; filtro em Java para `nc.severity.name().equals(rule.getClassifierValue())` quando `classifierField = SEVERITY`.
+3. Para cada `SlaRule` ativa com `entityType = WORK_ORDER`: busca via `WorkOrderRepository` OSs com `status != COMPLETED` e `status != CANCELLED`, `slaBreached = false` e `(openedAt + slaHours horas) <= LocalDateTime.now()`; filtro em Java para `wo.priority.name().equals(rule.getClassifierValue())` quando `classifierField = PRIORITY`.
+4. Para cada NC/OS encontrada: (a) seta `slaBreached = true` e `slaBreachedAt = LocalDateTime.now()`; (b) persiste via repositório; (c) chama `notificationService.broadcast()` com `title = "SLA Vencido: {entidade} #{id}"`, `message = "NC/OS {id} ultrapassou o prazo de {slaHours}h."`, `severity = CRITICAL` (não cria duplicata se `existsByTitleAndCreatedAtAfter` dentro do último intervalo de 2h); (d) se `rule.isEscalateByEmail() == true`: dispara `@Async` email via `JavaMailSender` para todos os usuários com role SUPERVISOR ou ADMIN com `active = true`.
+5. Processamento idempotente: entidades com `slaBreached = true` nunca são reprocessadas (filtro `slaBreached = false` na query).
+6. `EscalationJob` em `common/application/usecase/EscalationJob.java`: `@Component` com `@Scheduled(cron = "0 0 * * * *")`; injeta `EscalationUseCase`; loga resultado `INFO "EscalationJob concluído: {} NCs e {} OSs marcadas"`.
+7. `AuditAction` enum: adicionar `SLA_BREACHED`; `EscalationUseCase` chama `auditService.log("system", SLA_BREACHED, entityClass, entityId, Map.of("slaHours", rule.getSlaHours(), "classifierValue", rule.getClassifierValue()))` para cada item marcado.
+
+**Backend — Endpoints**
+
+8. `POST /api/v1/admin/sla-rules/run-now` (ADMIN): dispara `EscalationUseCase.execute()` de forma síncrona; retorna `200 { "breachedNcs": N, "breachedWorkOrders": M }`; protegido com rate limiting de 1 chamada/minuto por usuário (reutilizar bucket Bucket4j já configurado no projeto, conforme ADR-021).
+9. `GET /api/v1/qms/non-conformances` — novo parâmetro opcional `slaBreached` (Boolean); quando `true`, filtra apenas NCs com `slaBreached = true`; quando `false`, filtra NCs com `slaBreached = false`; quando ausente, retorna todas (comportamento atual preservado). JPQL atualizado com `AND (:slaBreached IS NULL OR nc.slaBreached = :slaBreached)`.
+10. `GET /api/v1/maintenance/work-orders` — mesmo padrão de filtro `slaBreached` adicionado ao endpoint existente.
+11. `GET /api/v1/admin/sla-rules/summary` (ADMIN): retorna `SlaSummaryResponse { int totalBreachedNcs, int totalBreachedWorkOrders, int totalOpenNcs, int totalOpenWorkOrders }`; calculado via JPQL (`COUNT`); sem native SQL.
+
+**Backend — Testes**
+
+12. `EscalationUseCaseTest`: (a) NC CRITICAL com `reportedAt` há 50h e regra NC/CRITICAL→48h → `slaBreached` setado + `notificationService.broadcast()` chamado + `auditService.log(SLA_BREACHED)` chamado; (b) NC CRITICAL já com `slaBreached = true` → não reprocessada (`save()` não chamado); (c) NC CLOSED → ignorada mesmo que prazo vencido; (d) `escalateByEmail = false` → `mailSender.send()` não chamado; (e) `escalateByEmail = true` → `mailSender.send()` chamado com destinatários SUPERVISOR+; (f) `EscalationResult` com contagens corretas.
 
 **Frontend**
-9. Chip "SLA Vencido" (vermelho, animação pulse) em listagens e detalhes de NCs e OSs com `slaBreached = true`
-10. Painel "SLA em Risco" no dashboard KPI (`/dashboard`) com contagens de NCs e OSs com SLA vencido; clique navega para listagem filtrada
-11. Notificações de SLA vencido exibidas no sino (ADR-013) com severidade CRITICAL
+
+13. `SlaService` em `shared/`: métodos `listSlaRules(): Observable<SlaRuleResponse[]>`, `createSlaRule(req): Observable<SlaRuleResponse>`, `updateSlaRule(id, req): Observable<SlaRuleResponse>`, `deleteSlaRule(id): Observable<void>`, `runEscalationNow(): Observable<EscalationResult>`, `getSlaSummary(): Observable<SlaSummaryResponse>`; interfaces tipadas sem `any`.
+14. Chip `SlaBreachedChipComponent` (standalone, `OnPush`): exibe "SLA Vencido" em vermelho (`#EF4444`) com animação CSS `pulse` (keyframes 0%→100% opacity 1→0.6); recebe `input() slaBreached: boolean`; visível apenas quando `slaBreached === true`; adicionado às listagens de NC (coluna extra após "Status") e OS (idem) e às páginas de detalhe de NC e OS.
+15. Painel "SLA em Risco" no dashboard (`/dashboard`): card com dois contadores — "NCs com SLA Vencido" e "OSs com SLA Vencido" carregados via `getSlaSummary()`; loading state com skeleton de 1 linha; clique em "NCs com SLA Vencido" navega para `/qms/non-conformances?slaBreached=true`; clique em "OSs com SLA Vencido" navega para `/maintenance/work-orders?slaBreached=true`; card exibe `--` em vez de `0` quando `isLoading() = true`; empty state: card oculto quando ambos os contadores são `0` (não poluir dashboard).
+16. Botão "Executar SLA agora" na rota `/admin/sla-rules` (ADMIN): chama `runEscalationNow()`; exibe `MatProgressSpinner` durante execução; resultado exibe snackbar "Escalação concluída: {breachedNcs} NCs e {breachedWorkOrders} OSs marcadas".
+17. Filtro `slaBreached` adicionado às listagens de NC e OS: checkbox "Apenas SLA vencido" no painel de filtros; quando marcado, adiciona `&slaBreached=true` ao request; integrado com os filtros existentes (status, severidade, etc.) sem quebrar estado atual.
+18. Spec `sla-breached-chip.component.spec.ts`: (a) chip visível quando `slaBreached = true`; (b) chip oculto quando `slaBreached = false`.
+19. Spec `dashboard.component.spec.ts` (atualizado): card "SLA em Risco" exibe contagens mockadas; card oculto quando ambos zero.
 
 ---
 
-## Sprint 23 ⬜
-**Objetivo**: Multi-plant support — dimensão de planta/unidade produtiva
-**ADR**: ADR-020
-**Status**: pendente
+#### US-091 — Tech debt Sprint 21 — validação de anexos e segurança (2 pts)
+
+> Cobre 5 itens de security debt identificados por Beatriz na revisão do Sprint 21: SEC-067 (tamanho `code` SparePart), SEC-068 (comprimento coluna `unit`), SEC-071 (Content-Type spoofing via magic bytes), SEC-072 (entityType sem enum tipado), SEC-073 (validação explícita de tamanho de arquivo no use case).
+
+**Backend — SEC-067: `@Size` em `CreateSparePartRequest.code`**
+
+1. `CreateSparePartRequest`: adicionar `@Size(max = 50, message = "code deve ter no máximo 50 caracteres")` ao campo `code`; `GlobalExceptionHandler` já trata `MethodArgumentNotValidException` retornando `400 { "message": "..." }` — sem alteração necessária.
+
+**Backend — SEC-068: `SparePart.unit` sem restrição de comprimento**
+
+2. `SparePart` entity: adicionar `@Column(length = 20)` no campo `unit`; adicionar `@Size(max = 20, message = "unit deve ter no máximo 20 caracteres")` no `CreateSparePartRequest.unit` e `UpdateSparePartRequest.unit`; migration `V{N}__spare_part_unit_length.sql`: `ALTER TABLE spare_part ALTER COLUMN unit TYPE VARCHAR(20)`.
+
+**Backend — SEC-071: Content-Type spoofing — verificação via magic bytes (Apache Tika)**
+
+3. Dependência `org.apache.tika:tika-core` adicionada ao `pom.xml` (sem `tika-parsers` — apenas detecção de tipo, sem parsing completo); versão gerenciada via propriedade `<tika.version>2.9.2</tika.version>`.
+4. `MimeTypeDetector` utilitário em `common/infrastructure/MimeTypeDetector.java`: método `String detect(InputStream inputStream, String declaredContentType)`; usa `Tika.detect(inputStream)` para obter o tipo real via magic bytes; retorna o tipo detectado.
+5. `UploadAttachmentUseCase.execute()`: antes de chamar `storageService.upload()`, detectar o tipo real via `MimeTypeDetector.detect(file.getInputStream(), file.getContentType())`; verificar o tipo detectado (não o `file.getContentType()` declarado pelo cliente) contra a whitelist `{image/jpeg, image/png, image/webp, application/pdf}`; tipo real fora da whitelist → `InvalidFileTypeException` com mensagem `"Tipo de arquivo não permitido: {tipoDetectado}"`; tipo declarado divergente do real é logado como `WARN` sem bloquear (apenas o tipo real determina a aceitação).
+6. Teste `UploadAttachmentUseCaseTest` atualizado: (a) arquivo JPEG com `contentType="image/jpeg"` declarado → aceito; (b) arquivo EXE disfarçado com `contentType="image/jpeg"` → `InvalidFileTypeException` (tipo real detectado é `application/octet-stream`); (c) arquivo PNG com `contentType="application/pdf"` declarado → aceito (tipo real é `image/png`, whitelist aceita); loga WARN sobre divergência.
+
+**Backend — SEC-072: `entityType` sem enum tipado no domínio**
+
+7. Enum `AttachmentEntityType` criado em `common/domain/AttachmentEntityType.java`: valores `NON_CONFORMANCE`, `WORK_ORDER`; método `toStoragePrefix()` retorna o valor em lowercase para uso na construção do `storageKey` (ex: `NON_CONFORMANCE.toStoragePrefix()` → `"non_conformance"`).
+8. `Attachment` entity: campo `entityType` alterado de `String` para `AttachmentEntityType`; `@Enumerated(EnumType.STRING)` anotado; migration não é necessária pois os valores armazenados mudam — migration `V{N}__attachment_entity_type_enum.sql` executa `UPDATE attachment SET entity_type = 'NON_CONFORMANCE' WHERE entity_type = 'NC'` e `UPDATE attachment SET entity_type = 'WORK_ORDER' WHERE entity_type = 'WORK_ORDER'` (ou conforme naming adotado no Sprint 21).
+9. `AttachmentController`: parâmetro `entityType` no `POST` e `GET` passa de `String` para `AttachmentEntityType`; Spring converte automaticamente via `@RequestParam AttachmentEntityType entityType`; valor inválido lança `MethodArgumentTypeMismatchException` → `GlobalExceptionHandler` retorna `400 { "message": "entityType inválido. Valores aceitos: NON_CONFORMANCE, WORK_ORDER" }`; o `@Pattern` adicionado no Sprint 21 no controller pode ser removido, pois o enum já tipifica a validação.
+10. `AttachmentRepository`: assinatura `findByEntityTypeAndEntityIdOrderByUploadedAtDesc(AttachmentEntityType entityType, String entityId)` atualizada.
+
+**Backend — SEC-073: validação explícita de tamanho de arquivo no use case**
+
+11. `UploadAttachmentUseCase.execute()`: adicionar verificação explícita `if (file.getSize() > 10_485_760L) throw new FileTooLargeException(file.getSize())` **antes** de chamar `storageService.upload()`; `FileTooLargeException` nova em `common/domain/`; `GlobalExceptionHandler`: mapear `FileTooLargeException` para `400 { "message": "Arquivo muito grande. Limite: 10 MB." }` (o handler existente para `MaxUploadSizeExceededException` permanece como fallback de nível Spring, mas agora o use case valida explicitamente antes de tentar o stream).
+12. Teste `UploadAttachmentUseCaseTest` atualizado: arquivo com `size = 10_485_761` bytes → `FileTooLargeException` lançada antes de `storageService.upload()` ser chamado (verificar com `verify(storageService, never()).upload(...)`).
+
+**Observações de implementação**
+
+- Os itens SEC-067, SEC-068, SEC-073 são triviais (anotações e verificação de tamanho) — estimativa: 0,5 pt somados.
+- SEC-071 (Apache Tika) é o item de maior esforço: dependência nova + lógica de detecção + ajuste no fluxo do use case — estimativa: 0,8 pt.
+- SEC-072 (enum `AttachmentEntityType`) envolve migration + refatoração de tipo — estimativa: 0,7 pt.
+- Total: ~2 pts. Desenvolvidos em paralelo com US-061 (sem dependências entre si).
+
+---
+
+## Sprint 23 ✅
+**Objetivo**: Multi-plant support (dimensão de planta/unidade produtiva) + tech debt SLA/email diferidos do Sprint 22
+**ADR**: ADR-020, ADR-038
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-063 | Cadastro de plantas e associação de usuários | 4 | ⬜ pendente |
-| US-064 | Filtro de dados por planta em todos os módulos | 5 | ⬜ pendente |
+| US-063 | Cadastro de plantas e associação de usuários | 4 | ✅ concluído |
+| US-064 | Filtro de dados por planta em todos os módulos | 5 | ✅ concluído |
+| US-092 | Tech debt Sprint 22 — escalação por e-mail, rate limit /run-now, auditoria e validações SLA | 3 | ✅ concluído |
+
+**Total**: 12 pts
+
+### Dependências
+- US-064 depende de US-063 (requer entidade `Plant`, migration e `PlantContext`)
+- US-092 é independente — pode ser desenvolvida em paralelo com US-063
 
 ---
 
-#### US-063 — Cadastro de plantas (4 pts)
+#### US-063 — Cadastro de plantas e associação de usuários (4 pts)
 
-**Backend**
-1. `POST /api/v1/admin/plants` cria `Plant` (ADMIN); campos: `code` (único), `name`, `address`, `timezone`; retorna `201`
-2. `GET /api/v1/admin/plants` lista plantas ativas (ADMIN)
-3. `PUT /api/v1/admin/plants/{id}` atualiza; `PUT /{id}/deactivate` desativa; `204`
-4. `PUT /api/v1/admin/users/{id}/plants` vincula usuário a lista de plantas (ADMIN); body: `{ "plantIds": [uuid, uuid] }`
-5. Seed: planta default `{ code: "HQ", name: "Matriz", isDefault: true }` no `DataInitializer`
-6. Migration: tabela `plant`, tabela `user_plant`, colunas `plant_id NOT NULL` em `equipment`, `non_conformance`, `import_batch` (preenchidas com planta default via `UPDATE`)
+> Permite que administradores registrem as unidades produtivas (plantas) do grupo MSB e vinculem usuários a uma ou mais plantas, habilitando a segmentação multi-plant a ser implementada em US-064.
+
+**Backend — Entidade e Migration**
+
+1. Entidade `Plant` criada em `common/domain/Plant.java`: campos `id` (UUID), `code` (String, max 20, único), `name` (String, max 200), `address` (String, max 500, nullable), `timezone` (String, max 50, default `"America/Sao_Paulo"`), `isDefault` (boolean, default false), `active` (boolean, default true), `createdAt` (LocalDateTime); constraint `UNIQUE` em `code`.
+2. Migration `V{N}__plant.sql`:
+   - Tabela `plant` com todas as colunas acima.
+   - Tabela `user_plant` (many-to-many): `user_id UUID NOT NULL REFERENCES app_user(id)`, `plant_id UUID NOT NULL REFERENCES plant(id)`, PRIMARY KEY `(user_id, plant_id)`.
+   - Colunas `plant_id UUID REFERENCES plant(id)` adicionadas a `equipment`, `non_conformance`, `import_batch` (nullable inicialmente para permitir o UPDATE a seguir).
+   - `INSERT INTO plant (id, code, name, timezone, is_default, active, created_at) VALUES (gen_random_uuid(), 'HQ', 'Matriz', 'America/Sao_Paulo', true, true, now())`.
+   - `UPDATE equipment SET plant_id = (SELECT id FROM plant WHERE code = 'HQ') WHERE plant_id IS NULL`.
+   - `UPDATE non_conformance SET plant_id = (SELECT id FROM plant WHERE code = 'HQ') WHERE plant_id IS NULL`.
+   - `UPDATE import_batch SET plant_id = (SELECT id FROM plant WHERE code = 'HQ') WHERE plant_id IS NULL`.
+   - `ALTER TABLE equipment ALTER COLUMN plant_id SET NOT NULL`.
+   - `ALTER TABLE non_conformance ALTER COLUMN plant_id SET NOT NULL`.
+   - `ALTER TABLE import_batch ALTER COLUMN plant_id SET NOT NULL`.
+   - Índice em `plant(active)`.
+
+**Backend — CRUD de Plantas**
+
+3. `POST /api/v1/admin/plants` (ADMIN): aceita `CreatePlantRequest { code, name, address, timezone }`; `code` normalizado para uppercase antes de persistir; `code` duplicado retorna `409 { "message": "Planta com código {code} já existe" }`; retorna `201 PlantResponse`.
+4. `PlantResponse` record: `id`, `code`, `name`, `address`, `timezone`, `isDefault`, `active`.
+5. `GET /api/v1/admin/plants` (ADMIN): retorna `List<PlantResponse>` de plantas ativas, ordenadas por `name ASC`.
+6. `PUT /api/v1/admin/plants/{id}` (ADMIN): aceita `UpdatePlantRequest { name, address, timezone }`; `code` e `isDefault` são imutáveis via este endpoint; retorna `200 PlantResponse` ou `404 { "message": "Planta não encontrada" }`.
+7. `DELETE /api/v1/admin/plants/{id}` (ADMIN): soft-delete (`active = false`); retorna `204`; retorna `409 { "message": "Não é possível desativar a planta padrão" }` se `isDefault = true`; retorna `409 { "message": "Planta possui equipamentos ou NCs ativas associados" }` se houver registros ativos vinculados.
+8. `AuditAction` enum: adicionar `PLANT_CREATED`, `PLANT_UPDATED`, `PLANT_DEACTIVATED`; use cases de CRUD chamam `auditService.log()` com `entityType = "Plant"` e `entityId = id.toString()`.
+9. `PlantRepository extends JpaRepository<Plant, UUID>`: métodos `findAllByActiveTrueOrderByNameAsc()` e `existsByCodeAndActiveTrue(String code)`.
+
+**Backend — Associação Usuário–Planta**
+
+10. `PUT /api/v1/admin/users/{userId}/plants` (ADMIN): aceita `UpdateUserPlantsRequest { List<UUID> plantIds }`; substitui completamente a lista de plantas do usuário (remove as anteriores e insere as novas); `plantIds` vazio válido (remove todas); ids de plantas inexistentes ou inativas retornam `422 { "message": "Planta {id} não encontrada ou inativa" }`; retorna `200 { "userId": ..., "plantIds": [...] }`.
+11. `GET /api/v1/admin/users/{userId}/plants` (ADMIN): retorna `List<PlantResponse>` das plantas vinculadas ao usuário; usuário inexistente retorna `404`.
+12. `UserPlantRepository extends JpaRepository`: métodos `findPlantsByUserId(UUID userId)` e `deleteAllByUserId(UUID userId)`.
+
+**Backend — Seed**
+
+13. `DataInitializer`: ao inicializar, se tabela `plant` estiver vazia, cria `Plant { code="HQ", name="Matriz", timezone="America/Sao_Paulo", isDefault=true, active=true }`; vincula todos os usuários existentes à planta HQ na tabela `user_plant` (para evitar usuários sem planta após a migration).
 
 **Frontend**
-7. Rota `/admin/plants` (ADMIN): tabela de plantas + formulário de criação
-8. Na página de detalhe do usuário (`/admin/users/{id}`): seção "Plantas" com checkboxes para vincular/desvincular
+
+14. Rota lazy `/admin/plants` (ADMIN, protegida por `AuthGuard` com role ADMIN): tabela com colunas Código, Nome, Endereço, Fuso Horário, Padrão (ícone), ações (Editar / Desativar); `ChangeDetectionStrategy.OnPush`, standalone.
+15. Botão "Nova Planta" abre `MatDialog` com formulário: input `code` (uppercase automático), input `name`, input `address` (opcional), select `timezone` (lista dos fusos BR mais Etc/UTC); botão "Salvar" desabilitado enquanto formulário inválido; sucesso: dialog fecha + snackbar "Planta criada" + tabela recarregada.
+16. Botão "Editar" em cada linha abre dialog pré-preenchido com `name`, `address`, `timezone`; `code` exibido como texto não editável; sucesso: snackbar "Planta atualizada".
+17. Botão "Desativar" pede confirmação via `window.confirm()` nativo; planta padrão exibe "Desativar" desabilitado com tooltip "A planta padrão não pode ser desativada"; sucesso: linha removida da tabela.
+18. Na página de detalhe do usuário (`/admin/users/{id}`): nova seção "Plantas Vinculadas" com lista de checkboxes de todas as plantas ativas; checkboxes marcados conforme vinculação atual; botão "Salvar Plantas" dispara `PUT /api/v1/admin/users/{userId}/plants`; sucesso: snackbar "Plantas atualizadas".
+19. `PlantService` em `shared/`: métodos `listPlants(): Observable<PlantResponse[]>`, `createPlant(req): Observable<PlantResponse>`, `updatePlant(id, req): Observable<PlantResponse>`, `deactivatePlant(id): Observable<void>`, `getUserPlants(userId): Observable<PlantResponse[]>`, `updateUserPlants(userId, plantIds): Observable<void>`; interfaces tipadas sem `any`.
+20. Spec `plants.component.spec.ts`: (a) tabela exibe 2 plantas mockadas; (b) botão "Salvar" desabilitado com `name` vazio; (c) `createPlant` chamado ao salvar nova planta; (d) `window.confirm` chamado ao clicar "Desativar"; (e) botão "Desativar" desabilitado para planta padrão.
 
 ---
 
-#### US-064 — Filtro de dados por planta (5 pts)
+#### US-064 — Filtro de dados por planta em todos os módulos (5 pts)
 
-**Backend**
-1. `PlantContextFilter` (OncePerRequestFilter): resolve planta(s) do usuário autenticado via `UserPlantRepository`; injeta em `PlantContext` (ThreadLocal)
-2. ADMIN: vê todas as plantas (sem filtro); OPERATOR/SUPERVISOR: veem apenas suas plantas
-3. Todos os use cases de listagem consultam `PlantContext.currentPlantIds()` para filtrar queries
-4. Query param `?plantId=<uuid>` em endpoints de listagem permite que ADMINs filtrem por planta específica
-5. `WorkOrder.plant` derivado do `equipment.plant` na criação — não aceito no request body
+> Aplica a dimensão de planta como filtro automático em todos os endpoints de listagem: OPERATOR/SUPERVISOR veem apenas os dados das suas plantas; ADMIN vê tudo e pode filtrar por planta específica.
+
+**Backend — PlantContext**
+
+1. `PlantContext` em `common/infrastructure/PlantContext.java`: `ThreadLocal<Set<UUID>>` com métodos estáticos `set(Set<UUID>)`, `get(): Set<UUID>`, `clear()`; `get()` retorna `Set.of()` se não inicializado (caso de contexto de sistema/job).
+2. `PlantContextFilter extends OncePerRequestFilter` em `common/infrastructure/`: executa para toda requisição autenticada; obtém `username` do `SecurityContextHolder`; busca `Set<UUID> plantIds` via `UserPlantRepository.findPlantIdsByUsername(username)`; ADMIN: `PlantContext.set(null)` (convenção: `null` = sem filtro = ver tudo); OPERATOR/SUPERVISOR: `PlantContext.set(plantIds)`; registra `PlantContext.clear()` no `finally` para evitar leak entre requisições (mesmo pool de threads).
+3. `PlantContextFilter` registrado em `SecurityConfig` após `JwtAuthFilter` na chain via `addFilterAfter`.
+
+**Backend — Endpoints filtrados**
+
+4. `GET /api/v1/maintenance/equipment`: query JPQL atualizada com `AND (:plantIds IS NULL OR e.plant.id IN :plantIds)`; query param opcional `?plantId=<uuid>` aceito apenas por ADMIN (ignorado para outros roles — filtro do context prevalece); OPERATOR/SUPERVISOR sem planta vinculada recebem lista vazia (não erro).
+5. `GET /api/v1/qms/non-conformances`: mesmo padrão de filtro por `plant.id`; `?plantId=<uuid>` para ADMIN.
+6. `GET /api/v1/maintenance/work-orders`: `WorkOrder.plant` derivado de `WorkOrder.equipment.plant` — filtro aplica via join `wo.equipment.plant.id IN :plantIds`.
+7. `GET /api/v1/oee/records` e `GET /api/v1/oee/analytics/**`: `ImportBatch.plant` já tem coluna `plant_id`; filtro adicionado às queries existentes.
+8. `POST /api/v1/maintenance/equipment` (criação): `plant_id` **não** aceito no request body; `Plant` resolvido a partir do contexto: se OPERATOR/SUPERVISOR com 1 planta vinculada, usa essa planta; se ADMIN, aceita `?plantId=<uuid>` como query param (obrigatório para ADMIN quando há mais de 1 planta ativa); falha de resolução retorna `422 { "message": "Nenhuma planta ativa encontrada para o usuário" }`.
+9. `POST /api/v1/qms/non-conformances` (criação): mesmo padrão de resolução de planta.
+10. `GET /api/v1/kpi/summary`: agrega dados apenas das plantas do usuário autenticado (ADMIN: agrega tudo; `?plantId=<uuid>` para ADMIN filtra para planta específica).
+11. `EscalationJob`: não filtra por planta — processa todas as entidades de todas as plantas (comportamento global correto para o job agendado de sistema).
+
+**Backend — Testes**
+
+12. `PlantContextFilterTest` (unitário): (a) OPERATOR com 2 plantas → `PlantContext.get()` retorna os 2 UUIDs; (b) ADMIN → `PlantContext.get()` retorna `null`; (c) requisição não autenticada → filter não executa (ordem na chain).
+13. `GetEquipmentsUseCaseTest` atualizado: (a) OPERATOR com plantId X → retorna apenas equipamentos de X; (b) ADMIN sem filtro → retorna todos; (c) OPERATOR sem planta vinculada → retorna lista vazia.
 
 **Frontend**
-6. Selector de planta no nav (ADMIN): dropdown com todas as plantas; seleção persiste em `localStorage`
-7. OPERATOR/SUPERVISOR: se vinculado a 1 planta, planta exibida no nav sem dropdown; se 2+, exibe dropdown
-8. Chip de planta em cards de NC, OS e equipamentos (omitido quando usuário tem acesso a apenas 1 planta)
+
+14. `PlantSelectorComponent` standalone (`OnPush`) no `NavComponent`: exibido apenas quando usuário autenticado; ADMIN: `MatSelect` dropdown com todas as plantas ativas (carregado via `PlantService.listPlants()`), opção "Todas as plantas" como primeira entrada, seleção persiste em `localStorage` sob chave `msb_selected_plant`; OPERATOR/SUPERVISOR com 1 planta: exibe nome da planta como texto estático (sem dropdown); OPERATOR/SUPERVISOR com 2+ plantas: exibe `MatSelect` restrito às plantas vinculadas.
+15. `PlantService.selectedPlant$`: `signal<PlantResponse | null>` inicializado do `localStorage`; todos os serviços de listagem (`EquipmentService`, `NonConformanceService`, `WorkOrderService`) adicionam `?plantId=<uuid>` às requests quando `selectedPlant()` não é `null`.
+16. Chip `<span class="plant-chip">` adicionado aos cards de NC, OS e equipamento exibindo `plant.name`; o chip é omitido (`@if`) quando o usuário tem acesso a apenas 1 planta (propriedade `hasSinglePlant` no serviço de autenticação).
+17. Formulário de criação de equipamento: quando ADMIN e `selectedPlant()` for `null`, exibe select obrigatório "Planta" no formulário; quando ADMIN e planta selecionada no nav, pré-preenche e oculta o campo; OPERATOR/SUPERVISOR: campo não exibido (planta inferida pelo backend).
+18. Formulário de criação de NC: mesmo padrão do item 17.
+19. Spec `plant-selector.component.spec.ts`: (a) ADMIN vê select com "Todas as plantas" + lista mockada; (b) OPERATOR com 1 planta vê texto estático; (c) seleção de planta atualiza `PlantService.selectedPlant()`; (d) seleção persiste no `localStorage`.
 
 ---
 
-## Sprint 24 ⬜
-**Objetivo**: OEE Benchmarking — comparativo entre trabalhadores, turnos e tipos de equipamento
-**ADR**: ADR-026
-**Status**: pendente
+#### US-092 — Tech debt Sprint 22 — escalação por e-mail, rate limit /run-now, auditoria e validações SLA (3 pts)
+
+> Cobre 5 itens de tech debt e security debt identificados por Beatriz e Maiana na revisão do Sprint 22: SEC-075 (rate limit /run-now), SEC-076 (classifierValue sem validação semântica), SEC-077 (run-now não auditado), gap escalateByEmail (JavaMailSender não integrado), SEC-065 (shift use cases sem auditoria), SEC-074 (window.open sem noopener).
+
+**Backend — SEC-075: rate limiting em `/run-now`**
+
+1. `SlaRuleController.runNow()`: aplicar mesmo padrão de cooldown do `EvaluateNowUseCase` — `AtomicReference<Instant> lastRunAt` em `EscalationUseCase`; antes de executar: verificar se `lastRunAt` foi há menos de 5 minutos via `compareAndSet`; se cooldown ativo, retornar `429 { "message": "Execução manual disponível apenas a cada 5 minutos. Aguarde {segundos}s." }` com header `Retry-After: {segundos}`; cooldown calculado sobre o `Instant` da última execução concluída (não da chamada rejeitada).
+2. `GlobalExceptionHandler`: não é necessário novo handler — o `429` é retornado diretamente no controller antes de delegar ao use case; manter consistência com o padrão do `EvaluateNowUseCase`.
+
+**Backend — SEC-076: validação semântica de `classifierValue`**
+
+3. `CreateSlaRuleUseCase.execute()`: antes de persistir, validar que `classifierValue` pertence ao enum correspondente ao `classifierField`:
+   - Se `classifierField = SEVERITY`: tentar `NcSeverity.valueOf(request.classifierValue().toUpperCase())`; falha → `400 { "message": "classifierValue inválido para SEVERITY. Valores aceitos: LOW, MEDIUM, HIGH, CRITICAL" }`.
+   - Se `classifierField = PRIORITY`: tentar `WorkOrderPriority.valueOf(request.classifierValue().toUpperCase())`; falha → `400 { "message": "classifierValue inválido para PRIORITY. Valores aceitos: LOW, MEDIUM, HIGH, URGENT" }`.
+4. `UpdateSlaRuleUseCase`: não revalida `classifierValue` (campo imutável em updates — apenas `slaHours` e `escalateByEmail` são atualizáveis conforme AC de US-061).
+5. Teste `CreateSlaRuleUseCaseTest` atualizado: (a) `classifierValue = "CRITICAL"` com `classifierField = SEVERITY` → sucesso; (b) `classifierValue = "INEXISTENTE"` com `classifierField = SEVERITY` → `IllegalArgumentException` capturada e mapeada para `400`; (c) `classifierValue = "URGENT"` com `classifierField = PRIORITY` → sucesso.
+
+**Backend — SEC-077: auditoria da execução manual de escalação**
+
+6. `AuditAction` enum: adicionar `SLA_ESCALATION_RUN_MANUAL`.
+7. `SlaRuleController.runNow(Principal principal)`: injetar `Principal` no método; após execução bem-sucedida do use case, chamar `auditService.log(principal.getName(), SLA_ESCALATION_RUN_MANUAL, "EscalationUseCase", "manual", Map.of("breachedNcs", result.breachedNcs(), "breachedWorkOrders", result.breachedWorkOrders()))`.
+8. `EscalationJob` mantém auditoria de `SLA_BREACHED` por entidade (já implementado no Sprint 22); não adiciona log de execução do job (execução agendada é sistema, não precisa de ator humano no AuditLog).
+
+**Backend — Gap escalateByEmail: integração com JavaMailSender**
+
+9. `EscalationUseCase`: injetar `JavaMailSender` e `@Value("${spring.mail.username}") String fromEmail`; o bloco `if (rule.isEscalateByEmail())` já existe mas estava vazio; implementar:
+   - Buscar via `UserRepository.findByRoleInAndActiveTrue(List.of(Role.SUPERVISOR, Role.ADMIN))` os destinatários.
+   - Para cada destinatário com `email != null`: construir `SimpleMailMessage` com `from = fromEmail`, `to = user.getEmail()`, `subject = "SLA Vencido: {entityType} #{entityId}"`, `text = "A entidade {entityType} #{entityId} ultrapassou o prazo de SLA de {slaHours}h configurado para {classifierField}={classifierValue}.\n\nData/hora: {slaBreachedAt}\n\nAcesse o Industrial Hub para tomar as ações necessárias."`.
+   - Envio encapsulado em método `@Async` do próprio use case ou delegado a `QmsEmailService` existente (reutilizar se a assinatura for compatível); falha de envio de e-mail logada como `WARN` mas não propaga exceção (não deve bloquear a marcação de `slaBreached`).
+10. `application.properties`: `spring.mail.host`, `spring.mail.port`, `spring.mail.username`, `spring.mail.password` já configurados via `QmsEmailService` do Sprint 6 — sem novas propriedades necessárias; `spring.mail.properties.mail.smtp.auth=true`, `starttls.enable=true` já presentes.
+11. Teste `EscalationUseCaseTest` atualizado: (a) `escalateByEmail = true`, usuários SUPERVISOR+ADMIN com email → `mailSender.send()` chamado N vezes; (b) `escalateByEmail = false` → `mailSender.send()` não chamado (verifica `verify(mailSender, never()).send(any(SimpleMailMessage.class))`); (c) `mailSender.send()` lança `MailException` → exceção capturada, `slaBreached` marcado normalmente, log WARN.
+
+**Backend — SEC-065: auditoria em Shift use cases**
+
+12. `AuditAction` enum: adicionar `SHIFT_CREATED`, `SHIFT_UPDATED`, `SHIFT_DEACTIVATED`.
+13. `CreateShiftUseCase.execute()`: após `shiftRepository.save(shift)`, chamar `auditService.log(username, SHIFT_CREATED, "Shift", shift.getId().toString(), Map.of("name", shift.getName(), "startTime", shift.getStartTime().toString(), "endTime", shift.getEndTime().toString()))`.
+14. `UpdateShiftUseCase.execute()`: após save, chamar `auditService.log(username, SHIFT_UPDATED, "Shift", id.toString(), Map.of("name", updated.getName()))`.
+15. `DeactivateShiftUseCase.execute()`: após save, chamar `auditService.log(username, SHIFT_DEACTIVATED, "Shift", id.toString(), Map.of())`.
+
+**Frontend — SEC-074: window.open sem noopener**
+
+16. Em todos os componentes que chamam `window.open(url, '_blank')` (identificados no Sprint 21 no `AttachmentListComponent`): substituir por `window.open(url, '_blank', 'noopener,noreferrer')`; buscar ocorrências via `grep -r "window.open" src/` e corrigir todas de uma vez.
+
+**Observações de esforço**
+
+- SEC-075 (rate limit): ~0,5 pt — padrão idêntico ao `EvaluateNowUseCase`.
+- SEC-076 (validação semântica): ~0,3 pt — 2 `valueOf()` + tratamento de erro.
+- SEC-077 (auditoria run-now): ~0,2 pt — 1 linha no controller + enum.
+- Gap escalateByEmail: ~1,2 pt — lógica de envio + teste com mock.
+- SEC-065 (auditoria shifts): ~0,5 pt — 3 use cases + enum values.
+- SEC-074 (window.open): ~0,1 pt — substituição de string.
+- Total: ~2,8 pt → arredondado para **3 pts**.
+
+---
+
+## Sprint 24 ✅
+**Objetivo**: OEE Benchmarking — comparativo por trabalhador, turno e tipo de equipamento + liquidação do tech debt de segurança diferido do Sprint 23
+**ADR**: ADR-026, ADR-039
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-075 | Endpoints de benchmarking OEE (worker, shift, equipment-type) | 3 | ⬜ pendente |
-| US-076 | Frontend de benchmarking com charts comparativos | 3 | ⬜ pendente |
+| US-075 | Endpoints de benchmarking OEE (worker, shift, equipment-type) | 3 | ✅ concluído |
+| US-076 | Frontend de benchmarking com charts comparativos | 3 | ✅ concluído |
+| US-093 | Tech debt Sprint 23 — validações de planta, From de e-mail e interceptor de login | 2 | ✅ concluído |
+
+**Total**: 8 pts
+
+### Dependências
+- US-076 depende de US-075 (consome os endpoints de benchmarking)
+- US-093 é independente — pode ser desenvolvida em paralelo com US-075
 
 ---
 
-#### US-075 — Endpoints de benchmarking (3 pts)
+#### US-075 — Endpoints de benchmarking OEE (3 pts)
 
-**Backend**
-1. `GET /api/v1/analytics/oee/benchmark/workers?from=&to=` retorna `BenchmarkResponse` com ranking por trabalhador: `{ ranking: [{ dimension, oeeAvg, sampleCount, stdDev }], best, worst, overallAvg }` (SUPERVISOR+)
-2. `GET /api/v1/analytics/oee/benchmark/shifts?from=&to=` ranking por turno (requer Sprint 17 — `shiftId` em `ImportBatch`); retorna campos null para dados sem turno associado
-3. `GET /api/v1/analytics/oee/benchmark/equipment-type?from=&to=` ranking por `EquipmentType`
-4. `GET /api/v1/analytics/oee/benchmark/period-comparison?from=&to=` retorna `{ current: TimeSeriesResponse, previous: TimeSeriesResponse, improvementPct: double }`
-5. Período máximo: 90 dias (validado no use case); excedido retorna `400`
-6. `stdDev` calculado em Java; `null` quando `sampleCount < 3`
+> Expõe 4 endpoints analíticos de comparação de OEE: ranking por trabalhador, por turno, por tipo de equipamento e comparação entre dois períodos consecutivos. Todos os cálculos são feitos em Java sobre dados já existentes no `ImportBatch` (conforme ADR-026 — zero novas entidades).
+
+**Backend — Estrutura comum**
+
+1. `BenchmarkItemResponse` record em `oee/application/dto/`: `{ String dimension, double oeeAvg, int sampleCount, Double stdDev }`. `stdDev` é `null` quando `sampleCount < 3` (desvio padrão estatisticamente insignificante com menos de 3 amostras).
+2. `BenchmarkResponse` record: `{ List<BenchmarkItemResponse> ranking, BenchmarkItemResponse best, BenchmarkItemResponse worst, double overallAvg }`. `best` e `worst` calculados após ordenação do `ranking` por `oeeAvg` (best = maior, worst = menor); `null` quando `ranking` está vazio.
+3. `GetOeeBenchmarkUseCase` criado em `oee/application/usecase/`; endpoints adicionados ao `AnalyticsController` em `common/presentation/` (conforme ADR-012 Decisão 2).
+4. Período máximo 90 dias: se `ChronoUnit.DAYS.between(from, to) > 90`, lança `IllegalArgumentException("Período máximo de benchmarking é 90 dias")` → `GlobalExceptionHandler` mapeia para `400 { "message": "..." }`.
+5. `from` e `to` são `@RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate`; `to` default = `LocalDate.now()`, `from` default = `to.minusDays(30)`; se `from` > `to`, retorna `400 { "message": "from deve ser anterior a to" }`.
+6. Todos os 4 endpoints protegidos por `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`.
+7. `AnalyticsController` já tem `@Validated` na classe (corrigido em US-059 da Sprint 16) — nenhum `@Validated` adicional necessário; os parâmetros `from` e `to` não têm constraints Bean Validation, pois a validação de período máximo é feita no use case via `IllegalArgumentException`.
+
+**Backend — Endpoints de ranking**
+
+8. `GET /api/v1/analytics/oee/benchmark/workers?from=&to=`: busca `ImportBatch` com `profileDate` entre `from` e `to` via `findByProfileDateBetween`; agrupa por `workerId` em Java usando `Collectors.groupingBy`; calcula `oeeAvg = média de (availableTimeMinutes / totalTimeMinutes)` e `stdDev` por grupo; retorna `BenchmarkResponse` com `ranking` ordenado por `oeeAvg DESC`; `dimension` = `workerId` do `ImportBatch`.
+9. `GET /api/v1/analytics/oee/benchmark/shifts?from=&to=`: agrupa por `shiftId` (campo adicionado em Sprint 19); registros com `shiftId = null` agrupados sob `dimension = "Sem Turno"`; mesmo cálculo de `oeeAvg` e `stdDev`; ranking ordenado por `oeeAvg DESC`.
+10. `GET /api/v1/analytics/oee/benchmark/equipment-type?from=&to=`: requer join com `Equipment` via `ImportBatch.equipment`; busca `ImportBatch` com join fetch `equipment`; agrupa por `equipment.type.name()` (String do enum `EquipmentType`); mesmo cálculo; `dimension` = nome do enum (ex: `"MACHINE"`, `"TOOL"`). **Nota de limitação (Sprint 24)**: `ImportBatch` não possui relação com `Equipment` no modelo atual (sem campo `equipment_id` na tabela `import_batch`). Implementado com fallback `label="GERAL"` agrupando todos os registros em uma única entrada. Agrupamento real por tipo de equipamento requer adição de `ImportBatch.equipment` ao modelo — diferido para sprint futura.
+11. Teste unitário `GetOeeBenchmarkUseCaseTest`: (a) ranking por worker com 3 workers, dados variados → ordena DESC, `best`/`worst` corretos; (b) período vazio → `ranking = []`, `best = null`, `worst = null`, `overallAvg = 0.0`; (c) período > 90 dias → `IllegalArgumentException`; (d) `stdDev = null` para `sampleCount < 3`; (e) ranking por shift com `shiftId = null` → agrupado em "Sem Turno".
+
+**Backend — Endpoint de comparação de períodos**
+
+12. `GET /api/v1/analytics/oee/benchmark/period-comparison?from=&to=`: calcula `periodDays = ChronoUnit.DAYS.between(from, to)`; período anterior = `[from - periodDays, from)`; retorna `PeriodComparisonResponse` record:
+    ```json
+    {
+      "current":  { "labels": ["2026-W01", "2026-W02"], "values": [0.78, 0.82] },
+      "previous": { "labels": ["2025-W49", "2025-W50"], "values": [0.72, 0.75] },
+      "improvementPct": 8.5
+    }
+    ```
+    `improvementPct = ((currentAvg - previousAvg) / previousAvg) * 100`; `null` quando `previousAvg = 0` (divisão por zero evitada); negativo indica regressão.
+13. `TimeSeriesResponse` (já existente de US-043/044) reutilizado para `current` e `previous`; agrupamento por semana ISO idêntico ao `GetOeeTrendUseCase`.
 
 ---
 
-#### US-076 — Frontend de benchmarking (3 pts)
+#### US-076 — Frontend de benchmarking OEE (3 pts)
 
-1. Nova aba "Benchmark" na rota `/analytics/oee`
-2. Bar chart horizontal: ranking de trabalhadores por OEE DESC (barra colorida: verde ≥ 65%, amarela 50–64%, vermelha < 50%)
-3. Bar chart: ranking por tipo de equipamento
-4. Cards "Melhor" e "Pior" performer com nome, OEE % e desvio padrão
-5. Section "Comparação de Período": dois line charts sobrepostos (período atual em azul, anterior em cinza tracejado); card com `improvementPct` (verde se positivo, vermelho se negativo)
-6. Toggle "Linha de referência OEE Classe Mundial (85%)" adiciona linha horizontal em todos os charts
+> Adiciona aba "Benchmark" à rota `/analytics/oee` com visualizações comparativas de OEE por trabalhador, turno, tipo de equipamento e comparação de períodos. Reutiliza `BarChartComponent` e `LineChartComponent` já existentes em `shared/charts/`.
+
+**Frontend — Estrutura e roteamento**
+
+1. Aba "Benchmark" adicionada ao componente `/analytics/oee` via `MatTabGroup`; as abas existentes ("Trend") permanecem; rota não muda (sub-abas via `MatTab`, não via roteamento).
+2. `OeeBenchmarkComponent` standalone (`OnPush`) criado em `oee/analytics/oee-benchmark/`; adicionado ao template de `/analytics/oee` como content da nova aba.
+3. `AnalyticsService` (ou `OeeAnalyticsService`) estendido com métodos: `getBenchmarkWorkers(from, to): Observable<BenchmarkResponse>`, `getBenchmarkShifts(from, to): Observable<BenchmarkResponse>`, `getBenchmarkEquipmentTypes(from, to): Observable<BenchmarkResponse>`, `getPeriodComparison(from, to): Observable<PeriodComparisonResponse>`.
+4. Interfaces `BenchmarkItemResponse`, `BenchmarkResponse`, `PeriodComparisonResponse` tipadas no service sem `any`.
+
+**Frontend — Seletores de período**
+
+5. Dois date pickers (`MatDatepicker`) no topo da aba: "De" (`from`) e "Até" (`to`); default: `to = hoje`, `from = hoje - 30 dias`; `to` max = `hoje`; `from` min = `hoje - 90 dias`; mudança de data recarrega todos os 4 charts via `effect()` ou `computed()` sobre `signal<LocalDate>`.
+6. Validação client-side: se `from > to`, exibe mensagem "A data inicial deve ser anterior à data final" abaixo dos campos; botão de atualização desabilitado.
+
+**Frontend — Ranking de trabalhadores**
+
+7. `BarChartComponent` horizontal com `ranking` de trabalhadores por `oeeAvg DESC`; cada barra colorida conforme faixa: verde (`#22C55E`) para `oeeAvg ≥ 0.65`, amarela (`#F59E0B`) para `0.50 ≤ oeeAvg < 0.65`, vermelha (`#EF4444`) para `oeeAvg < 0.50`; label = `dimension` (workerId); valor = `oeeAvg * 100` (percentual).
+8. Abaixo do chart: dois cards side-by-side "Melhor Performer" e "Pior Performer"; cada card exibe: nome (`dimension`), OEE % em fonte grande, `sampleCount` como texto secundário, `stdDev` formatado como `± N.N%` (oculto se `null`).
+9. Quando `ranking` está vazio: mensagem "Sem dados para o período selecionado" no lugar do chart.
+
+**Frontend — Ranking por turno e por tipo de equipamento**
+
+10. Seção "Por Turno": `BarChartComponent` horizontal idêntico ao de workers; `dimension` = nome do turno (ou "Sem Turno" quando `shiftId = null`); mesma lógica de cores.
+11. Seção "Por Tipo de Equipamento": `BarChartComponent` horizontal; `dimension` = tipo em português mapeado no componente (`"MACHINE"→"Máquinas"`, `"TOOL"→"Ferramentas"`, `"VEHICLE"→"Veículos"`, `"INFRASTRUCTURE"→"Infraestrutura"`); mesma lógica de cores.
+
+**Frontend — Comparação de períodos**
+
+12. Seção "Comparação de Períodos": `LineChartComponent` com dois datasets sobrepostos: período atual em azul sólido (`#0099B8`), período anterior em cinza tracejado (`#9CA3AF`); eixo X usa labels do período atual; se os arrays tiverem comprimentos diferentes, o período mais curto é exibido com o comprimento que possui.
+13. Card "Evolução": exibe `improvementPct` com sinal (ex: `+8,5%`) e cor (verde se ≥ 0, vermelho se < 0); texto "em relação ao período anterior de N dias"; `null` exibe "N/D" em cinza.
+
+**Frontend — Toggle de referência mundial**
+
+14. `MatSlideToggle` "Linha de referência OEE Classe Mundial (85%)": quando ativo, passa `referenceValue=0.85` para todos os `LineChartComponent` e `BarChartComponent` da aba; linha horizontal pontilhada vermelha em 85%; estado do toggle persiste via `signal<boolean>` local (não em localStorage).
+
+**Frontend — Loading e erros**
+
+15. Skeleton loader (`<div class="skeleton-chart">`) para cada seção enquanto dados carregam; erro da API exibe snackbar persistente com mensagem do backend; os demais charts continuam carregando independentemente (falha de um endpoint não bloqueia os outros — cada seção tem `catchError` independente).
+16. Spec `oee-benchmark.component.spec.ts`: (a) chart de workers renderiza com dados mockados; (b) período inválido (`from > to`) desabilita atualização e exibe mensagem de validação; (c) `improvementPct = null` exibe "N/D"; (d) toggle de referência passa `referenceValue=0.85` para os charts; (e) ranking vazio exibe mensagem "Sem dados".
 
 ---
 
-## Sprint 25 ⬜
-**Objetivo**: LGPD compliance — retenção, anonimização e direito ao esquecimento
-**ADR**: ADR-022
-**Status**: pendente
+#### US-093 — Tech debt Sprint 23 — validações de planta, From de e-mail e interceptor de login (2 pts)
+
+> Cobre 4 itens de security debt (todos LOW) identificados por Beatriz na revisão do Sprint 23: SEC-078 (lista de plantIds sem bound), SEC-079 (username SMTP exposto no From dos emails de escalação), SEC-080 (interceptor Angular injeta X-Plant-Id no login), SEC-081 (associação de planta aceita plantas inativas).
+
+**Backend — SEC-078: `@Size(max=100)` em `AssignUserPlantsRequest.plantIds`**
+
+1. `AssignUserPlantsRequest` (DTO em `common/application/dto/`): adicionar `@Size(max = 100, message = "plantIds deve conter no máximo 100 plantas")` ao campo `List<UUID> plantIds`; lista vazia (`[]`) continua válida (semântica de "remover todas as plantas do usuário").
+2. `PlantController` (ou `AdminController` — onde `PUT /api/v1/admin/users/{userId}/plants` está mapeado): verificar que a classe tem `@Validated`; se não tiver, adicionar — necessário para que `@Size` no campo do DTO seja validado via Bean Validation; `ConstraintViolationException` → `GlobalExceptionHandler` já retorna `400`.
+3. Teste unitário: lista com 101 UUIDs → `400` com mensagem `"plantIds deve conter no máximo 100 plantas"`; lista com 100 UUIDs → aceito; lista vazia → aceito.
+
+**Backend — SEC-079: propriedade `app.mail.from` separada de `spring.mail.username`**
+
+4. `application.properties`: adicionar `app.mail.from=${spring.mail.username}` como valor default (garante retrocompatibilidade — em dev, o valor é o mesmo; em produção, pode ser sobrescrito para `noreply@msb.com.br` ou endereço dedicado).
+5. `EmailEscalationService`: substituir `@Value("${spring.mail.username}") String fromAddress` por `@Value("${app.mail.from}") String fromAddress`; nenhuma outra alteração na lógica de envio.
+6. `QmsEmailService` (Sprint 6, envio de emails de NC): verificar se também usa `${spring.mail.username}` como From; se sim, aplicar a mesma substituição para consistência; se já usa outra propriedade, manter como está e apenas documentar.
+
+**Frontend — SEC-080: excluir `/auth/` do `plantHeaderInterceptor`**
+
+7. `plantHeaderInterceptor` (Angular `HttpInterceptorFn` em `shared/`): a condição atual `req.url.includes('/api/')` deve ser alterada para `req.url.includes('/api/') && !req.url.includes('/auth/')`. Isso garante que a request `POST /api/v1/auth/login` não receba o header `X-Plant-Id`, eliminando a exposição desnecessária do plant_id da sessão anterior durante o login.
+8. Spec `plant-header.interceptor.spec.ts` (novo ou atualizado): (a) request para `/api/v1/maintenance/equipment` com planta selecionada → header `X-Plant-Id` presente; (b) request para `/api/v1/auth/login` → header `X-Plant-Id` ausente mesmo com planta selecionada; (c) request para `/api/v1/auth/refresh` → header ausente.
+
+**Backend — SEC-081: rejeitar plantas inativas em `AssignUserPlantsUseCase`**
+
+9. `AssignUserPlantsUseCase.execute()`: substituir `plantRepository.findById(plantId)` por `plantRepository.findByIdAndActiveTrue(plantId)`; se retornar `Optional.empty()` (planta inexistente **ou** inativa), lançar `422 { "message": "Planta {id} não encontrada ou inativa" }`; a mensagem já era retornada para plantas inexistentes (conforme AC#10 de US-063) — a alteração apenas amplia o mesmo guard para incluir plantas inativas.
+10. `PlantRepository`: adicionar método `Optional<Plant> findByIdAndActiveTrue(UUID id)` se ainda não existir (Spring Data deriva a query automaticamente do nome do método).
+11. Teste unitário `AssignUserPlantsUseCaseTest` (novo ou atualizado): (a) planta ativa → associação criada; (b) planta inexistente → `422`; (c) planta inativa (`active = false`) → `422` com mesma mensagem de planta inexistente.
+
+**Observações de esforço**
+
+- SEC-078 (@Size + @Validated): ~0,4 pt — 1 anotação no DTO + verificação no controller + teste.
+- SEC-079 (app.mail.from): ~0,3 pt — 1 property + 1 substituição de @Value + verificação no QmsEmailService.
+- SEC-080 (interceptor login): ~0,3 pt — 1 condição no interceptor + spec.
+- SEC-081 (planta inativa): ~0,4 pt — substituição de método + novo método no repositório + teste.
+- Total: ~1,4 pt → arredondado para **2 pts** (itens cirúrgicos e independentes).
+
+---
+
+## Sprint 25 ✅
+**Objetivo**: LGPD compliance — retenção automática, anonimização, direito ao esquecimento + correção de segurança nos endpoints de benchmark OEE
+**ADRs**: ADR-022, ADR-039
+**Status**: concluída
+
+### Tech Debt diferido do Sprint 24 (Beatriz — security)
+- **SEC-082** (MEDIUM): Endpoints `/oee/benchmark/workers|shifts|equipment-type|period-comparison` expostos a OPERATOR via `@PreAuthorize` de método que sobrescreve o `SUPERVISOR+` da classe. Em particular, `/benchmark/workers` expõe `workerName` com métricas individuais de performance para OPERATOR — implicação de privacidade operacional. **Decisão de produto**: OPERATOR não deve ver rankings de performance individual — dados nominais de colegas são reservados para SUPERVISOR+. Fix: remover os 4 `@PreAuthorize` de método nos 4 endpoints de benchmark, herdando o `SUPERVISOR+` da classe.
+- **SEC-083** (LOW): `console.error('Erro ao carregar turnos', err)` em `OeeAnalyticsComponent.loadShifts()` expõe objeto de erro HTTP completo (status, headers, stack trace) no console do browser em produção. Fix: substituir por `this.errorMsg.set('Erro ao carregar turnos.')` sem logar o objeto `err`.
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-067 | Job de retenção e anonimização automática de dados | 4 | ⬜ pendente |
-| US-068 | Direito ao esquecimento + exportação de dados pessoais | 3 | ⬜ pendente |
+| US-067 | Job de retenção e anonimização automática de dados | 4 | ✅ concluído |
+| US-068 | Direito ao esquecimento + exportação de dados pessoais | 3 | ✅ concluído |
+| US-094 | Tech debt Sprint 24 — SEC-082 (acesso OPERATOR a benchmark) + SEC-083 (console.error) | 1 | ✅ concluído |
+
+**Total**: 8 pontos
+
+### Dependências
+- US-067 é independente — `DataRetentionJob` e `ConsentRecord` são novos, sem dependências de Sprint 24
+- US-068 depende de US-067 (consome `DataRetentionService` para preview e o `ConsentRecord` já criado)
+- US-094 é independente das demais — fix cirúrgico sobre código existente, pode ser desenvolvida em paralelo
 
 ---
 
 #### US-067 — Job de retenção automática (4 pts)
 
-**Backend**
-1. `DataRetentionJob` com `@Scheduled(cron = "0 0 2 1 * *")` (1º de cada mês às 2h)
-2. Anonimiza usuários desativados há > 2 anos: `username → "[usuario-{id8chars}]"`, `email → null`, `password → BCrypt("*invalid*")`
-3. Anonimiza `AuditLog` com `timestamp` > 5 anos: `username → "[anonimizado]"`, `ipAddress → null`, `details → null`
-4. Anonimiza campos pessoais em `NonConformance` e `WorkOrder` com data > 5 anos
-5. Deleta fisicamente `Notification` com `createdAt` > 90 dias
-6. Cada bloco de anonimização em transação independente — falha de um não cancela os demais; log de ERROR por bloco com falha
-7. `POST /api/v1/admin/data-retention/run-now` (ADMIN) dispara job manualmente; retorna estatísticas `{ "anonymizedUsers": N, "anonymizedAuditLogs": M, "deletedNotifications": K }`
-8. `GET /api/v1/admin/data-retention/preview` (ADMIN) lista candidatos sem executar
+**Backend — Job agendado**
+1. `DataRetentionJob` com `@Scheduled(cron = "0 0 2 1 * *", zone = "America/Sao_Paulo")` (1º de cada mês às 2h); `@EnableScheduling` já ativo em `BackendApplication` (Sprint 9)
+2. Anonimiza usuários desativados há > 2 anos: sobrescreve `username → "[usuario-{primeiros8chars(id)}]"`, `email → null`, `password → BCrypt("*invalid*")`; senha com BCrypt(12) impede qualquer login mesmo que o hash vaze
+3. Anonimiza `AuditLog` com `timestamp < now().minusYears(5)`: sobrescreve `username → "[anonimizado]"`, `ipAddress → null`, `details → null`; `id`, `action`, `entityType`, `entityId`, `timestamp` preservados (imutabilidade histórica da ação)
+4. Anonimiza campos pessoais em `NonConformance` com `reportedAt < now().minusYears(5)`: `reportedBy → "[anonimizado]"`, `closedBy → "[anonimizado]"` (quando não nulo)
+5. Anonimiza campos pessoais em `WorkOrder` com `openedAt < now().minusYears(5)`: `openedBy → "[anonimizado]"`, `assignedTo → "[anonimizado]"` (quando não nulo)
+6. Deleta fisicamente `Notification` com `createdAt < now().minusDays(90)` — dados transientes sem valor histórico
+7. Cada bloco (usuários, audit, NCs, OSs, notificações) executa em `@Transactional` independente — falha de um bloco loga `ERROR` e continua os demais; `DataRetentionReport` acumula contadores por bloco. **Nota de implementação**: isolamento transacional por bloco implementado via `DataRetentionExecutor` (bean auxiliar `@Service`) injetado em `DataRetentionService`, contornando o problema de self-invocation de proxy Spring identificado por Helena (MF-S25-02).
+8. `DataRetentionService` encapsula a lógica de cada bloco e é separado do `DataRetentionJob` para testabilidade — padrão estabelecido em `WeeklyReportService` (Sprint 9)
+9. `POST /api/v1/admin/data-retention/run-now` (ADMIN) chama `DataRetentionService.executeAll()` imediatamente; retorna `200` com `DataRetentionReport`:
+   ```json
+   {
+     "anonymizedUsers": 0,
+     "anonymizedAuditLogs": 0,
+     "anonymizedNonConformances": 0,
+     "anonymizedWorkOrders": 0,
+     "deletedNotifications": 12,
+     "executedAt": "2026-05-23T02:00:00"
+   }
+   ```
+10. `GET /api/v1/admin/data-retention/preview` (ADMIN) retorna contagens de candidatos sem executar anonimização (dry-run); consultas JPQL de contagem, não `findAll()` para evitar carregamento de entidades inteiras:
+    ```json
+    {
+      "usersEligible": 2,
+      "auditLogsEligible": 0,
+      "nonConformancesEligible": 0,
+      "workOrdersEligible": 0,
+      "notificationsEligible": 12
+    }
+    ```
+11. `DataRetentionController` em `common/presentation/`; use cases agrupados em `DataRetentionService` em `common/application/`; todos os endpoints com `@PreAuthorize("hasRole('ADMIN')")`
 
 **Entidade `ConsentRecord`**
-9. Tabela `consent_record` criada; seed de registro de consentimento para todos os usuários existentes com versão "v1.0"
+12. Entidade `ConsentRecord` criada em `common/domain/` com campos: `id` (UUID), `username` (String), `consentVersion` (String, ex: `"v1.0"`), `consentedAt` (LocalDateTime), `ipAddress` (String, nullable)
+13. Migration: tabela `consent_record` com índice único em `username`
+14. Seed: `DataInitializer` (ou migration de dados) insere `ConsentRecord` para todos os usuários existentes com `consentVersion = "v1.0"`, `consentedAt = now()`, `ipAddress = null` — retrocompatibilidade
+15. `AuditAction` enum: adicionar `DATA_RETENTION_EXECUTED` e `USER_ANONYMIZED`
+
+**Backend — Testes**
+16. `DataRetentionServiceTest` com os seguintes cenários: (a) usuário inativo há > 2 anos é anonimizado; (b) usuário inativo há < 2 anos não é anonimizado; (c) `AuditLog` com timestamp > 5 anos: `username` e `details` nulos após execução; (d) `Notification` com `createdAt` > 90 dias é deletada; (e) falha em um bloco não cancela os demais — `verify(auditRepository).save(any())` confirmado mesmo após falha forçada no bloco de usuários
 
 ---
 
-#### US-068 — Direito ao esquecimento e exportação (3 pts)
+#### US-068 — Direito ao esquecimento e exportação de dados pessoais (3 pts)
 
-**Backend**
-1. `POST /api/v1/admin/users/{id}/anonymize` (ADMIN): anonimização imediata do usuário e dados associados; retorna `200 { "anonymized": true, "affectedEntities": {...} }`
-2. Operação registrada no `AuditLog` com `action = USER_ANONYMIZED` (irreversível)
-3. `GET /api/v1/users/me/data-export` (autenticado): exporta JSON com dados pessoais do próprio usuário: perfil, NCs abertas por ele, OSs criadas por ele, entradas de audit log com seu username
+**Backend — Anonimização imediata**
+1. `POST /api/v1/admin/users/{id}/anonymize` (ADMIN): executa anonimização imediata do usuário-alvo via `DataRetentionService.anonymizeUser(userId, requesterUsername)` — reutiliza a mesma lógica de anonimização do job; retorna `200` com:
+   ```json
+   {
+     "anonymized": true,
+     "affectedEntities": {
+       "auditLogs": 5,
+       "nonConformances": 2,
+       "workOrders": 3
+     }
+   }
+   ```
+2. Usuário já anonimizado (`username` começa com `"[usuario-"`) retorna `422 { "message": "Usuário já foi anonimizado" }`
+3. Tentativa de anonimizar o próprio usuário autenticado retorna `422 { "message": "Não é possível anonimizar a própria conta" }` — ADMIN não pode se auto-anonimizar
+4. Operação registrada no `AuditLog` com `action = USER_ANONYMIZED`, `entityId = userId`, `details = Map.of("requester", adminUsername, "affectedEntities", {...})` — registro irremovível (nenhum endpoint DELETE/UPDATE exposto para `AuditLog`)
 
-**Frontend**
-4. Rota `/admin/lgpd` (ADMIN): tabela paginada de candidatos à anonimização (usuários inativos > 2 anos, registros antigos), botão "Executar Retenção"
-5. Botão "Anonimizar" por linha (usuário): dialog com texto de confirmação digitável "CONFIRMAR" antes de executar
-6. Link "Exportar meus dados" no menu de perfil do usuário (qualquer autenticado): dispara download do JSON de dados pessoais
+**Backend — Exportação de dados pessoais**
+5. `GET /api/v1/users/me/data-export` (qualquer usuário autenticado): exporta JSON com todos os dados pessoais do usuário atual:
+   ```json
+   {
+     "exportedAt": "2026-05-23T10:00:00",
+     "profile": { "username": "...", "email": "...", "role": "...", "active": true },
+     "nonConformancesReported": [...],
+     "workOrdersOpened": [...],
+     "auditLogEntries": [...]
+   }
+   ```
+6. `nonConformancesReported`: lista de `{ id, title, type, severity, status, reportedAt }` onde `reportedBy = username` atual
+7. `workOrdersOpened`: lista de `{ id, title, type, priority, status, openedAt }` onde `openedBy = username` atual
+8. `auditLogEntries`: lista de `{ id, action, entityType, entityId, timestamp }` onde `username = atual` — sem campo `details` (pode conter dados de outros usuários referenciados)
+9. Resposta com `Content-Type: application/json` e `Content-Disposition: attachment; filename="dados-pessoais-{username}-{date}.json"`
+10. `DataExportUseCase` em `common/application/usecase/`; endpoint em `UserController` (já existente em `common/presentation/`)
+
+**Frontend — Painel LGPD (admin)**
+11. Rota `/admin/lgpd` (ADMIN, lazy-loaded): dois cards principais — "Candidatos à Anonimização" e "Executar Retenção"
+12. Card "Candidatos à Anonimização": tabela com colunas username, motivo (ex: "Inativo há 3 anos"), tipo (Usuário / AuditLog / NC / OS / Notificação); dados carregados via `GET /api/v1/admin/data-retention/preview`; empty state: "Nenhum candidato no momento"
+13. Botão "Executar Retenção" (ADMIN): dialog de confirmação com texto "Esta operação é irreversível. Deseja continuar?" + botão "Executar Retenção" (vermelho) + "Cancelar"; executa `POST .../run-now`; após conclusão exibe snackbar com resumo "N usuários anonimizados, M notificações removidas"
+14. Coluna "Ações" na tabela de usuários do `/admin/users` (já existente): adicionar botão "Anonimizar" por linha (visível apenas para ADMIN, oculto para o próprio usuário autenticado); abre dialog com campo de confirmação digitável — usuário deve digitar o `username` alvo antes de confirmar; erro `422` exibe mensagem da API em snackbar
+15. Link "LGPD" adicionado ao submenu de administração no `NavComponent`, visível apenas para ADMIN
+16. `ChangeDetectionStrategy.OnPush`, standalone, signals
+
+**Frontend — Exportação self-service**
+17. Link "Exportar meus dados" adicionado ao menu de perfil no `NavComponent` (dropdown do username — visível para todos os usuários autenticados); dispara `GET /api/v1/users/me/data-export`; download do JSON inicia automaticamente via `<a>` com `download` attribute e Blob URL; snackbar "Exportação iniciada" durante o carregamento
+18. Spec `admin-lgpd.component.spec.ts`: (a) tabela de candidatos exibe dados do preview mockado; (b) empty state exibido quando preview retorna zeros; (c) dialog de confirmação de "Executar Retenção" exibido ao clicar no botão; (d) snackbar com resumo exibido após execução bem-sucedida
 
 ---
 
-## Sprint 26 ⬜
-**Objetivo**: Progressive Web App — instalação, cache offline e fila de NCs offline
-**ADR**: ADR-023
-**Status**: pendente
+#### US-094 — Tech debt Sprint 24 — SEC-082 e SEC-083 (1 pt)
+
+> Cobre os dois itens diferidos identificados por Beatriz na revisão do Sprint 24: exposição indevida dos endpoints de benchmark a OPERATOR (SEC-082) e vazamento de objeto de erro HTTP no console do browser (SEC-083).
+
+**Backend — SEC-082: corrigir acesso OPERATOR a endpoints de benchmark**
+1. `OeeBenchmarkController` (ou classe equivalente onde os 4 endpoints de benchmark estão declarados): remover as anotações `@PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")` dos métodos dos 4 endpoints:
+   - `GET /api/v1/oee/benchmark/workers`
+   - `GET /api/v1/oee/benchmark/shifts`
+   - `GET /api/v1/oee/benchmark/equipment-type`
+   - `GET /api/v1/oee/benchmark/period-comparison`
+2. Após a remoção, os 4 métodos herdam o `@PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")` da classe — OPERATOR passa a receber `403 Forbidden` ao tentar acessar qualquer endpoint de benchmark
+3. Teste de integração ou unitário de controller: (a) requisição autenticada como OPERATOR em `/benchmark/workers` retorna `403`; (b) requisição autenticada como SUPERVISOR retorna `200`; (c) requisição autenticada como ADMIN retorna `200`
+4. `@PreAuthorize` de classe da `OeeBenchmarkController` confirmada como `SUPERVISOR+` — nenhuma outra rota do controller deve ter acesso OPERATOR
+
+**Frontend — SEC-083: remover console.error com objeto de erro em loadShifts()**
+5. `OeeAnalyticsComponent` (arquivo `oee-analytics.component.ts`): no método `loadShifts()`, substituir:
+   ```typescript
+   // ANTES (expõe objeto HTTP bruto):
+   console.error('Erro ao carregar turnos', err);
+   ```
+   por:
+   ```typescript
+   // DEPOIS (mensagem genérica sem vazar detalhes de infraestrutura):
+   this.errorMsg.set('Erro ao carregar turnos.');
+   ```
+   — sem nenhum `console.error`, `console.warn` ou `console.log` adicionado; padrão consistente com os demais blocos de erro do mesmo componente
+6. Confirmar que os outros blocos `catchError` em `OeeAnalyticsComponent` já estão corretos (sem logar o objeto `err`); se algum estiver inconsistente, corrigir junto neste commit
+7. Spec `oee-analytics.component.spec.ts`: (a) quando `loadShifts()` falha (serviço retorna `throwError`), `errorMsg()` recebe o texto `'Erro ao carregar turnos.'`; (b) console permanece limpo (sem `spyOn(console, 'error')` disparado)
+
+---
+
+## Sprint 26 🔄
+**Objetivo**: Progressive Web App — instalação, cache offline e fila de NCs offline + liquidação do tech debt crítico de LGPD/security diferido do Sprint 25
+**ADRs**: ADR-023
+**Status**: em andamento
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
 | US-069 | Service Worker, manifest e cache de leitura offline | 3 | ⬜ pendente |
 | US-070 | Fila offline para criação de NC + banner de atualização | 3 | ⬜ pendente |
+| US-095 | Tech debt Sprint 25 — SEC-083/084/085/086/087 | 2 | ⬜ pendente |
+
+**Total**: 8 pontos
+
+### Dependências
+- US-070 depende de US-069 (service worker e `manifest.webmanifest` precisam estar configurados antes da fila offline)
+- US-095 é independente das demais — fix cirúrgico sobre código existente, pode ser desenvolvida em paralelo
 
 ---
 
-#### US-069 — Service Worker e cache offline (3 pts)
+#### US-069 — Service Worker, manifest e cache de leitura offline (3 pts)
 
-1. `ng add @angular/pwa` executado; `manifest.webmanifest` com `theme_color: "#0099B8"`, `display: "standalone"`, `start_url: "/dashboard"`
-2. `ngsw-config.json` configurado com strategy `freshness` para: `/api/v1/maintenance/equipment`, `/api/v1/kpi/summary`, `/api/v1/qms/non-conformances` (timeout 3–5s; fallback para cache)
-3. Service worker ativo apenas em `production` build (`serviceWorker: true` em `angular.json`)
-4. `SwUpdate` service: quando nova versão detectada, exibe banner no topo da página "Nova versão disponível" com botão "Recarregar"
-5. Ícones PWA gerados em 72, 96, 128, 144, 152, 192, 384, 512 px
-6. Botão "Instalar App" no nav: detecta `beforeinstallprompt`, exibe apenas quando instalação disponível
+> Configura o Industrial Hub como Progressive Web App instalável, com cache offline para leitura de dados críticos e banner de atualização automático de versão.
+
+**Setup**
+1. `ng add @angular/pwa` executado em `apps/frontend/`; `@angular/service-worker` adicionado como dependência em `package.json`
+2. `manifest.webmanifest` gerado com: `name: "Industrial Hub"`, `short_name: "MSB Hub"`, `theme_color: "#0099B8"`, `background_color: "#F4F6F9"`, `display: "standalone"`, `start_url: "/dashboard"`, `scope: "/"`
+3. Ícones PWA gerados em 72, 96, 128, 144, 152, 192, 384 e 512 px; servidos em `assets/icons/`; todos os tamanhos referenciados no `manifest.webmanifest`
+4. `serviceWorker: true` configurado **apenas** no build de produção em `angular.json` — sem service worker em desenvolvimento (evita cache de dados antigos durante dev)
+5. `ngsw-worker.js` servido pelo Angular CLI automaticamente no build de produção; `ngsw.json` gerado pela CLI a partir do `ngsw-config.json`
+
+**Cache offline de leitura**
+6. `ngsw-config.json` configurado com `assetGroups` para cache dos assets do app (strategy: `prefetch`) e `dataGroups` com strategy `freshness` (rede primeiro, cache como fallback) para:
+   - `/api/v1/kpi/summary` — timeout 4s, cache máximo 1h
+   - `/api/v1/maintenance/equipment` — timeout 4s, cache máximo 30 min
+   - `/api/v1/qms/non-conformances` — timeout 5s, cache máximo 15 min
+7. Dados cacheados exibidos normalmente offline; banner "Exibindo dados salvos (sem conexão)" em âmbar exibido nos componentes que dependem desses endpoints quando `!navigator.onLine`
+
+**Banner de atualização de versão**
+8. `PwaUpdateService` criado em `shared/` com `@Injectable({ providedIn: 'root' })`; injeta `SwUpdate`
+9. `SwUpdate.versionUpdates` monitorado: quando tipo `VERSION_READY`, exibe `MatSnackBar` persistente "Nova versão disponível" com botão "Recarregar" — clique chama `document.location.reload()`
+10. `SwUpdate.unrecoverable` monitorado: quando detectado estado irrecuperável do service worker, chama `document.location.reload()` automaticamente (sem confirmação — estado irrecuperável não tem alternativa)
+11. `PwaUpdateService` injetado no `AppComponent` e inicializado no `ngOnInit`
+
+**Instalação**
+12. `PwaInstallService` criado em `shared/`: captura evento `beforeinstallprompt` e armazena o deferred prompt; expõe signal `canInstall: Signal<boolean>`
+13. Botão "Instalar App" exibido no nav apenas quando `canInstall()` é `true`; clique chama `prompt.prompt()` e aguarda `prompt.userChoice`; após escolha do usuário (qualquer decisão), `canInstall` setado para `false`
+14. `PwaInstallService.ngOnInit` registra listener de `appinstalled` para ocultar o botão após instalação concluída
 
 ---
 
-#### US-070 — Fila offline para NC (3 pts)
+#### US-070 — Fila offline para criação de NC + banner de atualização (3 pts)
 
-1. `OfflineQueueService` armazena `POST /api/v1/qms/non-conformances` em IndexedDB quando network falha
-2. `navigator.onLine` + `fromEvent(window, 'online')` monitora conectividade; ao retornar online, drena a fila sequencialmente
-3. Snackbar persistente "Sem conexão. NC salva localmente — será enviada quando a conexão retornar."
-4. Fila exibida no menu do nav: badge "N pendentes" quando há NCs offline; lista de NCs aguardando sync
-5. Outras mutações (PUT, DELETE) falham com snackbar "Operação indisponível offline"
-6. Após sync bem-sucedido: snackbar "N NC(s) sincronizadas com sucesso"
+> Garante que operadores possam registrar Não-Conformidades mesmo sem conexão; as NCs são enfileiradas em IndexedDB e sincronizadas automaticamente ao retornar online.
+
+**OfflineQueueService**
+1. `OfflineQueueService` criado em `qms/` (`@Injectable({ providedIn: 'root' })`); usa IndexedDB diretamente via `IDBFactory` (sem biblioteca externa) para armazenar `OfflineNcEntry` com campos: `id` (UUID local, `crypto.randomUUID()`), `payload` (objeto `CreateNcRequest`), `createdAt` (ISO string), `attempts` (number)
+2. Método `enqueue(payload: CreateNcRequest): Promise<void>` grava entrada no IndexedDB store `offline_ncs`; schema gerado na abertura do banco com `request.onupgradeneeded`
+3. Método `getAll(): Promise<OfflineNcEntry[]>` retorna entradas ordenadas por `createdAt ASC`
+4. Método `remove(id: string): Promise<void>` remove entrada por ID local após sync bem-sucedido
+
+**Detecção de conectividade e sync**
+5. `NetworkStatusService` criado em `shared/`: expõe `isOnline: Signal<boolean>` atualizado via `fromEvent(window, 'online')` e `fromEvent(window, 'offline')` com `toSignal()` e estado inicial de `navigator.onLine`
+6. `OfflineQueueService.startSync()` chamado no `AppComponent.ngOnInit`; observa `NetworkStatusService.isOnline()`; quando transita para `true`, chama `drainQueue()`
+7. `drainQueue()` itera as entradas da fila **sequencialmente** (não em paralelo) via `for...of` com `await`; para cada entrada: chama `NcService.create(entry.payload)` — se sucesso: `remove(entry.id)`; se falha (4xx/5xx): incrementa `entry.attempts` e persiste; se `entry.attempts >= 3`: remove da fila e emite snackbar de erro individual "NC '{title}' falhou após 3 tentativas — descartada"
+
+**UX de estado offline**
+8. Formulário de criação de NC (`/qms/non-conformances/new`): intercepta erro de rede no submit; quando offline (`!navigator.onLine`), chama `offlineQueueService.enqueue(payload)` em vez de retornar erro; exibe `MatSnackBar` persistente "Sem conexão. NC salva localmente — será enviada quando a conexão retornar."
+9. Outras mutações (PUT, DELETE, status transitions) quando offline: exibem `MatSnackBar` de erro "Operação indisponível sem conexão" (sem enfileirar)
+10. Badge "N pendentes" exibido no ícone de NC no nav quando `offlineQueueService.pendingCount()` > 0; signal `pendingCount` derivado de `getAll()` com polling via `interval(5000)` e `toSignal()`
+11. Item "NCs offline (N)" exibido no nav quando `pendingCount() > 0`; clique navega para dialog/painel listando as NCs pendentes com: título, tipo, severidade, `createdAt` local; sem opção de editar ou cancelar (fila é FIFO)
+
+**Feedback de sincronização**
+12. Após `drainQueue()` concluir sem erros: `MatSnackBar` "N NC(s) sincronizadas com sucesso" (duração 5s)
+13. Após `drainQueue()` com falhas parciais: `MatSnackBar` "N NC(s) sincronizadas; M falharam após 3 tentativas" (duração 8s, botão "Ver detalhes" desabilitado na sprint 26 — reservado para sprint futura)
+14. `OfflineQueueService` expõe `lastSyncAt: Signal<Date | null>` atualizado após cada `drainQueue()` bem-sucedido
+
+---
+
+#### US-095 — Tech debt Sprint 25 — SEC-083/084/085/086/087 (2 pts)
+
+> Liquida 5 itens de segurança diferidos da revisão de Beatriz no Sprint 25: um HIGH (proteção de ADMIN na anonimização), dois MEDIUM (auditoria de motivo + rate limiting retention) e dois LOW (console.error residual + sanitização de filename).
+
+**SEC-084 — HIGH: Guard contra anonimização de ADMIN ativo**
+1. Em `DataRetentionService.anonymizeUser()`, adicionar guard imediatamente antes da anonimização: `if (user.getRole() == Role.ADMIN && user.isActive()) { throw new CannotAnonymizeActiveAdminException("Não é possível anonimizar um administrador ativo: " + target.getUsername()); }`. A exceção `CannotAnonymizeActiveAdminException` já foi criada por Mateus no pós-fix do Sprint 25 — verificar se está sendo lançada neste ponto
+2. `GlobalExceptionHandler` deve ter handler para `CannotAnonymizeActiveAdminException` retornando `422 Unprocessable Entity` com `{ "message": "..." }` — adicionar handler se ausente
+3. Teste unitário `DataRetentionServiceTest`: cenário "anonymize active ADMIN throws CannotAnonymizeActiveAdminException" — mock `user.getRole() = ADMIN`, `user.isActive() = true`; verificar que `UserRepository.save()` não é chamado (anonimização não ocorre)
+
+**SEC-085 — MEDIUM: `reason` registrado no AuditLog**
+4. Em `DataRetentionService.anonymizeUser(String userId, String requesterUsername, String reason)`, garantir que `reason` está presente na assinatura do método; se `AdminUserController` já passa `request.reason()` (pós-fix Sprint 25), verificar que o `auditService.log()` dentro de `anonymizeUser()` inclui `reason` no `details`: `Map.of("requester", requesterUsername, "reason", reason, "affectedEntities", affectedEntities)` — adicionar se ausente
+5. Teste unitário: cenário "anonymize user records reason in AuditLog" — verificar que `auditService.log()` é chamado com `details` contendo chave `"reason"` com o valor passado
+
+**SEC-086 — MEDIUM: Rate limiting no `DataRetentionController.runNow()`**
+6. Em `DataRetentionController`, adicionar `AtomicReference<Instant> lastRunTime = new AtomicReference<>(Instant.MIN)` como campo da classe (padrão idêntico ao `SlaRuleController` e `AlertThresholdController` já implementados)
+7. Em `runNow()`: calcular `now = Instant.now()`; verificar `lastRunTime.get().plusSeconds(3600).isAfter(now)` — se verdadeiro, calcular `secondsRemaining` e lançar `DataRetentionCooldownException(secondsRemaining)` (bean já criado por Mateus no pós-fix Sprint 25); se falso, usar `compareAndSet` para atualizar `lastRunTime` atomicamente
+8. `GlobalExceptionHandler` deve ter handler para `DataRetentionCooldownException` retornando `429 Too Many Requests` com `{ "message": "Aguarde N segundos antes de executar novamente.", "secondsRemaining": N }` — adicionar handler se ausente
+9. Teste unitário: cenário "runNow twice within cooldown returns 429" — chamar `runNow()` com `lastRunTime` setado há 30 min; verificar que `DataRetentionCooldownException` é lançada com `secondsRemaining > 0`
+
+**SEC-083 — LOW: `console.error` residual em `work-order-list.component.ts`**
+10. Em `work-order-list.component.ts` linha 80: substituir `console.error('Erro ao carregar turnos', err)` por `this.shiftsErrorMsg.set('Erro ao carregar turnos.')` (sem logar o objeto `err`); declarar signal `shiftsErrorMsg = signal<string>('')` no componente se não existir; exibir mensagem no template via `@if (shiftsErrorMsg())` em elemento de texto simples (sem snackbar — erro de carregamento de turno é não-crítico)
+11. Spec `work-order-list.component.spec.ts`: cenário "loadShifts error sets shiftsErrorMsg without exposing err object" — verificar que `console.error` não é chamado quando o HTTP retorna erro
+
+**SEC-087 — LOW: Sanitização do filename no `Content-Disposition`**
+12. Em `UserController.exportMyData()` (ou onde quer que `Content-Disposition` seja construído com `auth.getName()`): substituir a construção do filename por `String safeUsername = auth.getName().replaceAll("[^a-zA-Z0-9_\\-]", "_")` e usar `safeUsername` na construção do header `Content-Disposition: attachment; filename="dados-pessoais-{safeUsername}-{date}.json"`
+13. Teste unitário: cenário "exportMyData filename sanitizes special chars" — mock `auth.getName()` = `"user with spaces"` ou `"user\"test"` ; verificar que o header `Content-Disposition` retornado contém filename sem caracteres especiais (regex `[a-zA-Z0-9_\\-.]` apenas)
 
 ---
 
@@ -1581,13 +2063,13 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 17 | Planned Downtime + correção residual BUG-2 (qms-analytics) | US-073, US-074, US-060 | ADR-025, ADR-032 |
 | ✅ Sprint 18 | Tech debt Sprint 17 + threshold alerts + notificações in-app | US-088, US-046, US-047, US-048 | ADR-013, ADR-033 |
 | ✅ Sprint 19 | Gestão de turnos + rastreabilidade por turno | US-054, US-055, US-056, US-089 | ADR-016, ADR-034 |
-| ⬜ Sprint 20 | Peças e insumos (spare parts inventory) | US-049, US-050, US-051 | ADR-014 |
-| ⬜ Sprint 21 | Anexos — upload de documentos e imagens | US-059, US-060 | ADR-018 |
-| ⬜ Sprint 22 | SLA e escalação automática | US-061, US-062 | ADR-019 |
-| ⬜ Sprint 23 | Multi-plant support (dimensão de planta/unidade) | US-063, US-064 | ADR-020 |
-| ⬜ Sprint 24 | OEE Benchmarking — comparativo por trabalhador/turno | US-075, US-076 | ADR-026 |
-| ⬜ Sprint 25 | LGPD compliance e data retention | US-067, US-068 | ADR-022 |
-| ⬜ Sprint 26 | Progressive Web App (PWA + offline queue) | US-069, US-070 | ADR-023 |
+| ✅ Sprint 20 | Peças e insumos (spare parts inventory) | US-049, US-050, US-051, US-090 | ADR-014, ADR-035 |
+| ✅ Sprint 21 | Anexos — upload de documentos e imagens + tech debt S20 | US-059, US-060 | ADR-018, ADR-036 |
+| ✅ Sprint 22 | SLA e escalação automática + tech debt security S21 | US-061, US-062, US-091 | ADR-019, ADR-037 |
+| ✅ Sprint 23 | Multi-plant support + tech debt SLA/email/shifts | US-063, US-064, US-092 | ADR-020, ADR-038 |
+| ✅ Sprint 24 | OEE Benchmarking + tech debt multi-plant | US-075, US-076, US-093 | ADR-026, ADR-039 |
+| ✅ Sprint 25 | LGPD compliance e data retention + tech debt benchmark OEE | US-067, US-068, US-094 | ADR-022, ADR-039 |
+| 🔄 Sprint 26 | Progressive Web App (PWA + offline queue) + tech debt LGPD/security | US-069, US-070, US-095 | ADR-023 |
 | ⬜ Sprint 27 | Outbound webhooks para integração com sistemas externos | US-071, US-072 | ADR-024 |
 | ⬜ Sprint 28 | Dashboard customizável por usuário (widgets drag-and-drop) | US-077, US-078 | ADR-027 |
 | ⬜ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) | US-079, US-080, US-081 | ADR-028 |

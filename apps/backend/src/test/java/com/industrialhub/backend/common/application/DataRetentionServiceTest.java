@@ -246,6 +246,43 @@ class DataRetentionServiceTest {
         ));
     }
 
+    // ── SEC-085: anonymizeUser records reason in AuditLog ────────────────────
+
+    @Test
+    void anonymizeUser_recordsReasonInAuditLog() {
+        UUID userId = UUID.randomUUID();
+        User user = User.builder()
+            .id(userId)
+            .username("jose.silva")
+            .email("jose@empresa.com")
+            .password("hashed")
+            .role(Role.OPERATOR)
+            .active(false)
+            .build();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(auditLogRepository.findByUsernameOrderByTimestampDesc("jose.silva")).thenReturn(List.of());
+        when(nonConformanceRepository.findByReportedByOrderByReportedAtDesc("jose.silva")).thenReturn(List.of());
+        when(workOrderRepository.findByOpenedByOrderByOpenedAtDesc("jose.silva")).thenReturn(List.of());
+        when(passwordEncoder.encode("*invalid*")).thenReturn("invalid-hash");
+
+        service.anonymizeUser(userId, "LGPD request - Article 17", "admin");
+
+        verify(auditService).log(
+            eq("admin"),
+            eq(AuditAction.USER_ANONYMIZED),
+            eq("User"),
+            eq(userId.toString()),
+            argThat(details -> {
+                @SuppressWarnings("unchecked")
+                var map = (java.util.Map<String, ?>) details;
+                return "LGPD request - Article 17".equals(map.get("reason"))
+                    && "admin".equals(map.get("triggeredBy"));
+            })
+        );
+    }
+
     // ── SH-S25-03b: falha em um bloco não cancela os demais ──────────────────
 
     @Test

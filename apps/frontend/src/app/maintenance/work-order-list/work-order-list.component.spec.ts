@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { provideRouter } from '@angular/router';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { WorkOrderListComponent } from './work-order-list.component';
 import { MaintenanceService, WorkOrderResponse, PageResponse } from '../maintenance.service';
 import { AdminService, Shift } from '../../admin/admin.service';
@@ -114,6 +114,38 @@ describe('WorkOrderListComponent', () => {
 
     const select = fixture.nativeElement.querySelector('[data-testid="shift-filter"]');
     expect(select).toBeFalsy();
+  });
+
+  // ─── SEC-083: loadShifts error sets shiftsErrorMsg ────────────────────────
+  it('(SEC-083-a) deve preencher shiftsErrorMsg quando loadShifts falha', async () => {
+    const maintenanceService = {
+      listWorkOrders: vi.fn().mockReturnValue(of(makePageResponse([BASE_WO]))),
+      getWorkOrderMetrics: vi.fn().mockReturnValue(of({ mttr: null, totalOrders: 1, openOrders: 1 })),
+    };
+    const adminService = {
+      getShifts: vi.fn().mockReturnValue(throwError(() => new Error('network error'))),
+    };
+
+    const fixture = await createFixture(maintenanceService, adminService);
+
+    expect(fixture.componentInstance.shiftsErrorMsg()).toBe('Erro ao carregar turnos.');
+  });
+
+  it('(SEC-083-b) console.error não deve ser chamado quando loadShifts falha', async () => {
+    const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => undefined);
+
+    const maintenanceService = {
+      listWorkOrders: vi.fn().mockReturnValue(of(makePageResponse([BASE_WO]))),
+      getWorkOrderMetrics: vi.fn().mockReturnValue(of({ mttr: null, totalOrders: 1, openOrders: 1 })),
+    };
+    const adminService = {
+      getShifts: vi.fn().mockReturnValue(throwError(() => new Error('network error'))),
+    };
+
+    await createFixture(maintenanceService, adminService);
+
+    expect(consoleSpy).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 
   // ─── US-056: seleção de turno chama serviço com shiftId ───────────────────
