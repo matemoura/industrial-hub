@@ -1,104 +1,96 @@
-<div class="kpi-page">
+<div class="dashboard-page">
   <div class="page-header">
     <h2>Dashboard</h2>
-    <span class="refresh-hint">Atualiza automaticamente a cada 5 min</span>
-  </div>
-
-  <!-- SLA Risk Panel -->
-  @if (showSlaPanel()) {
-    <div class="sla-risk-panel" data-testid="sla-risk-panel">
-      <h3 class="sla-risk-panel__title">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" class="sla-risk-panel__icon">
-          <path d="M8 1l7 14H1L8 1z" stroke="#DC2626" stroke-width="1.5" stroke-linejoin="round" fill="none"/>
-          <path d="M8 6v4M8 12v.5" stroke="#DC2626" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
-        SLA em Risco
-      </h3>
-      <div class="sla-risk-cards">
-        <a
-          routerLink="/qms/non-conformances"
-          [queryParams]="{ slaBreached: true }"
-          class="sla-risk-card"
-          data-testid="sla-risk-ncs"
-        >
-          <span class="sla-risk-card__count">
-            {{ slaLoading() ? '--' : (slaSummary()?.totalBreachedNcs ?? 0) }}
-          </span>
-          <span class="sla-risk-card__label">NCs com SLA Vencido</span>
-        </a>
-        <a
-          routerLink="/maintenance/work-orders"
-          [queryParams]="{ slaBreached: true }"
-          class="sla-risk-card"
-          data-testid="sla-risk-wos"
-        >
-          <span class="sla-risk-card__count">
-            {{ slaLoading() ? '--' : (slaSummary()?.totalBreachedWorkOrders ?? 0) }}
-          </span>
-          <span class="sla-risk-card__label">OSs com SLA Vencido</span>
-        </a>
-      </div>
-    </div>
-  }
-
-  @if (errorMsg()) {
-    <div class="error-banner" role="alert">{{ errorMsg() }}</div>
-  }
-
-  @if (loading()) {
-    <div class="kpi-grid">
-      @for (i of [1,2,3,4,5,6]; track i) {
-        <div class="kpi-card skeleton"></div>
+    <div class="page-header__actions">
+      @if (!editMode()) {
+        <button class="btn btn--secondary" (click)="toggleEditMode()" data-testid="btn-personalizar">
+          Personalizar
+        </button>
+      } @else {
+        <button class="btn btn--primary" [disabled]="isSaving()" (click)="saveLayout()" data-testid="btn-salvar">
+          {{ isSaving() ? 'Salvando…' : 'Salvar Layout' }}
+        </button>
+        <button class="btn btn--danger-outline" (click)="confirmReset()" data-testid="btn-resetar">
+          Resetar
+        </button>
+        <button class="btn btn--ghost" (click)="toggleEditMode()">Cancelar</button>
       }
     </div>
-  } @else if (kpi(); as k) {
-    <div class="kpi-grid">
+  </div>
 
-      <div [class]="'kpi-card ' + oeeClass(k.oeeAvgLast30Days)" data-testid="kpi-card-oee">
-        <span class="kpi-label">OEE médio (30 dias)</span>
-        <span class="kpi-value">{{ formatOee(k.oeeAvgLast30Days) }}</span>
-        @if (k.oeeAvgLast30Days !== null && k.oeeAvgLast30Days < 0.65) {
-          <span class="kpi-alert">Abaixo do alvo (65%)</span>
+  @if (toast()) {
+    <div class="toast toast--success" role="status">{{ toast() }}</div>
+  }
+  @if (errorToast()) {
+    <div class="toast toast--error" role="alert">{{ errorToast() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="widget-grid">
+      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
+        <div class="widget-card skeleton"></div>
+      }
+    </div>
+  } @else {
+    <div class="dashboard-layout">
+      <div class="widget-grid">
+        @for (widget of widgetConfigs(); track widget.id; let idx = $index) {
+          <div
+            class="widget-card"
+            [class.widget-card--edit]="editMode()"
+            [style]="gridStyle(widget)"
+            [draggable]="editMode()"
+            (dragstart)="onDragStart(idx)"
+            (dragover)="onDragOver($event)"
+            (drop)="onDrop(idx)"
+            [attr.data-testid]="'widget-' + widget.type"
+          >
+            @if (editMode()) {
+              <div class="widget-card__toolbar">
+                <span class="drag-handle" aria-label="Arrastar widget">⠿</span>
+                <button
+                  class="btn-remove"
+                  (click)="removeWidget(idx)"
+                  [attr.aria-label]="'Remover ' + widgetLabels[widget.type]"
+                  data-testid="btn-remove-widget"
+                >
+                  ×
+                </button>
+              </div>
+            }
+
+            @switch (widget.type) {
+              @case ('oee-avg') { <app-oee-avg-widget /> }
+              @case ('nc-open') { <app-nc-open-widget /> }
+              @case ('nc-critical') { <app-nc-critical-widget /> }
+              @case ('wo-open') { <app-wo-open-widget /> }
+              @case ('mttr') { <app-mttr-widget /> }
+              @case ('equipment-count') { <app-equipment-count-widget /> }
+              @case ('oee-trend') { <app-oee-trend-widget /> }
+              @case ('nc-pareto') { <app-nc-pareto-widget /> }
+            }
+          </div>
         }
       </div>
 
-      <div class="kpi-card" data-testid="kpi-card-ncs-abertas">
-        <span class="kpi-label">NCs Abertas</span>
-        <span class="kpi-value">{{ k.totalNcOpen }}</span>
-        <span class="kpi-sub">não-conformidades em aberto</span>
-      </div>
-
-      <div [class]="'kpi-card ' + criticalClass(k.totalNcCritical)" data-testid="kpi-card-ncs-criticas">
-        <span class="kpi-label">NCs Críticas</span>
-        <span class="kpi-value">
-          {{ k.totalNcCritical }}
-          @if (k.totalNcCritical > 0) {
-            <span class="pulse-chip">CRÍTICO</span>
-          }
-        </span>
-        <span class="kpi-sub">severidade crítica</span>
-      </div>
-
-      <div class="kpi-card" data-testid="kpi-card-oss-abertas">
-        <span class="kpi-label">OSs Abertas</span>
-        <span class="kpi-value">{{ k.totalWorkOrdersOpen }}</span>
-        <span class="kpi-sub">ordens em aberto ou andamento</span>
-      </div>
-
-      <div class="kpi-card" data-testid="kpi-card-mttr">
-        <span class="kpi-label">MTTR Global</span>
-        <span class="kpi-value">
-          {{ k.mttrGlobalHours !== null ? (k.mttrGlobalHours | number:'1.1-1') + ' h' : 'N/A' }}
-        </span>
-        <span class="kpi-sub">tempo médio de reparo (corretivas)</span>
-      </div>
-
-      <div class="kpi-card" data-testid="kpi-card-equipamentos">
-        <span class="kpi-label">Equipamentos Ativos</span>
-        <span class="kpi-value">{{ k.activeEquipmentCount }}</span>
-        <span class="kpi-sub">equipamentos em operação</span>
-      </div>
-
+      @if (editMode() && catalogWidgets().length > 0) {
+        <aside class="catalog-panel" data-testid="catalog-panel">
+          <h3 class="catalog-panel__title">Adicionar Widget</h3>
+          <ul class="catalog-list">
+            @for (type of catalogWidgets(); track type) {
+              <li>
+                <button
+                  class="catalog-item"
+                  (click)="addFromCatalog(type)"
+                  [attr.data-testid]="'catalog-' + type"
+                >
+                  + {{ widgetLabels[type] }}
+                </button>
+              </li>
+            }
+          </ul>
+        </aside>
+      }
     </div>
   }
 </div>

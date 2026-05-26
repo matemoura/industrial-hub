@@ -1,135 +1,142 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { provideHttpClient } from '@angular/common/http';
-import { provideHttpClientTesting } from '@angular/common/http/testing';
-import { provideRouter } from '@angular/router';
-import { of, throwError } from 'rxjs';
 import { KpiDashboardComponent } from './kpi-dashboard.component';
-import { KpiService, KpiSummaryResponse } from '../kpi.service';
-import { SlaService, SlaSummaryResponse } from '../../admin/sla-rules/sla.service';
+import { DashboardService, WidgetConfig } from '../dashboard.service';
+import { AuthService } from '../../auth/auth.service';
+import { signal } from '@angular/core';
+import { of, throwError } from 'rxjs';
 
-const MOCK_KPI: KpiSummaryResponse = {
-  oeeAvgLast30Days: 0.72,
-  totalNcOpen: 3,
-  totalNcCritical: 1,
-  totalWorkOrdersOpen: 5,
-  mttrGlobalHours: 2.4,
-  activeEquipmentCount: 10,
-};
+const DEFAULT_WIDGETS: WidgetConfig[] = [
+  { id: 'w1', type: 'oee-avg',          column: 1, row: 1 },
+  { id: 'w2', type: 'nc-open',          column: 2, row: 1 },
+  { id: 'w3', type: 'nc-critical',      column: 3, row: 1 },
+  { id: 'w4', type: 'wo-open',          column: 1, row: 2 },
+  { id: 'w5', type: 'mttr',             column: 2, row: 2 },
+  { id: 'w6', type: 'equipment-count',  column: 3, row: 2 },
+];
 
-const MOCK_SLA_SUMMARY: SlaSummaryResponse = {
-  totalBreachedNcs: 2,
-  totalBreachedWorkOrders: 1,
-  totalOpenNcs: 5,
-  totalOpenWorkOrders: 10,
-};
-
-function makeKpiService(kpi: KpiSummaryResponse = MOCK_KPI) {
+function makeDashboardService(widgets = DEFAULT_WIDGETS): Partial<DashboardService> {
   return {
-    getSummary: vi.fn().mockReturnValue(of(kpi)),
+    getLayout: vi.fn().mockReturnValue(of({ widgetsJson: JSON.stringify(widgets) })),
+    saveLayout: vi.fn().mockReturnValue(of({ widgetsJson: JSON.stringify(widgets) })),
+    deleteLayout: vi.fn().mockReturnValue(of(undefined)),
   };
 }
 
-function makeSlaService(summary: SlaSummaryResponse = MOCK_SLA_SUMMARY) {
+function makeAuthService(role = 'OPERATOR'): Partial<AuthService> {
   return {
-    getSlaSummary: vi.fn().mockReturnValue(of(summary)),
-    listSlaRules: vi.fn().mockReturnValue(of([])),
-    createSlaRule: vi.fn(),
-    updateSlaRule: vi.fn(),
-    deleteSlaRule: vi.fn(),
-    runEscalationNow: vi.fn(),
+    role: signal(role) as AuthService['role'],
   };
-}
-
-async function setup(kpi = MOCK_KPI, sla = MOCK_SLA_SUMMARY) {
-  const kpiService = makeKpiService(kpi);
-  const slaService = makeSlaService(sla);
-
-  await TestBed.configureTestingModule({
-    imports: [KpiDashboardComponent],
-    providers: [
-      provideRouter([]),
-      provideHttpClient(),
-      provideHttpClientTesting(),
-      { provide: KpiService, useValue: kpiService },
-      { provide: SlaService, useValue: slaService },
-    ],
-  }).compileComponents();
-
-  const fixture = TestBed.createComponent(KpiDashboardComponent);
-  fixture.detectChanges();
-  return { fixture, kpiService, slaService };
 }
 
 describe('KpiDashboardComponent', () => {
-  describe('KPI cards', () => {
-    it('should display OEE card', async () => {
-      const { fixture } = await setup();
-      const card = fixture.nativeElement.querySelector('[data-testid="kpi-card-oee"]');
-      expect(card).toBeTruthy();
-      expect(card.textContent).toContain('72.0%');
-    });
+  let fixture: ComponentFixture<KpiDashboardComponent>;
+  let component: KpiDashboardComponent;
 
-    it('should display open NCs card', async () => {
-      const { fixture } = await setup();
-      const card = fixture.nativeElement.querySelector('[data-testid="kpi-card-ncs-abertas"]');
-      expect(card).toBeTruthy();
-      expect(card.textContent).toContain('3');
-    });
+  async function setup(
+    dashSvc: Partial<DashboardService> = makeDashboardService(),
+    authSvc: Partial<AuthService> = makeAuthService(),
+  ) {
+    await TestBed.configureTestingModule({
+      imports: [KpiDashboardComponent],
+      providers: [
+        { provide: DashboardService, useValue: dashSvc },
+        { provide: AuthService, useValue: authSvc },
+      ],
+    }).compileComponents();
+
+    fixture = TestBed.createComponent(KpiDashboardComponent);
+    component = fixture.componentInstance;
+    fixture.detectChanges();
+    await fixture.whenStable();
+    fixture.detectChanges();
+  }
+
+  it('should render widgets from GET response', async () => {
+    await setup();
+    const cards = fixture.nativeElement.querySelectorAll('[data-testid^="widget-"]');
+    expect(cards.length).toBe(DEFAULT_WIDGETS.length);
+    expect(fixture.nativeElement.querySelector('[data-testid="widget-oee-avg"]')).toBeTruthy();
   });
 
-  describe('SLA Risk Panel — AC-19', () => {
-    it('should show sla-risk-panel when totalBreachedNcs > 0', async () => {
-      const { fixture } = await setup(MOCK_KPI, { ...MOCK_SLA_SUMMARY, totalBreachedNcs: 2, totalBreachedWorkOrders: 0 });
-      const panel = fixture.nativeElement.querySelector('[data-testid="sla-risk-panel"]');
-      expect(panel).toBeTruthy();
-    });
+  it('should activate edit mode when "Personalizar" is clicked', async () => {
+    await setup();
+    const btn = fixture.nativeElement.querySelector('[data-testid="btn-personalizar"]');
+    btn.click();
+    fixture.detectChanges();
+    expect(component.editMode()).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="btn-salvar"]')).toBeTruthy();
+  });
 
-    it('should show sla-risk-panel when totalBreachedWorkOrders > 0', async () => {
-      const { fixture } = await setup(MOCK_KPI, { ...MOCK_SLA_SUMMARY, totalBreachedNcs: 0, totalBreachedWorkOrders: 1 });
-      const panel = fixture.nativeElement.querySelector('[data-testid="sla-risk-panel"]');
-      expect(panel).toBeTruthy();
-    });
+  it('should remove widget via "×" button and show it in catalog', async () => {
+    await setup();
+    component.editMode.set(true);
+    fixture.detectChanges();
 
-    it('should hide sla-risk-panel when both counters are 0', async () => {
-      const { fixture } = await setup(MOCK_KPI, { totalBreachedNcs: 0, totalBreachedWorkOrders: 0, totalOpenNcs: 0, totalOpenWorkOrders: 0 });
-      const panel = fixture.nativeElement.querySelector('[data-testid="sla-risk-panel"]');
-      expect(panel).toBeFalsy();
-    });
+    const removeBtns = fixture.nativeElement.querySelectorAll('[data-testid="btn-remove-widget"]');
+    removeBtns[0].click();
+    fixture.detectChanges();
 
-    it('should display breachedNcs count in panel', async () => {
-      const { fixture } = await setup(MOCK_KPI, MOCK_SLA_SUMMARY);
-      const card = fixture.nativeElement.querySelector('[data-testid="sla-risk-ncs"]');
-      expect(card).toBeTruthy();
-      expect(card.textContent).toContain('2');
-    });
+    expect(component.widgetConfigs().length).toBe(DEFAULT_WIDGETS.length - 1);
+    const catalogItem = fixture.nativeElement.querySelector('[data-testid="catalog-oee-avg"]');
+    expect(catalogItem).toBeTruthy();
+  });
 
-    it('should display breachedWorkOrders count in panel', async () => {
-      const { fixture } = await setup(MOCK_KPI, MOCK_SLA_SUMMARY);
-      const card = fixture.nativeElement.querySelector('[data-testid="sla-risk-wos"]');
-      expect(card).toBeTruthy();
-      expect(card.textContent).toContain('1');
-    });
+  it('should add widget from catalog and remove it from catalog list', async () => {
+    const widgets = DEFAULT_WIDGETS.slice(0, 5);
+    await setup(makeDashboardService(widgets));
+    component.editMode.set(true);
+    fixture.detectChanges();
 
-    it('should hide panel when sla summary API fails', async () => {
-      const kpiService = makeKpiService();
-      const slaService = {
-        ...makeSlaService(),
-        getSlaSummary: vi.fn().mockReturnValue(throwError(() => new Error())),
-      };
-      await TestBed.configureTestingModule({
-        imports: [KpiDashboardComponent],
-        providers: [
-          provideRouter([]),
-          provideHttpClient(),
-          provideHttpClientTesting(),
-          { provide: KpiService, useValue: kpiService },
-          { provide: SlaService, useValue: slaService },
-        ],
-      }).compileComponents();
-      const fixture = TestBed.createComponent(KpiDashboardComponent);
-      fixture.detectChanges();
-      const panel = fixture.nativeElement.querySelector('[data-testid="sla-risk-panel"]');
-      expect(panel).toBeFalsy();
+    const catalogBtn = fixture.nativeElement.querySelector('[data-testid="catalog-equipment-count"]');
+    expect(catalogBtn).toBeTruthy();
+    catalogBtn.click();
+    fixture.detectChanges();
+
+    expect(component.widgetConfigs().some((w) => w.type === 'equipment-count')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('[data-testid="catalog-equipment-count"]')).toBeFalsy();
+  });
+
+  it('should call PUT when saving layout and clear edit mode', async () => {
+    const saveSpy = vi.fn().mockReturnValue(of({ widgetsJson: JSON.stringify(DEFAULT_WIDGETS) }));
+    await setup({ ...makeDashboardService(), saveLayout: saveSpy });
+    component.editMode.set(true);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('[data-testid="btn-salvar"]').click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(saveSpy).toHaveBeenCalledWith(JSON.stringify(DEFAULT_WIDGETS));
+    expect(component.editMode()).toBeFalsy();
+  });
+
+  it('should call DELETE then GET when resetting layout', async () => {
+    const deleteSpy = vi.fn().mockReturnValue(of(undefined));
+    let getCallCount = 0;
+    const getSpy = vi.fn().mockImplementation(() => {
+      getCallCount++;
+      return of({ widgetsJson: JSON.stringify(DEFAULT_WIDGETS) });
     });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    await setup({ deleteLayout: deleteSpy, getLayout: getSpy, saveLayout: vi.fn() });
+    component.editMode.set(true);
+    fixture.detectChanges();
+
+    fixture.nativeElement.querySelector('[data-testid="btn-resetar"]').click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(deleteSpy).toHaveBeenCalled();
+    expect(getCallCount).toBeGreaterThanOrEqual(2);
+    expect(component.editMode()).toBeFalsy();
+  });
+
+  it('should show load error when GET fails', async () => {
+    const failingService: Partial<DashboardService> = {
+      getLayout: vi.fn().mockReturnValue(throwError(() => new Error('fail'))),
+    };
+    await setup(failingService);
+    expect(component.loadError()).toBeTruthy();
   });
 });

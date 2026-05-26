@@ -1,85 +1,179 @@
-import { ChangeDetectionStrategy, Component, OnDestroy, OnInit, computed, inject, signal } from '@angular/core';
-import { DecimalPipe } from '@angular/common';
-import { RouterLink } from '@angular/router';
-import { EMPTY, Subscription, catchError, interval, startWith, switchMap } from 'rxjs';
-import { KpiService, KpiSummaryResponse } from '../kpi.service';
-import { SlaService, SlaSummaryResponse } from '../../admin/sla-rules/sla.service';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
+import {
+  DashboardService,
+  SUPERVISOR_ONLY_WIDGETS,
+  WIDGET_LABELS,
+  WidgetConfig,
+  WidgetType,
+} from '../dashboard.service';
+import { AuthService } from '../../auth/auth.service';
+import { OeeAvgWidgetComponent } from './widgets/oee-avg-widget.component';
+import { NcOpenWidgetComponent } from './widgets/nc-open-widget.component';
+import { NcCriticalWidgetComponent } from './widgets/nc-critical-widget.component';
+import { WoOpenWidgetComponent } from './widgets/wo-open-widget.component';
+import { MttrWidgetComponent } from './widgets/mttr-widget.component';
+import { EquipmentCountWidgetComponent } from './widgets/equipment-count-widget.component';
+import { OeeTrendWidgetComponent } from './widgets/oee-trend-widget.component';
+import { NcParetoWidgetComponent } from './widgets/nc-pareto-widget.component';
 
-const REFRESH_INTERVAL_MS = 300_000;
+const ALL_WIDGET_TYPES: WidgetType[] = [
+  'oee-avg', 'nc-open', 'nc-critical', 'wo-open', 'mttr', 'equipment-count',
+  'oee-trend', 'nc-pareto',
+];
 
 @Component({
   selector: 'app-kpi-dashboard',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [DecimalPipe, RouterLink],
+  imports: [
+    OeeAvgWidgetComponent,
+    NcOpenWidgetComponent,
+    NcCriticalWidgetComponent,
+    WoOpenWidgetComponent,
+    MttrWidgetComponent,
+    EquipmentCountWidgetComponent,
+    OeeTrendWidgetComponent,
+    NcParetoWidgetComponent,
+  ],
   templateUrl: './kpi-dashboard.component.html',
   styleUrl: './kpi-dashboard.component.scss',
 })
-export class KpiDashboardComponent implements OnInit, OnDestroy {
-  private readonly kpiService = inject(KpiService);
-  private readonly slaService = inject(SlaService);
+export class KpiDashboardComponent implements OnInit {
+  private readonly dashboardService = inject(DashboardService);
+  private readonly authService = inject(AuthService);
 
-  kpi = signal<KpiSummaryResponse | null>(null);
-  loading = signal(true);
-  errorMsg = signal<string | null>(null);
+  readonly widgetConfigs = signal<WidgetConfig[]>([]);
+  readonly editMode = signal(false);
+  readonly isLoading = signal(true);
+  readonly isSaving = signal(false);
+  readonly loadError = signal(false);
 
-  slaSummary = signal<SlaSummaryResponse | null>(null);
-  slaLoading = signal(true);
+  readonly toast = signal<string | null>(null);
+  readonly errorToast = signal<string | null>(null);
 
-  readonly showSlaPanel = computed(() => {
-    const s = this.slaSummary();
-    if (!s) return false;
-    return s.totalBreachedNcs > 0 || s.totalBreachedWorkOrders > 0;
+  private draggedIndex: number | null = null;
+
+  readonly availableForRole = computed<WidgetType[]>(() => {
+    const role = this.authService.role();
+    if (role === 'SUPERVISOR' || role === 'ADMIN') {
+      return ALL_WIDGET_TYPES;
+    }
+    return ALL_WIDGET_TYPES.filter((t) => !SUPERVISOR_ONLY_WIDGETS.includes(t));
   });
 
-  private refreshSub?: Subscription;
+  readonly catalogWidgets = computed<WidgetType[]>(() => {
+    const current = new Set(this.widgetConfigs().map((w) => w.type));
+    return this.availableForRole().filter((t) => !current.has(t));
+  });
+
+  readonly widgetLabels = WIDGET_LABELS;
 
   ngOnInit(): void {
-    this.refreshSub = interval(REFRESH_INTERVAL_MS)
-      .pipe(
-        startWith(0),
-        switchMap(() =>
-          this.kpiService.getSummary().pipe(
-            catchError(() => {
-              this.loading.set(false);
-              this.errorMsg.set('Não foi possível carregar os indicadores. Tente novamente.');
-              return EMPTY;
-            }),
-          ),
-        ),
-      )
-      .subscribe((data) => {
-        this.kpi.set(data);
-        this.loading.set(false);
-        this.errorMsg.set(null);
-      });
-
-    this.slaService.getSlaSummary().subscribe({
-      next: (s) => {
-        this.slaSummary.set(s);
-        this.slaLoading.set(false);
+    this.dashboardService.getLayout().subscribe({
+      next: (res) => {
+        this.widgetConfigs.set(JSON.parse(res.widgetsJson) as WidgetConfig[]);
+        this.isLoading.set(false);
       },
       error: () => {
-        this.slaLoading.set(false);
+        this.loadError.set(true);
+        this.isLoading.set(false);
+        this.showError('Não foi possível carregar o layout do dashboard');
       },
     });
   }
 
-  ngOnDestroy(): void {
-    this.refreshSub?.unsubscribe();
+  toggleEditMode(): void {
+    this.editMode.update((v) => !v);
   }
 
-  formatOee(value: number | null): string {
-    if (value === null) return 'N/A';
-    return (value * 100).toFixed(1) + '%';
+  removeWidget(index: number): void {
+    this.widgetConfigs.update((list) => list.filter((_, i) => i !== index));
   }
 
-  oeeClass(value: number | null): string {
-    if (value === null) return '';
-    return value < 0.65 ? 'card--danger' : 'card--ok';
+  addFromCatalog(type: WidgetType): void {
+    const list = this.widgetConfigs();
+    const col = (list.length % 3) + 1;
+    const row = Math.floor(list.length / 3) + 1;
+    const newWidget: WidgetConfig = { id: `w${Date.now()}`, type, column: col, row };
+    this.widgetConfigs.update((l) => [...l, newWidget]);
   }
 
-  criticalClass(count: number): string {
-    return count > 0 ? 'card--danger' : 'card--ok';
+  onDragStart(index: number): void {
+    this.draggedIndex = index;
+  }
+
+  onDragOver(event: DragEvent): void {
+    event.preventDefault();
+  }
+
+  onDrop(targetIndex: number): void {
+    if (this.draggedIndex === null || this.draggedIndex === targetIndex) return;
+
+    this.widgetConfigs.update((list) => {
+      const updated = [...list];
+      const [dragged] = updated.splice(this.draggedIndex!, 1);
+      updated.splice(targetIndex, 0, dragged);
+      return updated.map((w, i) => ({
+        ...w,
+        column: (i % 3) + 1,
+        row: Math.floor(i / 3) + 1,
+      }));
+    });
+    this.draggedIndex = null;
+  }
+
+  saveLayout(): void {
+    this.isSaving.set(true);
+    const json = JSON.stringify(this.widgetConfigs());
+    this.dashboardService.saveLayout(json).subscribe({
+      next: () => {
+        this.isSaving.set(false);
+        this.editMode.set(false);
+        this.showToast('Layout salvo com sucesso');
+      },
+      error: (err: { error?: { message?: string } }) => {
+        this.isSaving.set(false);
+        this.showError(err?.error?.message ?? 'Erro ao salvar layout');
+      },
+    });
+  }
+
+  confirmReset(): void {
+    if (!window.confirm('Resetar para o layout padrão? As personalizações serão perdidas.')) return;
+
+    this.dashboardService.deleteLayout().subscribe({
+      next: () => {
+        this.dashboardService.getLayout().subscribe({
+          next: (res) => {
+            this.widgetConfigs.set(JSON.parse(res.widgetsJson) as WidgetConfig[]);
+            this.editMode.set(false);
+          },
+        });
+      },
+    });
+  }
+
+  gridStyle(widget: WidgetConfig): Record<string, string> {
+    return {
+      'grid-column': String(widget.column),
+      'grid-row': String(widget.row),
+    };
+  }
+
+  private showToast(msg: string): void {
+    this.toast.set(msg);
+    setTimeout(() => this.toast.set(null), 3000);
+  }
+
+  private showError(msg: string): void {
+    this.errorToast.set(msg);
+    setTimeout(() => this.errorToast.set(null), 5000);
   }
 }
