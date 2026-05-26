@@ -25,6 +25,7 @@ public class WebhookSubscription {
     private String url;
 
     @Column(length = 100)
+    @ToString.Exclude
     private String secret;
 
     @ElementCollection(fetch = FetchType.EAGER)

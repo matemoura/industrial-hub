@@ -19,8 +19,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.ConnectException;
+import java.net.SocketTimeoutException;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -108,7 +111,7 @@ public class WebhookDispatchService {
                 handleFailure(sub, event, entityPayload, delivery, attempt, code, duration, null);
             }
         } catch (Exception e) {
-            handleFailure(sub, event, entityPayload, delivery, attempt, null, 0L, e.getMessage());
+            handleFailure(sub, event, entityPayload, delivery, attempt, null, 0L, categorizeError(e));
         }
     }
 
@@ -135,7 +138,7 @@ public class WebhookDispatchService {
                     Instant.now().plusMillis(delayMs)
             );
             log.warn("Webhook falhou (tentativa {}/3) para {}: {}. Retry em {}ms",
-                    attempt, sub.getUrl(), error, delayMs);
+                    attempt, sanitizeUrl(sub.getUrl()), error, delayMs);
         } else {
             // 3ª falha: desativar subscription e notificar ADMIN
             sub.setActive(false);
@@ -149,8 +152,22 @@ public class WebhookDispatchService {
                     sub.getUrl());
             notificationService.broadcast(title, body, NotificationSeverity.CRITICAL);
 
-            log.error("Webhook desativado após 3 falhas: subscriptionId={}, url={}", sub.getId(), sub.getUrl());
+            log.error("Webhook desativado após 3 falhas: subscriptionId={}, url={}", sub.getId(), sanitizeUrl(sub.getUrl()));
         }
+    }
+
+    String sanitizeUrl(String url) {
+        if (url == null) return null;
+        return url.replaceAll("(https?://)([^@]+@)", "$1***@");
+    }
+
+    String categorizeError(Exception e) {
+        if (e instanceof ConnectException) return "Connection error";
+        if (e instanceof SocketTimeoutException) return "Timeout";
+        if (e instanceof ResourceAccessException rae
+                && rae.getCause() instanceof SocketTimeoutException) return "Timeout";
+        if (e instanceof ResourceAccessException) return "Network error";
+        return "HTTP error";
     }
 
     private String buildPayloadJson(WebhookEvent event, Object entityPayload) {

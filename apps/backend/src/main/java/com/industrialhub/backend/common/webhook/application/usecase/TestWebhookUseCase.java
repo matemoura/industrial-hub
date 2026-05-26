@@ -83,7 +83,7 @@ public class TestWebhookUseCase {
             // Persist delivery record
             deliveryRepository.save(WebhookDelivery.builder()
                     .subscription(subscription)
-                    .event(WebhookEvent.NC_CREATED) // placeholder for test
+                    .event(WebhookEvent.TEST)
                     .attempt(1)
                     .responseCode(responseCode)
                     .durationMs(duration)
@@ -102,7 +102,7 @@ public class TestWebhookUseCase {
 
             deliveryRepository.save(WebhookDelivery.builder()
                     .subscription(subscription)
-                    .event(WebhookEvent.NC_CREATED)
+                    .event(WebhookEvent.TEST)
                     .attempt(1)
                     .responseCode(null)
                     .durationMs(duration)

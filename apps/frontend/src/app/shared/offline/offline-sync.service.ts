@@ -19,6 +19,7 @@ export class OfflineSyncService {
 
   readonly synced$ = new Subject<SyncResult>();
   readonly lastSyncAt = signal<Date | null>(null);
+  readonly failedTitles = signal<string[]>([]);
 
   private syncing = false;
 
@@ -73,7 +74,7 @@ export class OfflineSyncService {
           if (entry.attempts >= MAX_ATTEMPTS) {
             await this.offlineQueue.remove(entry.id);
             failedCount++;
-            console.warn(`NC '${entry.payload.title}' falhou após 3 tentativas — descartada`);
+            this.failedTitles.update((arr) => [...arr, entry.payload.title.substring(0, 30)]);
           } else {
             await this.offlineQueue.updateAttempts(entry);
           }

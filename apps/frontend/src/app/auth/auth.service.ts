@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
+import { OfflineQueueService } from '../shared/offline/offline-queue.service';
 
 export interface LoginRequest {
   username: string;
@@ -31,6 +32,7 @@ const TOKEN_KEY = 'msb_token';
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
+  private readonly offlineQueue = inject(OfflineQueueService);
 
   private readonly _token = signal<string | null>(localStorage.getItem(TOKEN_KEY));
   private readonly _payload = computed(() => this.decodePayload(this._token()));
@@ -58,10 +60,11 @@ export class AuthService {
     this._token.set(newToken);
   }
 
-  logout(): void {
+  async logout(): Promise<void> {
+    await this.offlineQueue.clearAll();
     localStorage.removeItem(TOKEN_KEY);
     this._token.set(null);
-    this.router.navigate(['/login']);
+    void this.router.navigate(['/login']);
   }
 
   getToken(): string | null {

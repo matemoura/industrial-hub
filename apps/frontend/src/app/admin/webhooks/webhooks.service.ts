@@ -11,7 +11,8 @@ export type WebhookEvent =
   | 'WORK_ORDER_CREATED'
   | 'WORK_ORDER_STATUS_CHANGED'
   | 'EQUIPMENT_DECOMMISSIONED'
-  | 'SLA_BREACHED';
+  | 'SLA_BREACHED'
+  | 'TEST';
 
 export type DeliveryStatus = 'SUCCESS' | 'FAILED' | 'PENDING_RETRY';
 
@@ -69,7 +70,7 @@ export interface UpdateWebhookRequest {
 export interface WebhookEventMeta {
   value: WebhookEvent;
   label: string;
-  category: 'QMS' | 'Manutenção' | 'SLA';
+  category: 'QMS' | 'Manutenção' | 'SLA' | 'Teste';
   color: string;
 }
 
@@ -81,6 +82,7 @@ export const WEBHOOK_EVENTS: WebhookEventMeta[] = [
   { value: 'WORK_ORDER_STATUS_CHANGED', label: 'OS Status Alterado',           category: 'Manutenção', color: '#166534' },
   { value: 'EQUIPMENT_DECOMMISSIONED',  label: 'Equipamento Descomissionado',  category: 'Manutenção', color: '#92400E' },
   { value: 'SLA_BREACHED',              label: 'SLA Violado',                  category: 'SLA',       color: '#7C3AED' },
+  { value: 'TEST',                      label: 'Teste Manual',                 category: 'Teste',     color: '#6B7280' },
 ];
 
 // ─── Service ─────────────────────────────────────────────────────────────────
