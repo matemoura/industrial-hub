@@ -90,4 +90,44 @@ describe('OfflineSyncService', () => {
     expect(queueService.remove).toHaveBeenCalledWith(failingEntry.id);
     expect(queueService.updateAttempts).not.toHaveBeenCalled();
   });
+
+  // SEC-090 AC#8 — failedTitles populado após 3 falhas; console.warn não chamado
+  it('failedTitles contém título da NC após 3 falhas consecutivas e console.warn não é chamado', async () => {
+    const failingEntry: OfflineNcEntry = {
+      ...MOCK_ENTRY,
+      id: 'fail-nc-sec090',
+      attempts: 2, // already 2 attempts → next failure = 3rd = discard
+      payload: { ...MOCK_ENTRY.payload, title: 'NC Falha Repetida' },
+    };
+
+    const networkStatus = new NetworkStatusService();
+    networkStatus.isOnline.set(true);
+
+    const queueService = makeQueueService([failingEntry]);
+    const qmsService = makeQmsService(true); // always fails
+
+    await TestBed.configureTestingModule({
+      providers: [
+        OfflineSyncService,
+        { provide: NetworkStatusService, useValue: networkStatus },
+        { provide: OfflineQueueService, useValue: queueService },
+        { provide: QmsService, useValue: qmsService },
+      ],
+    }).compileComponents();
+
+    service = TestBed.inject(OfflineSyncService);
+
+    const warnSpy = vi.spyOn(console, 'warn');
+
+    await service.drainQueue();
+
+    // failedTitles should contain the NC title (or a substring up to 30 chars)
+    const titles = service.failedTitles();
+    expect(titles.some((t) => t.includes('NC Falha Repetida') || 'NC Falha Repetida'.includes(t))).toBeTruthy();
+
+    // console.warn must NOT have been called
+    expect(warnSpy).not.toHaveBeenCalled();
+
+    warnSpy.mockRestore();
+  });
 });

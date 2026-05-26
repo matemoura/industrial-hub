@@ -1854,17 +1854,17 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 26 🔄
+## Sprint 26 ✅
 **Objetivo**: Progressive Web App — instalação, cache offline e fila de NCs offline + liquidação do tech debt crítico de LGPD/security diferido do Sprint 25
 **ADRs**: ADR-023
-**Status**: em andamento
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-069 | Service Worker, manifest e cache de leitura offline | 3 | ⬜ pendente |
-| US-070 | Fila offline para criação de NC + banner de atualização | 3 | ⬜ pendente |
-| US-095 | Tech debt Sprint 25 — SEC-083/084/085/086/087 | 2 | ⬜ pendente |
+| US-069 | Service Worker, manifest e cache de leitura offline | 3 | ✅ concluído |
+| US-070 | Fila offline para criação de NC + banner de atualização | 3 | ✅ concluído |
+| US-095 | Tech debt Sprint 25 — SEC-083/084/085/086/087 | 2 | ✅ concluído |
 
 **Total**: 8 pontos
 
@@ -1962,81 +1962,233 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 27 ⬜
+## Sprint 27 ✅
 **Objetivo**: Outbound webhooks para integração com ERP e ferramentas externas
-**ADR**: ADR-024
-**Status**: pendente
+**ADRs**: ADR-024, ADR-040
+**Status**: concluída
+
+### Tech Debt diferido do Sprint 27 (Beatriz — security)
+- **SEC-088** (MEDIUM): Service Worker cacheia `/api/v1/qms/non-conformances` sem `Cache-Control: no-store` — resposta contém `reportedBy` (dado pessoal LGPD). Fix: header `Cache-Control: no-store` no endpoint de listagem ou remoção do grupo de cache no `ngsw-config.json`.
+- **SEC-089** (MEDIUM): `AuthService.logout()` não chama `offlineQueueService.clearAll()` — NCs pendentes de um usuário permanecem no IndexedDB após logout. Fix: aguardar `clearAll()` antes de limpar localStorage.
+- **SEC-090** (LOW): `console.warn` em `OfflineSyncService.drainQueue()` loga `entry.payload.title` — dado pessoal exposto no console do browser. Fix: substituir por signal de erro sem logar o payload.
+- **SEC-093** (MEDIUM): URL com credenciais embutidas logada em texto plano por `WebhookDispatchService`; `secret` em `WebhookSubscription` sem `@ToString.Exclude`. Fix: sanitizar URL nos logs; adicionar `@ToString.Exclude` em `secret`.
+- **SEC-094** (MEDIUM): `WebhookDelivery.errorMessage` populado com `e.getMessage()` pode conter IPs/portas internas. Fix: categorizar o erro com mensagem semântica genérica.
+- **SEC-096** (LOW): `UpdateWebhookRequest.url` sem `@NotBlank` — semântica de `null` (sem alteração) vs `""` (string vazia) ambígua. Fix: `@Size(min=1)` ou documentação explícita de PATCH semântico.
+- **SEC-097** (LOW): `TestWebhookUseCase` persiste `WebhookDelivery` com `event = NC_CREATED` como placeholder — histórico de testes aparece como entregas reais. Fix: criar `WebhookEvent.TEST`.
+- **SEC-092** ✅ CORRIGIDO em `fa3dc19` — SSRF via URL de webhook: `WebhookUrlValidator` implementado com resolução DNS + bloqueio RFC-1918/link-local/loopback.
+- **SEC-095** ✅ CORRIGIDO em `fa3dc19` — CRUD de webhook sem auditoria: `AuditAction.WEBHOOK_CREATED/UPDATED/DELETED/ACTIVATED/TESTED` adicionados.
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-071 | Gerenciamento de subscriptions de webhook | 3 | ⬜ pendente |
-| US-072 | Entrega de eventos e retry automático | 4 | ⬜ pendente |
+| US-071 | Gerenciamento de subscriptions de webhook | 3 | ✅ concluído |
+| US-072 | Entrega de eventos e retry automático | 4 | ✅ concluído |
+
+**Total**: 7 pontos
+
+### Dependências
+- US-072 depende de US-071 (entidade `WebhookSubscription` e repositório necessários antes do dispatch)
+- Integração de US-072 com `EscalationUseCase` depende do evento `SLA_BREACHED` introduzido no Sprint 22 (US-062) ✅
 
 ---
 
-#### US-071 — Webhook subscriptions (3 pts)
+#### US-071 — Gerenciamento de subscriptions de webhook (3 pts)
 
-**Backend**
-1. `POST /api/v1/admin/webhooks` cria `WebhookSubscription` (ADMIN); campos: `url`, `secret` (optional), `events` (set de `WebhookEvent`), `description`
-2. Enums `WebhookEvent`: `NC_CREATED`, `NC_STATUS_CHANGED`, `NC_CRITICAL_OPENED`, `WORK_ORDER_CREATED`, `WORK_ORDER_STATUS_CHANGED`, `EQUIPMENT_DECOMMISSIONED`, `SLA_BREACHED`
-3. `GET /api/v1/admin/webhooks` lista subscriptions (ADMIN)
-4. `PUT /api/v1/admin/webhooks/{id}` atualiza; `DELETE /{id}` remove
-5. `POST /api/v1/admin/webhooks/{id}/test` envia payload de teste imediato; retorna `{ "responseCode": 200, "durationMs": 245 }`
-6. `GET /api/v1/admin/webhooks/{id}/deliveries` retorna últimas 50 entregas com status, responseCode, attempt
+**Backend — Domínio**
+1. Entidade `WebhookSubscription` criada em `common/domain/` com campos: `id` (UUID), `url` (`@Column(nullable=false, length=500)`), `secret` (nullable, `length=100`), `events` (`@ElementCollection` → tabela `webhook_event_type`, enum `WebhookEvent`), `description` (nullable, `length=200`), `active` (boolean, default `true`), `createdBy` (String), `createdAt` (LocalDateTime); índice em `active` (conforme ADR-024 Decisão 1)
+2. Enum `WebhookEvent` criado com valores: `NC_CREATED`, `NC_STATUS_CHANGED`, `NC_CRITICAL_OPENED`, `WORK_ORDER_CREATED`, `WORK_ORDER_STATUS_CHANGED`, `EQUIPMENT_DECOMMISSIONED`, `SLA_BREACHED`
+3. Migration: tabelas `webhook_subscription` e `webhook_event_type` (tabela de coleção com colunas `webhook_subscription_id` UUID + `events` VARCHAR(50))
+4. `WebhookSubscriptionRepository` em `common/infrastructure/` com método `findByActiveTrue()` e `findByActiveTrueAndEventsContaining(WebhookEvent event)` para busca eficiente por evento
+
+**Backend — CRUD endpoints**
+5. `POST /api/v1/admin/webhooks` cria `WebhookSubscription` (ADMIN); corpo obrigatório: `url` (válida: começa com `https://` ou `http://`, max 500 chars), `events` (lista não vazia de `WebhookEvent`); opcionais: `secret` (max 100 chars), `description` (max 200 chars); `createdBy` preenchido com username do JWT; `createdAt` = UTC agora; retorna `201 WebhookSubscriptionResponse`
+6. `url` inválida (não começa com `http://` ou `https://`, ou > 500 chars) retorna `400` com `{ "message": "URL de webhook inválida" }`
+7. `events` vazia ou ausente retorna `400` com `{ "message": "Selecione pelo menos um evento" }`
+8. `GET /api/v1/admin/webhooks` retorna `List<WebhookSubscriptionResponse>` ordenada por `createdAt DESC` (ADMIN)
+9. `PUT /api/v1/admin/webhooks/{id}` atualiza `url`, `secret`, `events`, `description`, `active`; mantém `createdBy` e `createdAt` imutáveis; retorna `200 WebhookSubscriptionResponse` ou `404` com `{ "message": "Webhook não encontrado" }` (ADMIN)
+10. `DELETE /api/v1/admin/webhooks/{id}` remove fisicamente a subscription (ADMIN); retorna `204` ou `404`
+11. Controller `WebhookAdminController` em `common/presentation/`; use cases em `common/application/usecase/`: `CreateWebhookSubscriptionUseCase`, `UpdateWebhookSubscriptionUseCase`, `DeleteWebhookSubscriptionUseCase`, `ListWebhookSubscriptionsUseCase`
+12. Todos os endpoints protegidos com `@PreAuthorize("hasRole('ADMIN')")`; controller deve ter `@Validated` (ADR-031)
+
+**Backend — Endpoint de teste**
+13. `POST /api/v1/admin/webhooks/{id}/test` (ADMIN) envia payload de teste síncrono ao URL da subscription; payload fixo `{ "event": "TEST", "timestamp": "...", "payload": { "message": "Webhook test" } }`; se `secret` presente, assina com HMAC-SHA256; retorna `200 { "responseCode": <int>, "durationMs": <long>, "success": <boolean> }` independente do código de resposta do endpoint alvo; timeout de 5s; subscription inexistente retorna `404`
+
+**Backend — Histórico de entregas**
+14. `GET /api/v1/admin/webhooks/{id}/deliveries` retorna `List<WebhookDeliveryResponse>` das últimas 50 entregas (`@Query` com `ORDER BY createdAt DESC LIMIT 50`) ordenadas por `createdAt DESC` (ADMIN); subscription inexistente retorna `404`
+15. `WebhookDeliveryResponse` contém: `id`, `event`, `attempt`, `responseCode` (nullable — null se timeout), `durationMs`, `success` (boolean: `responseCode` entre 200–299), `createdAt`
 
 **Frontend**
-7. Rota `/admin/webhooks` (ADMIN): tabela com URL, eventos (chips), status última entrega (verde/vermelho), botão "Testar"
-8. Formulário de criação: URL, secret (opcional, masked), checkboxes de eventos, descrição
+16. Rota `/admin/webhooks` (lazy-loaded, ADMIN only) — link "Webhooks" adicionado ao nav somente para role ADMIN; rota protegida por `AuthGuard` + verificação de role
+17. Tabela de subscriptions com colunas: URL (truncada a 60 chars com tooltip completo), Eventos (chips com cor `#0099B8`), Status (chip: "Ativo"=verde / "Inativo"=cinza), Última entrega (código HTTP da entrega mais recente colorido: verde se 2xx, vermelho caso contrário, "—" se sem entregas), Ações (botões "Testar", "Editar", "Excluir")
+18. Botão "Nova Subscription" (ADMIN) abre dialog de criação com campos: URL (input obrigatório), Eventos (checkboxes para cada `WebhookEvent` com labels legíveis), Secret (input opcional, type=password com botão de visibilidade), Descrição (textarea opcional); botão "Salvar" desabilitado até `url` + ao menos 1 evento preenchidos
+19. Botão "Editar" abre mesmo dialog preenchido com dados atuais; campo Secret exibe placeholder "••••••" sem revelar valor salvo (atualizado apenas se preenchido novo valor)
+20. Botão "Excluir" abre dialog de confirmação: "Excluir webhook {url}? Esta ação não pode ser desfeita."; confirmação dispara `DELETE`; snackbar "Webhook removido"
+21. Botão "Testar" envia `POST /{id}/test`; durante envio, botão exibe spinner e fica desabilitado; resultado exibido em snackbar: "Sucesso (200 — 245ms)" ou "Falha (503 — 4980ms)" com a cor correspondente
+22. Componente `OnPush`, standalone, signals; `subscriptions = signal<WebhookSubscriptionResponse[]>([])`, `isLoading = signal(false)`, `testingId = signal<string | null>(null)` para controle do spinner por linha
+23. Spec `webhooks.component.spec.ts`: (a) tabela exibe dados mockados; (b) botão "Testar" desabilitado durante envio; (c) dialog de criação valida URL + evento obrigatórios; (d) confirmação de exclusão exibida antes do DELETE; (e) snackbar de sucesso exibido após criação
 
 ---
 
-#### US-072 — Entrega de eventos e retry (4 pts)
+#### US-072 — Entrega de eventos e retry automático (4 pts)
 
-**Backend**
-1. `WebhookDispatchService.dispatch(event, payload)` com `@Async`: busca subscriptions ativas para o evento, envia via `RestTemplate` com timeout 5s
-2. Payload: `{ "event": "NC_CRITICAL_OPENED", "timestamp": "...", "payload": { ...campos da entidade } }`
-3. Se `secret` presente: header `X-Hub-Signature-256: sha256=<hmac-sha256>` calculado sobre payload JSON
-4. Resposta não-2xx: agenda retry com backoff exponencial (5s → 30s → 2min); após 3 falhas: `active = false`, `Notification` ADMIN "Webhook {url} desativado após 3 falhas"
-5. `WebhookDelivery` entity persistida por tentativa: `webhookId`, `event`, `attempt`, `responseCode`, `durationMs`, `createdAt`
-6. Integração: `WebhookDispatchService.dispatch()` chamado nos use cases: `CreateNonConformanceUseCase`, `TransitionNcStatusUseCase`, `CreateWorkOrderUseCase`, `TransitionWorkOrderStatusUseCase`, `EscalationUseCase`
+**Backend — Entidade WebhookDelivery**
+1. Entidade `WebhookDelivery` criada em `common/domain/` com campos: `id` (UUID), `webhookSubscription` (`@ManyToOne(fetch=LAZY)`), `event` (enum `WebhookEvent`), `attempt` (int, 1-based), `responseCode` (Integer nullable — null = timeout/erro de rede), `durationMs` (Long), `success` (boolean), `createdAt` (LocalDateTime); índice em `webhook_subscription_id` + `created_at` (conforme ADR-024 Decisão 3)
+2. Migration: tabela `webhook_delivery`
+3. `WebhookDeliveryRepository` com `findTop50ByWebhookSubscriptionIdOrderByCreatedAtDesc(UUID subscriptionId)` — sem `findAll()`
+
+**Backend — Serviço de dispatch**
+4. `WebhookDispatchService` em `common/application/` com método `dispatch(WebhookEvent event, Object entityPayload)` anotado com `@Async`; falha neste método nunca aborta a operação de negócio do chamador (conforme ADR-024 Decisão 4)
+5. Busca subscriptions ativas para o evento via `WebhookSubscriptionRepository.findByActiveTrueAndEventsContaining(event)`; se nenhuma encontrada, retorna imediatamente sem operação
+6. Para cada subscription encontrada, chama método privado `deliverWithRetry(subscription, event, payload)` de forma assíncrona (dentro do `@Async` já ativo)
+7. Payload JSON serializado por `ObjectMapper` no formato:
+   ```json
+   {
+     "event": "NC_CRITICAL_OPENED",
+     "timestamp": "<ISO-8601 UTC>",
+     "payload": { "<campos da entidade>" }
+   }
+   ```
+8. Se `secret` da subscription não for nulo e não for vazio: header `X-Hub-Signature-256: sha256=<hex(HMAC-SHA256(secret, payloadJson))>` adicionado à requisição; implementação via `javax.crypto.Mac` com algoritmo `HmacSHA256` (sem biblioteca externa)
+9. Envio via `RestTemplate` com `ConnectTimeout = 3s` e `ReadTimeout = 5s`; resposta `2xx` = sucesso; qualquer outro status HTTP = falha; `ResourceAccessException` (timeout/erro de rede) = falha com `responseCode = null`
+10. `WebhookDelivery` persistida para cada tentativa com `attempt`, `responseCode`, `durationMs` (medido com `System.currentTimeMillis()`), `success`
+
+**Backend — Retry com backoff exponencial**
+11. Retry automático: até 3 tentativas com backoff exponencial: tentativa 1 imediata, tentativa 2 após 5s (`Thread.sleep(5_000)` dentro de `@Async`), tentativa 3 após 30s; após 3 falhas consecutivas: nenhum retry adicional
+12. Após a 3ª falha consecutiva: `subscription.setActive(false)` persistido; `Notification` ADMIN criada com título "Webhook desativado" e body "O webhook {url} foi desativado após 3 falhas consecutivas de entrega."; criação via `NotificationService.broadcast()` assíncrono (padrão ADR-013)
+13. Retry não deve ultrapassar 3 tentativas por evento — cada entrega bem-sucedida (2xx) encerra o ciclo de retry para aquele evento imediatamente
+14. `backoff` implementado em método separado para testabilidade; testes unitários usam injeção de `BiConsumer<Integer, Long>` como estratégia de sleep (evita `Thread.sleep` real nos testes)
+
+**Backend — Integração com use cases existentes**
+15. `WebhookDispatchService.dispatch()` chamado nos seguintes use cases (após persistência da entidade, dentro da mesma chamada de método mas fora da transação — `@TransactionalEventListener` ou chamada após `save()` + flush):
+    - `CreateNonConformanceUseCase`: dispatch de `NC_CREATED`; se `severity == CRITICAL` dispatch adicional de `NC_CRITICAL_OPENED`
+    - `TransitionNcStatusUseCase`: dispatch de `NC_STATUS_CHANGED`
+    - `CreateWorkOrderUseCase`: dispatch de `WORK_ORDER_CREATED`
+    - `TransitionWorkOrderStatusUseCase`: dispatch de `WORK_ORDER_STATUS_CHANGED`
+    - `DeleteEquipmentUseCase` (soft-delete / decommission): dispatch de `EQUIPMENT_DECOMMISSIONED` somente quando `equipment.status = DECOMMISSIONED` (não em simples desativação)
+    - `EscalationUseCase` (Sprint 22): dispatch de `SLA_BREACHED` após marcar `slaBreached = true`
+16. `WebhookDispatchService` injetado como dependência nos use cases listados; ausência de subscriptions para o evento não é erro — noop silencioso
+17. Teste unitário `WebhookDispatchServiceTest`: (a) subscription ativa para evento recebe chamada POST; (b) subscription inativa ignorada; (c) subscription para evento diferente ignorada; (d) HMAC-SHA256 header presente quando secret configurado; (e) 3 falhas consecutivas desativam subscription e criam Notification; (f) sucesso na tentativa 2 encerra retry sem tentativa 3; (g) `dispatch()` não lança exceção mesmo quando endpoint está offline
+
+**Backend — Payload shapes por evento**
+18. Cada evento inclui campos mínimos no `payload`:
+    - `NC_CREATED` / `NC_CRITICAL_OPENED` / `NC_STATUS_CHANGED`: `{ id, title, severity, status, reportedBy, reportedAt }`
+    - `WORK_ORDER_CREATED` / `WORK_ORDER_STATUS_CHANGED`: `{ id, title, type, priority, status, equipmentId, openedBy, openedAt }`
+    - `EQUIPMENT_DECOMMISSIONED`: `{ id, code, name, type, status }`
+    - `SLA_BREACHED`: `{ entityType, entityId, slaRuleId, breachedAt }`
+    - Campos serialização: Java records `WebhookNcPayload`, `WebhookWorkOrderPayload`, `WebhookEquipmentPayload`, `WebhookSlaPayload` em `common/application/dto/`
 
 ---
 
-## Sprint 28 ⬜
-**Objetivo**: Dashboard customizável por usuário com widgets drag-and-drop
+## Sprint 28 ✅
+**Objetivo**: Dashboard customizável por usuário com widgets drag-and-drop + liquidação do tech debt de segurança Sprints 26–27
 **ADR**: ADR-027
-**Status**: pendente
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-077 | Backend de persistência de layout de dashboard | 2 | ⬜ pendente |
-| US-078 | Frontend de dashboard com widgets personalizáveis | 5 | ⬜ pendente |
+| US-077 | Backend de persistência de layout de dashboard | 2 | ✅ concluído |
+| US-078 | Frontend de dashboard com widgets personalizáveis | 5 | ✅ concluído |
+| US-096 | Tech debt Sprints 26–27 — SEC-088/089/090/093/094/096/097/100 | 3 | ✅ concluído |
+
+**Total**: 10 pontos
+
+### Dependências
+- US-078 depende de US-077 (endpoints de layout precisam existir antes da integração frontend)
+- US-096 é independente das demais — fixes cirúrgicos, pode ser desenvolvida em paralelo
 
 ---
 
-#### US-077 — Backend de layout persistido (2 pts)
+#### US-077 — Backend de persistência de layout de dashboard (2 pts)
 
 **Backend**
-1. `GET /api/v1/users/me/dashboard` retorna `{ "widgetsJson": "[...]" }` — layout salvo; se não existir, retorna layout default calculado com base no role do usuário
-2. `PUT /api/v1/users/me/dashboard` salva `widgetsJson` (TEXT, max 10 KB); retorna `200`
-3. `DELETE /api/v1/users/me/dashboard` remove layout personalizado (reset para default); retorna `204`
-4. Entidade `UserDashboardConfig` criada; `username` com `UNIQUE` constraint
-5. Migration: tabela `user_dashboard_config`
+1. `GET /api/v1/users/me/dashboard` retorna `UserDashboardConfigResponse { widgetsJson: "[...]" }` (qualquer usuário autenticado); se não existir configuração salva, retorna layout default calculado com base no role: OPERATOR recebe 6 widgets KPI; SUPERVISOR+ recebe 8 widgets (+ OEE Trend e NC Pareto)
+2. Layout default definido como constante em `DashboardDefaultLayouts` em `common/application/` — sem query de banco para gerar o default; retornado diretamente como `widgetsJson` serializado
+3. `PUT /api/v1/users/me/dashboard` aceita `{ "widgetsJson": "[...]" }` e cria ou atualiza `UserDashboardConfig`; `widgetsJson` max 10.240 chars (10 KB); retorna `200 UserDashboardConfigResponse`
+4. `widgetsJson` nulo ou vazio retorna `400` com `{ "message": "widgetsJson não pode ser nulo ou vazio" }`
+5. `widgetsJson` acima de 10.240 chars retorna `400` com `{ "message": "widgetsJson excede o limite de 10 KB" }`
+6. `DELETE /api/v1/users/me/dashboard` remove `UserDashboardConfig` do usuário atual se existir (idempotente — retorna `204` mesmo se não existir); próxima chamada `GET` retornará o layout default do role
+7. Entidade `UserDashboardConfig` em `common/domain/` com campos: `id` (UUID), `username` (String, `@Column(unique=true, nullable=false)`), `widgetsJson` (TEXT), `updatedAt` (LocalDateTime — atualizado a cada PUT via `@PreUpdate`)
+8. Migration: tabela `user_dashboard_config` com constraint `UNIQUE(username)`
+9. Use cases em `common/application/usecase/`: `GetDashboardConfigUseCase`, `SaveDashboardConfigUseCase`, `DeleteDashboardConfigUseCase`; `DashboardController` em `common/presentation/` com `@PreAuthorize("isAuthenticated()")` e `@Validated` (ADR-031)
+10. Teste unitário `GetDashboardConfigUseCaseTest`: (a) usuário com config salva → retorna `widgetsJson` persistido; (b) usuário OPERATOR sem config → retorna default com 6 widgets; (c) usuário SUPERVISOR sem config → retorna default com 8 widgets; (d) PUT seguido de DELETE + GET → retorna default (sem resíduo da config deletada)
 
 ---
 
-#### US-078 — Frontend de dashboard customizável (5 pts)
+#### US-078 — Frontend de dashboard com widgets personalizáveis (5 pts)
 
-1. Rota `/dashboard` renderiza widgets em CSS Grid 3 colunas; layout carregado via `GET /api/v1/users/me/dashboard`
-2. Botão "Personalizar" no canto superior direito ativa modo de edição: widgets exibem handles de drag (⠿) e botão "×"
-3. Drag-and-drop via HTML5 Drag-and-Drop API: arrastar widget para nova posição reordena o grid em tempo real
-4. Catálogo lateral em modo de edição: lista de widgets disponíveis para o role do usuário não presentes no dashboard atual; clique adiciona widget
-5. Widgets disponíveis por role: OPERATOR (6 KPI cards), SUPERVISOR+ (+ OEE Trend, NC Pareto); cada widget é um standalone component que busca dados independentemente
-6. Botão "Salvar Layout" no modo de edição chama `PUT /api/v1/users/me/dashboard`; botão "Resetar" chama `DELETE` e restaura default
-7. Widgets carregam independentemente — skeleton loader por widget; falha de um widget não impede os demais
-8. Layout persistido no servidor — consistente entre dispositivos e sessões
+**Carregamento e renderização**
+1. Rota `/dashboard` (já existente) carrega layout via `GET /api/v1/users/me/dashboard` em `ngOnInit`; `widgetsJson` parseado como `WidgetConfig[]`; skeleton loader de 3 colunas exibido durante carregamento; erro de carregamento exibe snackbar persistente "Não foi possível carregar o layout do dashboard" sem bloquear o resto da página
+2. `WidgetConfig` interface: `{ id: string; type: WidgetType; column: number; row: number; }` onde `WidgetType` é union type: `'oee-avg' | 'nc-open' | 'nc-critical' | 'wo-open' | 'mttr' | 'equipment-count' | 'oee-trend' | 'nc-pareto'`
+3. Widgets disponíveis por role: OPERATOR (6): `oee-avg`, `nc-open`, `nc-critical`, `wo-open`, `mttr`, `equipment-count`; SUPERVISOR+ (8): os 6 do OPERATOR mais `oee-trend`, `nc-pareto` — widgets indisponíveis para o role não podem ser adicionados mesmo via manipulação de JSON
+4. Cada widget é um standalone component com `ChangeDetectionStrategy.OnPush` que faz sua própria chamada HTTP via `ngOnInit`; falha de um widget exibe ícone de erro no card sem afetar os demais
+5. Grid CSS 3 colunas via `display: grid; grid-template-columns: repeat(3, 1fr)`; posicionamento via `grid-column` e `grid-row` derivados de `WidgetConfig.column` e `WidgetConfig.row`
+
+**Modo de edição**
+6. Botão "Personalizar" no canto superior direito (visível para todos os usuários autenticados): ativa `editMode = signal(true)`; em edit mode cada widget exibe handle de drag (⠿) no canto superior esquerdo e botão "×" no canto superior direito
+7. Drag-and-drop via HTML5 Drag-and-Drop API nativo: `draggable="true"` nos cards; eventos `dragstart`, `dragover`, `drop` gerenciados no `DashboardComponent` pai; ao soltar em nova posição, `WidgetConfig[]` é reordenado em memória e o grid re-renderiza via `@for (widget of widgetConfigs(); track widget.id)`
+8. Catálogo lateral em edit mode (painel `position: fixed` à direita, 240px): lista de `WidgetType`s disponíveis para o role do usuário **não** presentes no dashboard atual; clique em widget do catálogo adiciona ao final do grid com `column = (widgets().length % 3) + 1`; catálogo atualiza reativamente via `computed()` com base em `widgetConfigs()`
+9. Botão "Salvar Layout" (em edit mode): serializa `WidgetConfig[]` via `JSON.stringify()`, chama `PUT /api/v1/users/me/dashboard`; `isSaving = signal(true)` durante envio; após sucesso: `editMode.set(false)`, snackbar "Layout salvo com sucesso" (3s); em caso de erro: snackbar com mensagem da API
+10. Botão "Resetar" (em edit mode): dialog de confirmação "Resetar para o layout padrão? As personalizações serão perdidas." (botão destrutivo vermelho + cancelar); confirmado: chama `DELETE /api/v1/users/me/dashboard`, depois `GET` para recarregar default; `editMode.set(false)` após recarga
+11. Botão "×" por widget (edit mode): remove do `widgetConfigs()` signal; catálogo lateral reflete remoção imediatamente via `computed()`
+
+**Estado e specs**
+12. `DashboardComponent` com `ChangeDetectionStrategy.OnPush`; signals: `widgetConfigs = signal<WidgetConfig[]>([])`, `editMode = signal(false)`, `isLoading = signal(true)`, `isSaving = signal(false)`
+13. Spec `dashboard.component.spec.ts`: (a) `GET` retorna layout → widgets renderizados na ordem correta; (b) clique em "Personalizar" → `editMode()` true, handles visíveis; (c) remover widget via "×" → widget some do grid, aparece no catálogo; (d) clicar em widget no catálogo → widget adicionado ao grid, some do catálogo; (e) salvar → `PUT` chamado com `widgetsJson` serializado, `editMode` volta para false; (f) resetar → `DELETE` + `GET` chamados, layout default restaurado; (g) widget individual com erro HTTP → card exibe ícone de erro sem afetar os demais
+
+---
+
+#### US-096 — Tech debt Sprints 26–27 — SEC-088/089/090/093/094/096/097/100 (3 pts)
+
+> Liquida itens de segurança diferidos das revisões de Beatriz nos Sprints 26 e 27: 2 MEDIUM do PWA (SEC-088/089), 1 LOW PWA (SEC-090), 2 MEDIUM de webhooks (SEC-093/094), 1 LOW webhook semântico (SEC-096), 1 LOW webhook placeholder (SEC-097) e 1 INFO de consistência de entidade (SEC-100).
+
+**SEC-088 — MEDIUM: Cache-Control: no-store no endpoint de listagem de NCs (PWA)**
+1. No `QmsController` (ou em `SecurityHeadersFilter`), adicionar header `Cache-Control: no-store` ao response de `GET /api/v1/qms/non-conformances` — o campo `reportedBy` é dado pessoal LGPD e não deve ser cacheado pelo Service Worker em dispositivos compartilhados
+2. O Service Worker Angular (`ngsw`) respeita `Cache-Control: no-store` no grupo `dataGroups` com strategy `freshness` — a resposta não será armazenada mesmo que a URL esteja configurada no `ngsw-config.json`
+3. Teste de integração ou `MockMvc`: `GET /api/v1/qms/non-conformances` → response inclui header `Cache-Control: no-store`
+
+**SEC-089 — MEDIUM: limpar IndexedDB offline_ncs no logout (PWA)**
+4. Em `AuthService.logout()` (ou `auth.service.ts`): chamar `await offlineQueueService.clearAll()` antes de `localStorage.removeItem('msb_token')` e do redirect para `/login` — garante que NCs pendentes de outro usuário não persistam no IndexedDB após logout
+5. `OfflineQueueService.clearAll(): Promise<void>`: abre transaction `readwrite` na store `offline_ncs` e executa `objectStore.clear()`; resolve a Promise no evento `onsuccess`
+6. Spec `auth.service.spec.ts`: cenário "logout clears IndexedDB before localStorage" — verificar via spy que `offlineQueueService.clearAll()` é chamado antes de `localStorage.removeItem('msb_token')`
+
+**SEC-090 — LOW: console.warn em OfflineSyncService (PWA)**
+7. Em `OfflineSyncService.drainQueue()`: substituir `console.warn('NC pendente falhou após 3 tentativas:', entry.payload.title)` por `this.failedTitles.update(arr => [...arr, entry.payload.title.substring(0, 30)])` — signal `failedTitles = signal<string[]>([])` acumulado; `AppComponent` observa e exibe snackbar genérico "N NC(s) não puderam ser sincronizadas" sem expor título individual no console
+8. Spec: cenário "drainQueue after 3 failures sets failedTitles signal without console.warn" — `spyOn(console, 'warn')` não deve ser chamado; `failedTitles()` deve ter 1 entrada
+
+**SEC-093 — MEDIUM: sanitização de URL em logs de webhook + Lombok toString**
+9. Em `WebhookDispatchService` (métodos que logam `sub.getUrl()`): substituir log direto por `sanitizeUrl(sub.getUrl())` — método privado `sanitizeUrl(String url)` remove credenciais embutidas: `url.replaceAll("(https?://)([^@]+@)", "$1***@")`
+10. Em `WebhookSubscription.java`: adicionar `@ToString.Exclude` no campo `secret` — protege contra exposição acidental via Lombok `toString()` em logs de DEBUG do Hibernate
+11. Teste unitário: `sanitizeUrl("https://user:pass@host.com/hook")` retorna `"https://***@host.com/hook"`; `sanitizeUrl("https://host.com/hook")` retorna inalterado
+
+**SEC-094 — MEDIUM: sanitização de errorMessage em WebhookDelivery**
+12. Em `WebhookDispatchService.handleFailure()`: substituir `e.getMessage()` por mensagem categorizada via método privado `categorizeError(Exception e)`:
+    ```java
+    private String categorizeError(Exception e) {
+        if (e instanceof ConnectException) return "Connection error";
+        if (e instanceof SocketTimeoutException) return "Timeout";
+        if (e instanceof ResourceAccessException rae
+                && rae.getCause() instanceof SocketTimeoutException) return "Timeout";
+        if (e instanceof ResourceAccessException) return "Network error";
+        return "HTTP error";
+    }
+    ```
+13. `WebhookDelivery.errorMessage` persistido com `categorizeError(e)` — sem IPs/portas internas; sem stack traces
+14. Teste unitário: `ConnectException` → `"Connection error"`; `SocketTimeoutException` → `"Timeout"`; `RuntimeException("algo interno")` → `"HTTP error"`
+
+**SEC-096 — LOW: `UpdateWebhookRequest.url` sem limite mínimo**
+15. Em `UpdateWebhookRequest.java`: adicionar `@Size(min = 1, max = 500)` em vez de apenas `@Size(max = 500)` para rejeitar string vazia `""` explicitamente — `null` continua aceito (PATCH semântico: `null` = sem alteração); adicionar JavaDoc explicitando essa semântica
+16. Teste unitário: `UpdateWebhookRequest` com `url = ""` → `ConstraintViolationException`; com `url = null` → válido (sem alteração); com `url = "https://host.com"` → válido
+
+**SEC-097 — LOW: `WebhookEvent.TEST` para entregas de teste**
+17. Em `WebhookEvent` enum: adicionar `TEST` como último valor — representa entregas de teste manual, distinguindo-as de eventos reais de negócio no histórico de deliveries
+18. Em `TestWebhookUseCase.execute()`: substituir `WebhookEvent.NC_CREATED` (placeholder hardcoded) por `WebhookEvent.TEST` ao criar a `WebhookDelivery` de teste
+19. Frontend `webhooks.component.ts`: chip do evento `TEST` exibido com label "Teste Manual" e cor cinza; demais eventos seguem o mapeamento existente
+20. Spec: "test delivery exibe evento TEST no histórico" — verificar que `WebhookDeliveryResponse.event == 'TEST'` após ação de teste
+
+**SEC-100 — INFO: deliveries PENDING_RETRY órfãs ao reativar subscription**
+21. Em `ActivateWebhookSubscriptionUseCase.execute()`: após `subscription.setActive(true)` e antes do `save()`, buscar `deliveryRepository.findBySubscriptionIdAndStatus(subscriptionId, "PENDING_RETRY")` e para cada uma: setar `errorMessage = "Retry cancelado: subscription reativada"` e `status = FAILED` — deliveries órfãs são encerradas explicitamente sem poluir o histórico com entregas "fantasma"
+22. Teste unitário: cenário "activate subscription marks PENDING_RETRY deliveries as FAILED" — mock 2 deliveries PENDING_RETRY; verificar que ambas são salvas com `status = FAILED` e `errorMessage` correto
 
 ---
 
@@ -2069,9 +2221,9 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 23 | Multi-plant support + tech debt SLA/email/shifts | US-063, US-064, US-092 | ADR-020, ADR-038 |
 | ✅ Sprint 24 | OEE Benchmarking + tech debt multi-plant | US-075, US-076, US-093 | ADR-026, ADR-039 |
 | ✅ Sprint 25 | LGPD compliance e data retention + tech debt benchmark OEE | US-067, US-068, US-094 | ADR-022, ADR-039 |
-| 🔄 Sprint 26 | Progressive Web App (PWA + offline queue) + tech debt LGPD/security | US-069, US-070, US-095 | ADR-023 |
-| ⬜ Sprint 27 | Outbound webhooks para integração com sistemas externos | US-071, US-072 | ADR-024 |
-| ⬜ Sprint 28 | Dashboard customizável por usuário (widgets drag-and-drop) | US-077, US-078 | ADR-027 |
+| ✅ Sprint 26 | Progressive Web App (PWA + offline queue) + tech debt LGPD/security | US-069, US-070, US-095 | ADR-023 |
+| ✅ Sprint 27 | Outbound webhooks para integração com sistemas externos | US-071, US-072 | ADR-024, ADR-040 |
+| ✅ Sprint 28 | Dashboard customizável por usuário (widgets drag-and-drop) | US-077, US-078, US-096 | ADR-027 |
 | ⬜ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) | US-079, US-080, US-081 | ADR-028 |
 | ⬜ Sprint 30 | Acompanhamento visual de produção e tracking de OPs por família | US-082, US-083 | ADR-029 |
 | ⬜ Sprint 31 | Gestão de cargas de esterilização (Hub-managed) | US-084 | ADR-029 |

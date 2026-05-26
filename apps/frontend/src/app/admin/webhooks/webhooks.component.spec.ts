@@ -431,6 +431,35 @@ describe('WebhooksComponent', () => {
     });
   });
 
+  // ─── SEC-097 AC#20: chip "Teste Manual" para event='TEST' ────────────────
+
+  describe('SEC-097 AC#20 — chip "Teste Manual" para event TEST', () => {
+    it('renderiza chip com texto "Teste Manual" quando subscription tem events: [TEST]', async () => {
+      const testOnlySub: WebhookSubscriptionResponse = {
+        id: 'wh-test-only',
+        url: 'https://test.exemplo.com/webhook',
+        hasSecret: false,
+        events: ['TEST'],
+        active: true,
+        description: null,
+        createdBy: 'admin',
+        createdAt: '2026-05-26T10:00:00Z',
+        updatedAt: null,
+        disabledAt: null,
+      };
+
+      const { fixture } = await setup([testOnlySub]);
+
+      // Find the events cell for this subscription row
+      const eventsCell: HTMLElement | null = fixture.nativeElement.querySelector('[data-testid="webhook-events"]');
+      expect(eventsCell).toBeTruthy();
+
+      const chips = eventsCell!.querySelectorAll('.event-chip');
+      expect(chips.length).toBe(1);
+      expect((chips[0] as HTMLElement).textContent?.trim()).toBe('Teste Manual');
+    });
+  });
+
   // ─── Additional: reactivate ────────────────────────────────────────────────
 
   describe('Reativar webhook', () => {
