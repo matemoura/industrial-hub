@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { tap } from 'rxjs/operators';
 import { Observable } from 'rxjs';
 import { OfflineQueueService } from '../shared/offline/offline-queue.service';
+import { OfflineSyncService } from '../shared/offline/offline-sync.service';
 
 export interface LoginRequest {
   username: string;
@@ -33,6 +34,7 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly router = inject(Router);
   private readonly offlineQueue = inject(OfflineQueueService);
+  private readonly offlineSync = inject(OfflineSyncService);
 
   private readonly _token = signal<string | null>(localStorage.getItem(TOKEN_KEY));
   private readonly _payload = computed(() => this.decodePayload(this._token()));
@@ -62,6 +64,7 @@ export class AuthService {
 
   async logout(): Promise<void> {
     await this.offlineQueue.clearAll();
+    this.offlineSync.clearFailedTitles();
     localStorage.removeItem(TOKEN_KEY);
     this._token.set(null);
     void this.router.navigate(['/login']);

@@ -23,6 +23,10 @@ export class OfflineSyncService {
 
   private syncing = false;
 
+  clearFailedTitles(): void {
+    this.failedTitles.set([]);
+  }
+
   startSync(): void {
     // Watch for online transitions
     let previousOnline = this.networkStatus.isOnline();
@@ -74,7 +78,7 @@ export class OfflineSyncService {
           if (entry.attempts >= MAX_ATTEMPTS) {
             await this.offlineQueue.remove(entry.id);
             failedCount++;
-            this.failedTitles.update((arr) => [...arr, entry.payload.title.substring(0, 30)]);
+            this.failedTitles.update((arr) => [...arr, entry.payload.title.substring(0, 30)].slice(-10));
           } else {
             await this.offlineQueue.updateAttempts(entry);
           }

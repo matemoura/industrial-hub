@@ -33,10 +33,10 @@ public class DashboardController {
     @PreAuthorize("isAuthenticated()")
     public UserDashboardConfigResponse get(Authentication authentication) {
         String username = authentication.getName();
-        String role = authentication.getAuthorities().stream()
-                .findFirst()
-                .map(a -> a.getAuthority().replace("ROLE_", ""))
-                .orElse("OPERATOR");
+        // SEC-103: use anyMatch for consistent role derivation (same pattern as other controllers)
+        boolean isSupervisorOrAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_SUPERVISOR") || a.getAuthority().equals("ROLE_ADMIN"));
+        String role = isSupervisorOrAdmin ? "SUPERVISOR" : "OPERATOR";
         return getConfig.execute(username, role);
     }
 

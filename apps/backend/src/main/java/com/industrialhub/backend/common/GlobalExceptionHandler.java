@@ -53,6 +53,8 @@ import com.industrialhub.backend.qms.domain.SupplierRequiredForNcException;
 import com.industrialhub.backend.common.domain.EvaluateNowCooldownException;
 import com.industrialhub.backend.common.webhook.domain.WebhookInvalidUrlException;
 import com.industrialhub.backend.common.webhook.domain.WebhookNotFoundException;
+import com.industrialhub.backend.production.domain.ImportProductionBatchNotFoundException;
+import com.industrialhub.backend.production.domain.ProductNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -550,6 +552,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(Map.of(
                 "message", ex.getMessage(),
                 "secondsRemaining", ex.getSecondsRemaining(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(ProductNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleProductNotFound(ProductNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(ImportProductionBatchNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleImportProductionBatchNotFound(ImportProductionBatchNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));
     }

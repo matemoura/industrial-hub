@@ -10,6 +10,7 @@ import com.industrialhub.backend.common.webhook.domain.WebhookNotFoundException;
 import com.industrialhub.backend.common.webhook.domain.WebhookSubscription;
 import com.industrialhub.backend.common.webhook.infrastructure.WebhookDeliveryRepository;
 import com.industrialhub.backend.common.webhook.infrastructure.WebhookSubscriptionRepository;
+import com.industrialhub.backend.common.webhook.service.WebhookErrorCategorizer;
 import com.industrialhub.backend.common.webhook.service.WebhookSignatureService;
 import com.industrialhub.backend.common.webhook.service.WebhookUrlValidator;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -35,19 +36,22 @@ public class TestWebhookUseCase {
     private final RestTemplate webhookRestTemplate;
     private final WebhookUrlValidator webhookUrlValidator;
     private final AuditService auditService;
+    private final WebhookErrorCategorizer errorCategorizer;
 
     public TestWebhookUseCase(WebhookSubscriptionRepository subscriptionRepository,
                                WebhookDeliveryRepository deliveryRepository,
                                WebhookSignatureService signatureService,
                                @Qualifier("webhookRestTemplate") RestTemplate webhookRestTemplate,
                                WebhookUrlValidator webhookUrlValidator,
-                               AuditService auditService) {
+                               AuditService auditService,
+                               WebhookErrorCategorizer errorCategorizer) {
         this.subscriptionRepository = subscriptionRepository;
         this.deliveryRepository = deliveryRepository;
         this.signatureService = signatureService;
         this.webhookRestTemplate = webhookRestTemplate;
         this.webhookUrlValidator = webhookUrlValidator;
         this.auditService = auditService;
+        this.errorCategorizer = errorCategorizer;
     }
 
     @Transactional
@@ -98,7 +102,8 @@ public class TestWebhookUseCase {
             return new WebhookTestResponse(subscription.getUrl(), responseCode, duration, success, null);
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - start;
-            errorMessage = e.getMessage();
+            // SEC-101: use categorizeError to prevent leaking internal IPs/ports
+            errorMessage = errorCategorizer.categorize(e);
 
             deliveryRepository.save(WebhookDelivery.builder()
                     .subscription(subscription)
@@ -113,7 +118,7 @@ public class TestWebhookUseCase {
 
             auditService.log(performedBy, AuditAction.WEBHOOK_TESTED, "WebhookSubscription",
                     subscription.getId().toString(),
-                    Map.of("event", "TEST", "responseCode", "null", "error", errorMessage != null ? errorMessage : ""));
+                    Map.of("event", "TEST", "responseCode", "null", "error", errorMessage));
 
             return new WebhookTestResponse(subscription.getUrl(), null, duration, false, errorMessage);
         }

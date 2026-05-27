@@ -1,5 +1,7 @@
 package com.industrialhub.backend.common.dashboard;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.common.application.DashboardDefaultLayouts;
 import com.industrialhub.backend.common.application.dto.SaveDashboardConfigRequest;
 import com.industrialhub.backend.common.application.dto.UserDashboardConfigResponse;
@@ -30,6 +32,9 @@ class GetDashboardConfigUseCaseTest {
     @Mock
     private UserDashboardConfigRepository repository;
 
+    @Mock
+    private AuditService auditService;
+
     private GetDashboardConfigUseCase useCase;
     private SaveDashboardConfigUseCase saveUseCase;
     private DeleteDashboardConfigUseCase deleteUseCase;
@@ -37,8 +42,8 @@ class GetDashboardConfigUseCaseTest {
     @BeforeEach
     void setUp() {
         useCase = new GetDashboardConfigUseCase(repository);
-        saveUseCase = new SaveDashboardConfigUseCase(repository);
-        deleteUseCase = new DeleteDashboardConfigUseCase(repository);
+        saveUseCase = new SaveDashboardConfigUseCase(repository, auditService, new ObjectMapper());
+        deleteUseCase = new DeleteDashboardConfigUseCase(repository, auditService);
     }
 
     @Test

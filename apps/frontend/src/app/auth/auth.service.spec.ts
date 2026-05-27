@@ -4,14 +4,17 @@ import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { OfflineQueueService } from '../shared/offline/offline-queue.service';
+import { OfflineSyncService } from '../shared/offline/offline-sync.service';
 
 describe('AuthService — SEC-089 AC#6', () => {
   let authService: AuthService;
   let clearAllMock: ReturnType<typeof vi.fn>;
+  let clearFailedTitlesMock: ReturnType<typeof vi.fn>;
   let routerNavigateMock: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     clearAllMock = vi.fn().mockResolvedValue(undefined);
+    clearFailedTitlesMock = vi.fn();
     routerNavigateMock = vi.fn().mockResolvedValue(true);
 
     // Ensure a clean localStorage state before each test
@@ -25,6 +28,10 @@ describe('AuthService — SEC-089 AC#6', () => {
         {
           provide: OfflineQueueService,
           useValue: { clearAll: clearAllMock },
+        },
+        {
+          provide: OfflineSyncService,
+          useValue: { clearFailedTitles: clearFailedTitlesMock },
         },
         {
           provide: Router,
@@ -61,6 +68,9 @@ describe('AuthService — SEC-089 AC#6', () => {
 
     // Assert — clearAll was called
     expect(clearAllMock).toHaveBeenCalledTimes(1);
+
+    // Assert — clearFailedTitles was called (SEC-110)
+    expect(clearFailedTitlesMock).toHaveBeenCalledTimes(1);
 
     // Assert — token removed from localStorage after logout
     expect(localStorage.getItem('msb_token')).toBeNull();

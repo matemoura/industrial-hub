@@ -64,5 +64,10 @@ public enum AuditAction {
     WEBHOOK_UPDATED,
     WEBHOOK_DELETED,
     WEBHOOK_ACTIVATED,
-    WEBHOOK_TESTED
+    WEBHOOK_TESTED,
+    // US-079/080/081 — Production module
+    PRODUCTION_IMPORT,
+    // SEC-104 — Dashboard config audit
+    DASHBOARD_CONFIG_SAVED,
+    DASHBOARD_CONFIG_RESET
 }
