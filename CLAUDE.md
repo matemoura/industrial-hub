@@ -95,7 +95,7 @@ Font: Inter (sans-serif), professional industrial look
 | Authentication | `common/auth/` | 4 | ✅ done |
 | QMS (Quality Management System) | `qms/` | 5–6, 13–14 | ✅ done |
 | Maintenance (TPM) | `maintenance/` | 7–8, 15, 20 | ✅ done |
-| Cross-module KPI + Reports + Analytics | `common/kpi/`, `common/presentation/` | 9–10, 16, 24 | ✅ done |
+| Cross-module KPI + Reports + Analytics | `common/kpi/`, `common/presentation/` | 9–10, 16, 24, 28 | ✅ done |
 | Security Hardening | `common/security/` | 11 | ✅ done |
 | User Management | `common/auth/` | 12 | ✅ done |
 | Alert Thresholds + Notifications | `common/` | 18 | ✅ done |

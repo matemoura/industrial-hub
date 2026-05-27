@@ -1,5 +1,26 @@
 # Log Aisha
 
+## [2026-05-26] Sincronização pós-Sprint 28 (pós-commit)
+Fontes lidas:
+- `CLAUDE.md` (raiz — tabela Domain Modules)
+- `.claude/sprint-atual.md` (estado atual do backlog)
+- `.claude/logs/log-mateus.md` (Sprint 28 — US-077 backend + US-096 backend; 381 testes)
+- `.claude/logs/log-tadeu.md` (Sprint 28 — US-078 frontend + US-096 frontend; 515 testes)
+- `.claude/logs/log-maite.md` (Sprint 28 — ready-to-deploy; 381 backend, 515 frontend; aprovado Maitê)
+- `.claude/logs/log-maiana.md` (Sprint 28 — 35/35 ACs cobertos após fixes dos 7 blockers; aprovado Maiana)
+- `.claude/logs/log-beatriz.md` (Sprint 28 — aprovado com ressalvas; 6 itens diferidos SEC-101 a SEC-106 para Sprint 29)
+- `docs/adr/` — todos os ADRs verificados; ADR-027 (dashboard) existente e linkado corretamente no Sprint 28
+
+Mudanças feitas:
+- `CLAUDE.md`: linha `Cross-module KPI + Reports + Analytics` — coluna Sprints atualizada de `9–10, 16, 24` para `9–10, 16, 24, 28` (Sprint 28 adicionou dashboard customizável com persistência de layout, que expande o módulo KPI/dashboard existente)
+- `.claude/sprint-atual.md`: seção "Tech Debt diferido do Sprint 28 (Beatriz — SEC-101 a SEC-106)" adicionada antes das User Stories do Sprint 29, com tabela descritiva de cada item (severidade, descrição, fix proposto)
+
+Inconsistências encontradas:
+- Sprint 28 já estava corretamente marcada como ✅ com ADR-027, USs como ✅ concluído e linha do roadmap como ✅ — nenhuma correção necessária nesse ponto.
+- ADR-027 existe em `docs/adr/ADR-027-customizable-dashboard.md` e está linkado corretamente no sprint-atual.md — consistente.
+- Os itens SEC-101 a SEC-106 diferidos por Beatriz não estavam documentados no sprint-atual.md na Sprint 29; adicionados para rastreabilidade (padrão das sincronizações anteriores).
+- `CLAUDE.md` não tinha referência à Sprint 28 no módulo KPI/Analytics; o dashboard customizável (US-077/078) é extensão do módulo `common/kpi/` e `common/presentation/` existente — Sprint 28 adicionada.
+
 ## [2026-05-26] Sincronização pós-Sprint 28
 Fontes lidas:
 - `.claude/logs/log-mateus.md` (Sprint 28 — US-077 backend + US-096 backend)

@@ -2224,7 +2224,7 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 26 | Progressive Web App (PWA + offline queue) + tech debt LGPD/security | US-069, US-070, US-095 | ADR-023 |
 | ✅ Sprint 27 | Outbound webhooks para integração com sistemas externos | US-071, US-072 | ADR-024, ADR-040 |
 | ✅ Sprint 28 | Dashboard customizável por usuário (widgets drag-and-drop) | US-077, US-078, US-096 | ADR-027 |
-| ⬜ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) | US-079, US-080, US-081 | ADR-028 |
+| ⬜ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) + tech debt S28 | US-079, US-080, US-081, US-097 | ADR-028 |
 | ⬜ Sprint 30 | Acompanhamento visual de produção e tracking de OPs por família | US-082, US-083 | ADR-029 |
 | ⬜ Sprint 31 | Gestão de cargas de esterilização (Hub-managed) | US-084 | ADR-029 |
 | ⬜ Sprint 32 | Motor MRP, planejamento por família e staffing por OP | US-085, US-086, US-087 | ADR-030 |
@@ -2232,60 +2232,159 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 ---
 
 ## Sprint 29 ⬜
-**Objetivo**: Production module — importação de dados do Dynamics (catálogo, estoque, OPs, tempos de ciclo e lead times)
+**Objetivo**: Production module — importação de dados do Dynamics (catálogo de produtos, snapshots de estoque, ordens de produção, tempos de ciclo e lead times) + liquidação do tech debt de segurança diferido do Sprint 28
 **ADR**: ADR-028
 **Status**: pendente
+
+### Tech Debt diferido do Sprint 28 (Beatriz — SEC-101 a SEC-106)
+
+| ID | Severidade | Descrição | Fix |
+|----|-----------|-----------|-----|
+| SEC-101 | MEDIUM | `TestWebhookUseCase` usa `e.getMessage()` bruto no `errorMessage` (expõe em `WebhookTestResponse` e AuditLog) | Substituir por `categorizeError()` já existente no `WebhookDispatchService` |
+| SEC-102 | MEDIUM | `widgetsJson` salvo sem validação de JSON válido no backend; `JSON.parse()` no frontend sem try-catch | Backend: validar com `objectMapper.readTree()` no use case; Frontend: envolver `JSON.parse()` em try-catch com fallback para layout padrão |
+| SEC-103 | MEDIUM | `DashboardController.get()` deriva role via `stream().findFirst()` em vez do padrão `hasRole()` — inconsistência com outros controllers | Usar lógica explícita com `anyMatch("ROLE_ADMIN" || "ROLE_SUPERVISOR")` ou `@AuthenticationPrincipal UserDetails` |
+| SEC-104 | LOW | `SaveDashboardConfigUseCase` e `DeleteDashboardConfigUseCase` sem auditoria | Adicionar `DASHBOARD_CONFIG_SAVED`, `DASHBOARD_CONFIG_RESET` ao `AuditAction`; chamar `auditService.log()` nos dois use cases |
+| SEC-105 | LOW | `failedTitles` signal em `OfflineSyncService` acumula sem limite e não é limpo no logout | Limitar array com `.slice(-10)`; limpar signal no logout via `offlineSyncService.failedTitles.set([])` |
+| SEC-106 | INFO | `WebhookUrlValidator.validate()` tem resolução DNS bloqueante na thread do use case (pode causar lentidão com DNS lento) | Envolver `InetAddress.getByName()` com `ExecutorService.submit().get(2, TimeUnit.SECONDS)` para timeout explícito |
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
 | US-079 | Importação de catálogo de produtos e famílias do Dynamics | 4 | ⬜ pendente |
-| US-080 | Importação de OPs e snapshots de estoque do Dynamics | 4 | ⬜ pendente |
+| US-080 | Importação de snapshots de estoque e ordens de produção | 4 | ⬜ pendente |
 | US-081 | Importação de tempos de ciclo e lead times + histórico de importações | 3 | ⬜ pendente |
+| US-097 | Tech debt Sprint 28 — SEC-101 a SEC-106 (dashboard JSON, auditoria, webhooks) | 2 | ⬜ pendente |
+
+**Total**: 13 pontos
+
+### Dependências
+- US-079 deve ser entregue antes de US-080 (importação de OPs exige `dynamics_code` existente no catálogo de produtos)
+- US-079 deve ser entregue antes de US-081 (importação de tempos de ciclo referencia `Product` por `dynamics_code`)
+- US-097 é independente das demais — pode ser desenvolvida em paralelo
 
 ---
 
 #### US-079 — Importação de catálogo de produtos e famílias (4 pts)
 
-**Backend**
-1. `POST /api/v1/production/import/products` (multipart, ADMIN) importa planilha com colunas: `dynamics_code`, `name`, `type` (FINISHED/INTERMEDIATE/RAW_MATERIAL), `family_code`, `family_name`, `unit`, `requires_sterilization`
-2. Upsert por `dynamics_code`: produto existente é atualizado; novo produto é criado; `ProductFamily` criada automaticamente se `family_code` não existe
-3. Retorna `ImportProductionBatch` com `createdRecords`, `updatedRecords`, `errorRecords`; erros por linha reportados (ex: `type` inválido)
-4. `StockLevel` criado com `qty = 0` para produto novo (evitar null pointer no MRP)
-5. `GET /api/v1/production/families` lista famílias ativas (OPERATOR+)
-6. `GET /api/v1/production/products` lista produtos com filtros: `family`, `type`, `active` (OPERATOR+)
-7. `GET /api/v1/production/products/{id}` retorna detalhe com estoque atual e tempo de ciclo mais recente (OPERATOR+)
+> Cria o módulo `production/` do zero (pacotes, entidades, migrations) e implementa o pipeline de importação do catálogo de produtos do Dynamics — base obrigatória para todas as outras importações da sprint.
+
+**Backend — Módulo e entidades**
+1. Pacote `production/` criado no caminho `com.industrialhub.backend.production/` com subpacotes `domain/`, `application/dto/`, `application/usecase/`, `infrastructure/`, `presentation/` conforme ADR-028 Decisão 1; nenhum código de negócio em outros módulos referencia `production/` diretamente — dependências cruzadas ocorrem apenas via `common/`
+2. Entidade `ProductFamily` criada em `production/domain/` com campos `id` (UUID), `code` (unique, max 50), `name` (max 200), `active` (default `true`); migration `V{N}__product_family.sql` cria tabela `product_family` com índice único em `code`
+3. Entidade `Product` criada em `production/domain/` com campos conforme ADR-028 Decisão 3: `id` (UUID), `dynamicsCode` (unique, max 100), `name` (max 200), `type` (`ProductType` enum: `FINISHED`, `INTERMEDIATE`, `RAW_MATERIAL`), `family` (`@ManyToOne LAZY`, nullable para `RAW_MATERIAL`), `unit` (nullable), `leadTimeDays` (nullable), `minStockQty` (nullable), `batchSize` (nullable), `requiresSterilization` (boolean), `active` (default `true`), `lastSyncAt` (`LocalDateTime`); migration `V{N}__product.sql` com índices em `dynamics_code` (unique), `family_id` e `type`
+4. Entidade `ImportProductionBatch` criada em `production/domain/` com campos: `id` (UUID), `type` (`ProductionImportType` enum: `PRODUCT_CATALOG`, `STOCK`, `PRODUCTION_ORDERS`, `CYCLE_TIMES`, `LEAD_TIMES`), `fileName`, `importedAt`, `importedBy`, `totalRecords`, `createdRecords`, `updatedRecords`, `errorRecords`; migration `V{N}__import_production_batch.sql`
+
+**Backend — Importação**
+5. `POST /api/v1/production/import/products` (multipart/form-data, ADMIN) aceita arquivo Excel com colunas `dynamics_code`, `name`, `type`, `family_code`, `family_name`, `unit`, `requires_sterilization`; retorna `201 ImportProductionBatchResponse` com todos os contadores (`createdRecords`, `updatedRecords`, `errorRecords`) e lista `errors` descrevendo linhas com problema (ex: `{ "line": 3, "message": "type inválido: INVALID_TYPE" }`)
+6. Upsert por `dynamics_code`: produto existente tem `name`, `type`, `unit`, `requiresSterilization` e `lastSyncAt` atualizados; campos gerenciados pelo Hub (`leadTimeDays`, `minStockQty`, `batchSize`) **não** são sobrescritos na importação de catálogo — preservados entre importações; produto novo é criado com todos os campos da linha; `ProductFamily` criada automaticamente quando `family_code` é novo (inserção atômica — upsert da família antes do produto); `family` pode ser null para `type = RAW_MATERIAL` mesmo com `family_code` na planilha (campo ignorado)
+7. Linha com `type` inválido ou `dynamics_code` ausente/nulo é registrada em `errorRecords` e incluída na lista `errors`; a importação **não é abortada** por linhas com erro — linhas válidas são processadas normalmente; `errorRecords = 0` indica sucesso total
+8. `ImportProductCatalogUseCase` em `production/application/usecase/`; usa `ProductFamilyRepository.findByCode()` + upsert com `ProductRepository.findByDynamicsCode()`; todo o processamento em **única transação** — falha total da transação em caso de erro inesperado de banco (não por erro de linha individual)
+9. Auditoria: `AuditAction` enum recebe `PRODUCTION_IMPORT`; `ImportProductCatalogUseCase` chama `auditService.log(username, PRODUCTION_IMPORT, "ImportProductionBatch", batchId, Map.of("type", "PRODUCT_CATALOG", "created", N, "updated", M, "errors", E))`
+10. Teste unitário `ImportProductCatalogUseCaseTest`: (a) planilha com 2 produtos novos e 1 produto existente → `createdRecords=2`, `updatedRecords=1`; (b) família nova criada automaticamente se `family_code` não existe no banco; (c) linha com `type` inválido → `errorRecords=1`, linha válida da mesma planilha processada; (d) `dynamics_code` duplicado na mesma planilha → segunda ocorrência conta como `updatedRecords`; (e) campos Hub (`leadTimeDays`, `minStockQty`) de produto existente não são sobrescritos
+
+**Backend — Leitura**
+11. `GET /api/v1/production/families` retorna `List<ProductFamilyResponse>` com famílias ativas ordenadas por `name ASC` (OPERATOR+); `@PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")`
+12. `GET /api/v1/production/products` retorna `Page<ProductSummaryResponse>` (OPERATOR+); filtros opcionais: `?familyCode=<string>`, `?type=<FINISHED|INTERMEDIATE|RAW_MATERIAL>`, `?active=<boolean>` (default: apenas ativos); `@PageableDefault(size=20)`; projeção de interface para evitar carregar `family` completo — campos: `id`, `dynamicsCode`, `name`, `type`, `familyName` (nullable), `unit`, `requiresSterilization`, `active`, `lastSyncAt`
+13. `GET /api/v1/production/products/{id}` retorna `ProductDetailResponse` completo (OPERATOR+): todos os campos da entidade + `currentStockQty` (resultado de `StockSnapshotRepository.findTopByProductIdOrderBySnapshotDateDesc().getQty()` — null se nenhum snapshot) + `currentCycleTimeSeconds` (resultado de `CycleTimeRepository.findTopByProductIdOrderByEffectiveDateDesc().getSecondsPerUnit()` — null se nenhum ciclo); produto inexistente retorna `404`
 
 **Frontend**
-8. Rota `/production/import` (ADMIN): abas por tipo de importação; cada aba tem área de drop de arquivo + botão de upload + tabela de resultado (criados/atualizados/erros)
-9. Rota `/production/products`: tabela com código, nome, família, tipo (chip), `requiresSterilization` (ícone)
-10. Painel de detalhe do produto com: estoque atual, mínimo, lead time, tempo de ciclo vigente
+14. Módulo `production/` criado em `apps/frontend/src/app/production/`; rota lazy-loaded `/production` adicionada ao `app.routes.ts`; link "Produção" adicionado ao `NavComponent` visível para OPERATOR+
+15. Rota `/production/import` (ADMIN, lazy-loaded) exibe página com `MatTabGroup`; primeira aba "Produtos": área drag-and-drop de arquivo Excel (componente `MatCard` com `(dragover)` e `(drop)`), botão "Selecionar arquivo" alternativo, nome do arquivo selecionado exibido; botão "Importar" desabilitado enquanto nenhum arquivo selecionado ou `isImporting()=true`; `MatProgressBar indeterminate` durante importação
+16. Resultado da importação exibido em card abaixo do upload: contadores `Criados: N`, `Atualizados: M`, `Erros: E`; quando `errors.length > 0`, tabela expansível exibe `line` e `message` de cada erro; card não aparece antes da primeira importação (`hasResult = signal(false)`)
+17. Rota `/production/products` (OPERATOR+, lazy-loaded) exibe tabela com colunas: código Dynamics, nome, família, tipo (chip colorido: FINISHED=`#0099B8`, INTERMEDIATE=`#F59E0B`, RAW_MATERIAL=`#9CA3AF`), unidade, esterilização (ícone `check` verde se `requiresSterilization=true`); paginação `MatPaginator` com `pageSize=20`; filtros: input de busca por código/nome (debounce 300ms), select de família, select de tipo; skeleton loader de 5 linhas enquanto `isLoading()=true`
+18. Clique na linha navega para `/production/products/{id}` — página de detalhe com: todos os campos do produto, card "Estoque Atual" (quantidade ou "Sem snapshot" se null), card "Tempo de Ciclo" (`secondsPerUnit` formatado como "X s/un" ou "Não importado" se null), chip de status ativo/inativo
+19. `ChangeDetectionStrategy.OnPush`, standalone, signals; `ProductionImportService` com métodos `importProducts(file: File): Observable<ImportBatchResponse>`, `listFamilies(): Observable<ProductFamilyResponse[]>`, `listProducts(params): Observable<Page<ProductSummaryResponse>>`, `getProduct(id): Observable<ProductDetailResponse>`
+20. Spec `product-import.component.spec.ts`: (a) botão "Importar" desabilitado enquanto nenhum arquivo selecionado; (b) após importação com sucesso, card de resultado exibe `createdRecords` e `updatedRecords`; (c) quando `errorRecords > 0`, tabela de erros é exibida; (d) erro HTTP exibe snackbar com mensagem da API
 
 ---
 
-#### US-080 — Importação de OPs e estoque (4 pts)
+#### US-080 — Importação de snapshots de estoque e ordens de produção (4 pts)
 
-**Backend**
-1. `POST /api/v1/production/import/stock` (SUPERVISOR+) importa planilha: `dynamics_code`, `qty`, `snapshot_date`; upsert por `(product, snapshotDate)` — não sobrescreve snapshots de datas diferentes
-2. `POST /api/v1/production/import/production-orders` (SUPERVISOR+) importa planilha: `op_number`, `dynamics_code`, `status`, `planned_qty`, `produced_qty`, `start_date`, `due_date`
-3. Upsert de OPs por `dynamics_order_number` — atualiza campos do Dynamics, **preserva** `sterilizationLoad`, `plannedPeople`, `peopleOverridden`
-4. OPs com `dynamics_code` não encontrado no catálogo: reportadas como erro (não bloqueiam o restante da importação)
-5. `GET /api/v1/production/production-orders` lista OPs com filtros: `family`, `status`, `productType`, `overdue` (OPERATOR+)
-6. `GET /api/v1/production/stock` lista posição mais recente de estoque por produto com flag `belowMin` (SUPERVISOR+)
+> Depende de US-079 (entidade `Product` e `ProductFamilyRepository` precisam existir).
+
+**Backend — Estoque**
+1. Entidade `StockSnapshot` criada em `production/domain/` com campos: `id` (UUID), `product` (`@ManyToOne LAZY`), `qty` (Integer), `snapshotDate` (LocalDate), `importedAt` (LocalDateTime), `importedBy` (String), `importBatch` (`@ManyToOne LAZY`); migration `V{N}__stock_snapshot.sql` com índices em `product_id` e `snapshot_date` (conforme ADR-028 Decisão 5)
+2. `POST /api/v1/production/import/stock` (multipart, SUPERVISOR+) aceita planilha com colunas `dynamics_code`, `qty`, `snapshot_date`; upsert por par `(product, snapshotDate)` — se já existe snapshot para o mesmo produto e mesma data, atualiza `qty`; datas diferentes geram **novo** registro (histórico preservado); retorna `201 ImportProductionBatchResponse` com contadores
+3. `dynamics_code` não encontrado no catálogo → linha reportada em `errorRecords` e `errors` (não bloqueia restante); `qty` negativo → linha reportada como erro; `snapshot_date` ausente → linha reportada como erro
+4. `GET /api/v1/production/stock` (SUPERVISOR+) retorna `List<StockPositionResponse>` com **posição mais recente** por produto: `productId`, `productCode`, `productName`, `familyCode`, `currentQty`, `minStockQty` (campo do `Product`), `belowMin` (boolean calculado: `currentQty < minStockQty`), `lastSnapshotDate`; calculado via `StockSnapshotRepository.findLatestPerProduct()` (JPQL com `GROUP BY product_id` + `MAX(snapshot_date)`) — sem N+1; filtro opcional `?belowMin=true`
+5. Teste unitário `ImportStockSnapshotUseCaseTest`: (a) produto + data nova → `createdRecords=1`; (b) produto + mesma data já existente → `updatedRecords=1` (qty atualizado, snapshot_date inalterado); (c) produto + data diferente → `createdRecords=1` (segundo registro criado, histórico preservado); (d) `dynamics_code` inexistente → `errorRecords=1`, processamento continua
+
+**Backend — Ordens de Produção**
+6. Entidade `ProductionOrder` criada em `production/domain/` conforme ADR-028 Decisão 4: `id` (UUID), `dynamicsOrderNumber` (unique, max 50), `product` (`@ManyToOne LAZY`), `family` (`@ManyToOne LAZY`, desnormalizado), `status` (`ProductionOrderStatus` enum: `PLANNED`, `RELEASED`, `IN_PROGRESS`, `DONE`, `CANCELLED`), `plannedQty`, `producedQty`, `startDate`, `dueDate`, `importBatch` (`@ManyToOne LAZY`), `sterilizationLoad` (nullable — campos Hub preservados), `plannedPeople` (nullable), `peopleOverridden` (boolean); migration `V{N}__production_order.sql` com índices em `dynamics_order_number` (unique), `product_id`, `family_id`, `status`, `due_date`
+7. `POST /api/v1/production/import/production-orders` (multipart, SUPERVISOR+) aceita planilha com colunas `op_number`, `dynamics_code`, `status`, `planned_qty`, `produced_qty`, `start_date`, `due_date`; upsert por `dynamicsOrderNumber` — campos do Dynamics atualizados: `status`, `producedQty`, `plannedQty`, `dueDate`, `startDate`; campos Hub **preservados** sem modificação: `sterilizationLoad`, `plannedPeople`, `peopleOverridden` (conforme ADR-028 Decisão 4 regra de upsert)
+8. `dynamics_code` não encontrado no catálogo → OP reportada em `errorRecords`; `status` com valor inválido → linha reportada como erro; OP nova com `dynamicsOrderNumber` novo → `createdRecords++`; OP existente (upsert) → `updatedRecords++`
+9. `GET /api/v1/production/production-orders` (OPERATOR+) retorna `Page<ProductionOrderSummaryResponse>` com `@PageableDefault(size=20, sort="dueDate")`; filtros opcionais: `?familyCode=<string>`, `?status=<enum>`, `?productType=<FINISHED|INTERMEDIATE|RAW_MATERIAL>`, `?overdue=true` (filtra OPs com `dueDate < today AND status NOT IN ('DONE','CANCELLED')`); campos retornados: `id`, `dynamicsOrderNumber`, `productName`, `familyCode`, `status`, `plannedQty`, `producedQty`, `completionPct` (calculado: `producedQty / plannedQty * 100`, null se `plannedQty=0`), `dueDate`, `overdue` (boolean)
+10. Teste unitário `ImportProductionOrdersUseCaseTest`: (a) OP nova → `createdRecords=1`, todos os campos persistidos corretamente; (b) OP existente com upsert → `updatedRecords=1`, `sterilizationLoad` e `plannedPeople` preservados, `status` Dynamics atualizado; (c) `dynamics_code` inexistente → `errorRecords=1`; (d) planilha com OPs de diferentes produtos, uma com `dynamics_code` inválido → processa válidas, reporta inválida; (e) importação com 0 erros → `errorRecords=0`, `errors=[]`
+
+**Frontend**
+11. Aba "Estoque" na página `/production/import`: mesmo padrão de upload da aba "Produtos" — drag-and-drop + botão + resultado; card de resultado exibe contadores e erros expansíveis
+12. Aba "Ordens de Produção" na página `/production/import`: mesmo padrão; resultado adicional: chip informativo "X OPs preservaram dados de esterilização" quando `updatedRecords > 0` (texto informacional sem ação — lembra o usuário que os dados Hub foram preservados)
+13. Rota `/production/production-orders` (OPERATOR+, lazy-loaded) exibe tabela com colunas: número da OP, produto, família, status (chip colorido: PLANNED=cinza, RELEASED=azul-claro, IN_PROGRESS=`#0099B8`, DONE=verde, CANCELLED=cinza escuro), planejado vs. produzido, barra de progresso `completionPct`, prazo (vermelho + ícone `warning` se `overdue=true`); filtros: família (select), status (select), tipo de produto (select), toggle "Apenas atrasadas"; paginação com `pageSize=20`
+14. Card informativo no topo da rota `/production/production-orders` exibe data da última importação de OPs (`lastSyncAt` da última `ImportProductionBatch` de tipo `PRODUCTION_ORDERS`) com texto "Última sincronização com Dynamics: {data formatada}"; exibe "Nunca sincronizado" se sem importação anterior
+15. Rota `/production/stock` (SUPERVISOR+, lazy-loaded) exibe tabela com colunas: produto, família, estoque atual, mínimo, status (chip "OK" verde ou "Abaixo do mínimo" vermelho baseado em `belowMin`), data do snapshot; toggle "Apenas abaixo do mínimo" acima da tabela
+16. `ChangeDetectionStrategy.OnPush`, standalone, signals; spec `production-orders-list.component.spec.ts`: (a) OPs com `overdue=true` exibem data vermelha; (b) toggle "Apenas atrasadas" reconsulta API com `?overdue=true`; (c) card de última sincronização exibe data correta quando `lastSyncAt` está presente; (d) tabela exibe skeleton loader durante carregamento
 
 ---
 
-#### US-081 — Importação de ciclos e lead times + histórico (3 pts)
+#### US-081 — Importação de tempos de ciclo e lead times + histórico (3 pts)
 
-**Backend**
-1. `POST /api/v1/production/import/cycle-times` (ADMIN) importa: `dynamics_code`, `seconds_per_unit`, `effective_date`; cria novo `CycleTime` versionado se valor diferente do vigente para o produto
-2. `POST /api/v1/production/import/lead-times` (ADMIN) importa: `dynamics_code`, `lead_time_days`, `min_stock_qty`, `batch_size`; atualiza campos do `Product`
-3. `GET /api/v1/production/import/history` retorna lista de `ImportProductionBatch` com tipo, arquivo, data, contagens (SUPERVISOR+); paginado, size=20
+> Depende de US-079 (entidade `Product` precisa existir). Completam os 5 tipos de importação do ADR-028.
+
+**Backend — Tempos de Ciclo**
+1. Entidade `CycleTime` criada em `production/domain/` conforme ADR-028 Decisão 6: `id` (UUID), `product` (`@ManyToOne LAZY`), `secondsPerUnit` (Double), `effectiveDate` (LocalDate), `importedBy`, `importedAt`; constraint única em `(product_id, effective_date)` — migration `V{N}__cycle_time.sql`
+2. `POST /api/v1/production/import/cycle-times` (multipart, ADMIN) aceita planilha com colunas `dynamics_code`, `seconds_per_unit`, `effective_date`; por produto: se já existe `CycleTime` com a mesma `effectiveDate` → atualiza `secondsPerUnit` (`updatedRecords++`); se `effectiveDate` é nova → cria registro (`createdRecords++`), preservando histórico; se `dynamics_code` não existe → `errorRecords++`; `seconds_per_unit <= 0` → `errorRecords++`
+3. `GET /api/v1/production/products/{id}` (já em US-079 AC#13) já expõe `currentCycleTimeSeconds`; adicionalmente, `GET /api/v1/production/products/{id}/cycle-times` retorna `List<CycleTimeResponse>` com todo o histórico de tempos de ciclo do produto ordenados por `effectiveDate DESC` (OPERATOR+)
+4. Teste unitário `ImportCycleTimesUseCaseTest`: (a) produto com nova `effectiveDate` → `createdRecords=1` (histórico do ciclo anterior preservado); (b) produto + mesma `effectiveDate` com novo valor → `updatedRecords=1`; (c) `dynamics_code` inexistente → `errorRecords=1`; (d) `seconds_per_unit=0` → `errorRecords=1`; (e) produto com 2 ciclos importados em datas diferentes → `findTopByProductIdOrderByEffectiveDateDesc()` retorna o mais recente
+
+**Backend — Lead Times**
+5. `POST /api/v1/production/import/lead-times` (multipart, ADMIN) aceita planilha com colunas `dynamics_code`, `lead_time_days`, `min_stock_qty`, `batch_size`; **atualiza** campos `leadTimeDays`, `minStockQty`, `batchSize` do `Product` existente — não cria nova entidade (esses campos são do `Product` conforme ADR-028 Decisão 3); se `dynamics_code` não existe → `errorRecords++`; campos com valor nulo na planilha são ignorados (campos Hub não são zerados por planilha vazia); retorna `ImportProductionBatchResponse` com contadores; todos os registros atualizados contam como `updatedRecords`
+6. Teste unitário `ImportLeadTimesUseCaseTest`: (a) produto existente → `leadTimeDays`, `minStockQty`, `batchSize` atualizados, `updatedRecords=1`; (b) campo nulo na planilha → campo no `Product` não alterado; (c) `dynamics_code` inexistente → `errorRecords=1`; (d) `lead_time_days < 0` → `errorRecords=1` (validação de valor negativo)
+
+**Backend — Histórico de Importações**
+7. `GET /api/v1/production/import/history` (SUPERVISOR+) retorna `Page<ImportProductionBatchResponse>` com `@PageableDefault(size=20, sort="importedAt", direction=DESC)`; filtros opcionais: `?type=<ProductionImportType>`; campos: `id`, `type`, `fileName`, `importedAt`, `importedBy`, `totalRecords`, `createdRecords`, `updatedRecords`, `errorRecords`
+8. `GET /api/v1/production/import/history/{id}` (SUPERVISOR+) retorna detalhe do batch incluindo `errors` completo — campo `errors` não exposto na listagem paginada para não sobrecarregar o response; batch inexistente retorna `404`
 
 **Frontend**
-4. Aba "Tempos de Ciclo" na tela de importação: upload + resultado + tabela histórica de ciclos por produto (versões)
-5. Aba "Lead Times" na tela de importação: upload + tabela resultante atualizada
-6. Aba "Histórico" na tela de importação: tabela de todos os imports com tipo, arquivo, data, usuário, registros criados/atualizados/erros
+9. Aba "Tempos de Ciclo" na página `/production/import`: área de upload + card de resultado; abaixo do resultado, tabela "Histórico de ciclos importados nesta sessão" exibida após importação bem-sucedida mostrando produto, data de vigência, segundos/unidade dos registros do batch atual
+10. Aba "Lead Times" na página `/production/import`: área de upload + card de resultado; abaixo, tabela dos produtos atualizados no último import com nome, lead time, estoque mínimo, tamanho de lote
+11. Aba "Histórico" na página `/production/import` (SUPERVISOR+): tabela paginada com colunas tipo (chip), arquivo, data, usuário, criados, atualizados, erros (chip vermelho se `errorRecords > 0`); paginação `MatPaginator`; filtro por tipo via select acima da tabela; clique na linha expande painel abaixo com lista de erros do batch (chamada a `GET .../history/{id}`)
+12. Painel de detalhe do produto (`/production/products/{id}`, US-079 AC#18) ganha seção "Histórico de Tempos de Ciclo": tabela com colunas "Vigente a partir de" e "Segundos por unidade", ordenada por data desc; exibe até 5 registros com link "Ver todos" oculto se ≤ 5
+13. Spec `production-import.component.spec.ts`: (a) aba "Histórico" exibe chip vermelho em batch com `errorRecords > 0`; (b) clique no batch chama `getImportBatch(id)` e exibe erros no painel; (c) aba "Histórico" filtrada por tipo "STOCK" oculta batches de outros tipos; (d) paginação com `totalElements > 20` exibe `MatPaginator` ativo
+
+---
+
+#### US-097 — Tech debt Sprint 28 — SEC-101 a SEC-106 (2 pts)
+
+> Liquida os 6 itens de segurança diferidos da revisão de Beatriz no Sprint 28: 3 MEDIUM (SEC-101, SEC-102, SEC-103), 2 LOW (SEC-104, SEC-105) e 1 INFO (SEC-106). Todos são cirúrgicos e independentes entre si, podem ser desenvolvidos em paralelo com as feature USs.
+
+**SEC-101 — MEDIUM: `TestWebhookUseCase` expõe `e.getMessage()` bruto**
+1. Em `TestWebhookUseCase.execute()`: substituir `e.getMessage()` por chamada ao método `categorizeError(Exception e)` já existente em `WebhookDispatchService` (ou extraí-lo para classe utilitária `WebhookErrorCategorizer` em `common/application/` se `WebhookDispatchService` não for injetável no contexto do use case de teste); `WebhookTestResponse.errorMessage` jamais expõe stack trace, IP, porta ou mensagem interna; no `AuditLog`, o campo `details` também deve usar a mensagem categorizada
+2. Teste unitário: `TestWebhookUseCase` com endpoint que lança `ConnectException` → `WebhookTestResponse.errorMessage` retorna `"Connection error"` (não a mensagem raw da exceção); `RuntimeException("internal db error")` → `"HTTP error"`
+
+**SEC-102 — MEDIUM: `widgetsJson` sem validação de JSON no backend + `JSON.parse` sem try-catch no frontend**
+3. Em `SaveDashboardConfigUseCase.execute()`: antes do `save()`, validar que `widgetsJson` é JSON array válido com `objectMapper.readTree(widgetsJson)` — se lançar `JsonProcessingException`, retornar `400` com `{ "message": "widgetsJson contém JSON inválido" }`; `ObjectMapper` injetado via construtor (já disponível no contexto Spring)
+4. Teste unitário `SaveDashboardConfigUseCaseTest`: (a) `widgetsJson = "[{\"id\":\"a\"}]"` → salvo com sucesso; (b) `widgetsJson = "not json"` → `IllegalArgumentException` mapeada para `400`; (c) `widgetsJson = "{}"` (objeto, não array) → pode ser aceito (ADR-027 não restringe a array) — não rejeitar, apenas validar sintaxe JSON
+5. Em `dashboard.component.ts`: envolver todo uso de `JSON.parse(widgetsJson)` em `try-catch`; bloco `catch`: `this.widgetConfigs.set(this.defaultLayout())` + snackbar "Layout salvo corrompido, restaurando padrão" (3s); método `defaultLayout()` já existe (calcula layout default baseado no role) — reutilizar sem duplicação
+6. Spec `dashboard.component.spec.ts`: cenário "JSON malformado retornado pelo backend → defaultLayout é usado e snackbar exibido" — mock do `GET /api/v1/users/me/dashboard` retornando `widgetsJson = "{{invalid"` → `widgetConfigs()` iguais ao default; snackbar visível
+
+**SEC-103 — MEDIUM: derivação de role inconsistente em `DashboardController.get()`**
+7. Em `DashboardController.get()`: substituir `authentication.getAuthorities().stream().findFirst()...` por uso de `@AuthenticationPrincipal UserDetails userDetails` injetado no método handler e verificação explícita: `boolean isSupervisorOrAdmin = userDetails.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_SUPERVISOR") || a.getAuthority().equals("ROLE_ADMIN"))`; consistente com o padrão `hasAnyRole()` usado nos `@PreAuthorize` de outros controllers
+8. Teste de integração `DashboardControllerTest` (ou `MockMvc`): (a) usuário ADMIN sem config salva → layout default de 8 widgets retornado; (b) usuário OPERATOR sem config salva → layout default de 6 widgets retornado; (c) usuário com config salva → `widgetsJson` persistido retornado independente do role
+
+**SEC-104 — LOW: `SaveDashboardConfigUseCase` e `DeleteDashboardConfigUseCase` sem auditoria**
+9. `AuditAction` enum: adicionar constantes `DASHBOARD_CONFIG_SAVED` e `DASHBOARD_CONFIG_RESET`
+10. `SaveDashboardConfigUseCase.execute()`: após `save()`, chamar `auditService.log(username, DASHBOARD_CONFIG_SAVED, "UserDashboardConfig", config.getId().toString(), Map.of("widgetCount", widgetCount))`; `widgetCount` derivado do tamanho do array `widgetsJson` (parse já feito no AC#3 acima — reutilizar sem segundo parse)
+11. `DeleteDashboardConfigUseCase.execute()`: após `delete()` (idempotente — logar apenas quando config existia): `auditService.log(username, DASHBOARD_CONFIG_RESET, "UserDashboardConfig", username, Map.of())`; quando config não existia (idempotente), não chamar `auditService` (sem log desnecessário)
+12. Teste unitário: (a) `SaveDashboardConfigUseCaseTest` — `verify(auditService).log(eq(DASHBOARD_CONFIG_SAVED), ...)` no happy path; (b) `DeleteDashboardConfigUseCaseTest` — `verify(auditService).log(eq(DASHBOARD_CONFIG_RESET), ...)` quando config existia; `verify(auditService, never()).log(...)` quando config não existia
+
+**SEC-105 — LOW: `failedTitles` signal acumula sem limite e não é limpo no logout**
+13. Em `OfflineSyncService.drainQueue()`: substituir `.update(arr => [...arr, entry.payload.title.substring(0, 30)])` por `.update(arr => [...arr, entry.payload.title.substring(0, 30)].slice(-10))` — mantém no máximo os últimos 10 títulos; `.slice(-10)` é O(n) sobre array ≤ 10+1 — custo desprezível
+14. Em `AuthService.logout()`: após `await offlineQueueService.clearAll()` (já garantido em SEC-089 de US-096 Sprint 28), adicionar `this.offlineSyncService.failedTitles.set([])` — limpa o signal ao deslogar; garantir que `OfflineSyncService` é injetável em `AuthService` (sem dependência circular: `AuthService` → `OfflineSyncService`, verificar que `OfflineSyncService` não injeta `AuthService`)
+15. Spec `offline-sync.service.spec.ts`: (a) 15 falhas consecutivas → `failedTitles().length === 10` (limite respeitado); (b) logout → `failedTitles()` vazio após chamada a `logout()`
+
+**SEC-106 — INFO: resolução DNS bloqueante em `WebhookUrlValidator`**
+16. Em `WebhookUrlValidator.validate()`: substituir a chamada direta `InetAddress.getByName(host)` por execução via `ExecutorService.submit(() -> InetAddress.getByName(host)).get(2, TimeUnit.SECONDS)`; usar `executorService` injetável (via construtor ou campo `@Value`-configurável) com `Executors.newCachedThreadPool()` como default — permite substituição por executor mockado nos testes; capturar `TimeoutException` e `InterruptedException` como resultado `false` (URL inválida); limitar o overhead: `ExecutorService` é compartilhado (não criar um novo por chamada)
+17. Teste unitário `WebhookUrlValidatorTest`: (a) `InetAddress.getByName` leva 3s (simulado via mock que dorme) → `validate()` retorna `false` em ≤ 2,5s; (b) host inexistente → `validate()` retorna `false` sem lançar exceção; (c) URL válida com host resolvível → `validate()` retorna `true` dentro do timeout
 
 ---
 
