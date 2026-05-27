@@ -150,5 +150,32 @@ export const routes: Routes = [
         (m) => m.NotificationsPageComponent,
       ),
   },
+  {
+    path: 'production',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    children: [
+      {
+        path: 'products',
+        loadComponent: () =>
+          import('./production/product-catalog/product-catalog.component').then(
+            (m) => m.ProductCatalogComponent,
+          ),
+      },
+      {
+        path: 'orders',
+        loadComponent: () =>
+          import('./production/production-orders/production-orders.component').then(
+            (m) => m.ProductionOrdersComponent,
+          ),
+      },
+      {
+        path: 'cycle-times',
+        loadComponent: () =>
+          import('./production/cycle-times/cycle-times.component').then(
+            (m) => m.CycleTimesComponent,
+          ),
+      },
+    ],
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];
