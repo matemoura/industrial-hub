@@ -1,0 +1,149 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Tempos de Ciclo</h1>
+    @if (canImport()) {
+      <button
+        type="button"
+        class="btn btn--primary"
+        data-testid="btn-import-cycle-times"
+        (click)="toggleUpload()"
+      >
+        Importar
+      </button>
+    }
+  </div>
+
+  @if (errorMsg()) {
+    <div class="alert alert--error" role="alert" data-testid="error-msg">{{ errorMsg() }}</div>
+  }
+
+  <!-- Upload Panel -->
+  @if (uploadExpanded()) {
+    <div class="upload-panel" data-testid="upload-panel">
+      <h2 class="upload-panel__title">Importar tempos de ciclo (Excel)</h2>
+      <div
+        class="drop-zone"
+        data-testid="drop-zone"
+        (dragover)="onDragOver($event)"
+        (drop)="onDrop($event)"
+      >
+        @if (selectedFile()) {
+          <p class="drop-zone__file" data-testid="selected-filename">{{ selectedFile()!.name }}</p>
+        } @else {
+          <p class="drop-zone__hint">Arraste o arquivo ou</p>
+          <label class="btn btn--secondary" for="cycle-file-input">Selecionar arquivo</label>
+          <input
+            id="cycle-file-input"
+            type="file"
+            accept=".xlsx,.xls"
+            class="sr-only"
+            data-testid="file-input"
+            (change)="onFileChange($event)"
+          />
+        }
+      </div>
+
+      <div class="upload-actions">
+        <button
+          type="button"
+          class="btn btn--primary"
+          data-testid="btn-confirm-upload"
+          [disabled]="!selectedFile() || isUploading()"
+          (click)="confirmUpload()"
+        >
+          @if (isUploading()) { Importando... } @else { Confirmar }
+        </button>
+        <button type="button" class="btn btn--ghost" (click)="toggleUpload()">Cancelar</button>
+      </div>
+
+      @if (uploadError()) {
+        <div class="alert alert--error" role="alert" data-testid="upload-error">{{ uploadError() }}</div>
+      }
+
+      @if (importResult()) {
+        <div class="import-result" data-testid="import-result">
+          <div class="import-result__cards">
+            <div class="import-result__card import-result__card--success" data-testid="result-imported">
+              <span class="import-result__value">{{ importResult()!.imported }}</span>
+              <span class="import-result__label">Importados</span>
+            </div>
+            <div class="import-result__card import-result__card--info" data-testid="result-updated">
+              <span class="import-result__value">{{ importResult()!.updated }}</span>
+              <span class="import-result__label">Atualizados</span>
+            </div>
+            <div class="import-result__card" [class.import-result__card--error]="importResult()!.errors.length > 0">
+              <span class="import-result__value">{{ importResult()!.errors.length }}</span>
+              <span class="import-result__label">Erros</span>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Filter -->
+  <div class="filters" data-testid="filters">
+    <select
+      class="filter-select"
+      data-testid="filter-product"
+      [value]="filterProductId()"
+      (change)="filterProductId.set($any($event.target).value); loadCycleTimes()"
+    >
+      <option value="">Todos os produtos</option>
+      @for (p of products(); track p.id) {
+        <option [value]="p.id">{{ p.name }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    @if (isLoading()) {
+      <table class="data-table" data-testid="skeleton-table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Ciclo</th>
+            <th>Lead Time (dias)</th>
+            <th>Vigente a partir de</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of skeletonRows; track row) {
+            <tr class="skeleton-row" data-testid="skeleton-row">
+              <td><span class="skeleton-cell"></span></td>
+              <td><span class="skeleton-cell skeleton-cell--short"></span></td>
+              <td><span class="skeleton-cell skeleton-cell--short"></span></td>
+              <td><span class="skeleton-cell"></span></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    } @else if (cycleTimes().length === 0) {
+      <div class="empty-state" data-testid="empty-state">
+        Nenhum tempo de ciclo encontrado. Importe um arquivo para começar.
+      </div>
+    } @else {
+      <table class="data-table" aria-label="Tempos de ciclo" data-testid="cycle-times-table">
+        <thead>
+          <tr>
+            <th scope="col">Produto</th>
+            <th scope="col">Ciclo</th>
+            <th scope="col">Lead Time (dias)</th>
+            <th scope="col">Vigente a partir de</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (ct of cycleTimes(); track ct.id) {
+            <tr data-testid="cycle-time-row">
+              <td data-testid="ct-product">{{ ct.product.name }}</td>
+              <td data-testid="ct-cycle">{{ formatCycleTime(ct.cycleSecs) }}</td>
+              <td data-testid="ct-lead-time">{{ ct.leadTimeDays }}</td>
+              <td data-testid="ct-effective-date">{{ ct.effectiveDate }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  </div>
+</div>
