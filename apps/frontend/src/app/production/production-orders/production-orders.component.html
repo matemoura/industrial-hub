@@ -1,0 +1,307 @@
+<div class="page">
+  <div class="page-header">
+    <h1 class="page-title">Estoque e Ordens de Produção</h1>
+  </div>
+
+  @if (errorMsg()) {
+    <div class="alert alert--error" role="alert" data-testid="error-msg">{{ errorMsg() }}</div>
+  }
+
+  <!-- Native CSS Tabs -->
+  <div class="tabs" role="tablist" aria-label="Abas de produção">
+    <button
+      type="button"
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'stock'"
+      role="tab"
+      [attr.aria-selected]="activeTab() === 'stock'"
+      data-testid="tab-stock"
+      (click)="setTab('stock')"
+    >
+      Estoque
+    </button>
+    <button
+      type="button"
+      class="tab-btn"
+      [class.tab-btn--active]="activeTab() === 'orders'"
+      role="tab"
+      [attr.aria-selected]="activeTab() === 'orders'"
+      data-testid="tab-orders"
+      (click)="setTab('orders')"
+    >
+      Ordens de Produção
+    </button>
+  </div>
+
+  <!-- ── Stock Tab ───────────────────────────────────────────────────── -->
+  @if (activeTab() === 'stock') {
+    <div class="tab-panel" role="tabpanel" data-testid="panel-stock">
+      <div class="tab-panel__header">
+        <input
+          type="text"
+          class="filter-input"
+          placeholder="Filtrar por produto"
+          data-testid="filter-product-stock"
+          [value]="filterProductStock()"
+          (input)="filterProductStock.set($any($event.target).value); loadStock()"
+        />
+        @if (canImport()) {
+          <button
+            type="button"
+            class="btn btn--primary"
+            data-testid="btn-import-stock"
+            (click)="toggleStockUpload()"
+          >
+            Importar Estoque
+          </button>
+        }
+      </div>
+
+      @if (stockUploadExpanded()) {
+        <div class="upload-panel" data-testid="upload-panel-stock">
+          <h2 class="upload-panel__title">Importar snapshot de estoque</h2>
+          <div
+            class="drop-zone"
+            (dragover)="onStockDragOver($event)"
+            (drop)="onStockDrop($event)"
+            data-testid="drop-zone-stock"
+          >
+            @if (stockSelectedFile()) {
+              <p class="drop-zone__file" data-testid="stock-filename">{{ stockSelectedFile()!.name }}</p>
+            } @else {
+              <p class="drop-zone__hint">Arraste o arquivo ou</p>
+              <label class="btn btn--secondary" for="stock-file-input">Selecionar arquivo</label>
+              <input
+                id="stock-file-input"
+                type="file"
+                accept=".xlsx,.xls"
+                class="sr-only"
+                data-testid="stock-file-input"
+                (change)="onStockFileChange($event)"
+              />
+            }
+          </div>
+          <div class="upload-actions">
+            <button
+              type="button"
+              class="btn btn--primary"
+              data-testid="btn-confirm-stock-upload"
+              [disabled]="!stockSelectedFile() || stockIsUploading()"
+              (click)="confirmStockUpload()"
+            >
+              @if (stockIsUploading()) { Importando... } @else { Confirmar }
+            </button>
+            <button type="button" class="btn btn--ghost" (click)="toggleStockUpload()">Cancelar</button>
+          </div>
+          @if (stockUploadError()) {
+            <div class="alert alert--error" role="alert" data-testid="stock-upload-error">{{ stockUploadError() }}</div>
+          }
+          @if (stockImportResult()) {
+            <div class="import-result" data-testid="stock-import-result">
+              <div class="import-result__cards">
+                <div class="import-result__card import-result__card--success" data-testid="stock-result-imported">
+                  <span class="import-result__value">{{ stockImportResult()!.imported }}</span>
+                  <span class="import-result__label">Importados</span>
+                </div>
+                <div class="import-result__card import-result__card--info" data-testid="stock-result-updated">
+                  <span class="import-result__value">{{ stockImportResult()!.updated }}</span>
+                  <span class="import-result__label">Atualizados</span>
+                </div>
+                <div class="import-result__card" [class.import-result__card--error]="stockImportResult()!.errors.length > 0">
+                  <span class="import-result__value">{{ stockImportResult()!.errors.length }}</span>
+                  <span class="import-result__label">Erros</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="table-wrapper">
+        @if (isLoadingStock()) {
+          <table class="data-table" data-testid="skeleton-stock">
+            <thead><tr><th>Produto</th><th>Qtd</th><th>Unidade</th><th>Data snapshot</th></tr></thead>
+            <tbody>
+              @for (row of skeletonRows; track row) {
+                <tr class="skeleton-row"><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell"></span></td></tr>
+              }
+            </tbody>
+          </table>
+        } @else if (stockItems().length === 0) {
+          <div class="empty-state" data-testid="empty-stock">Nenhum snapshot de estoque encontrado.</div>
+        } @else {
+          <table class="data-table" aria-label="Estoque" data-testid="stock-table">
+            <thead>
+              <tr>
+                <th scope="col">Produto</th>
+                <th scope="col">Qtd</th>
+                <th scope="col">Unidade</th>
+                <th scope="col">Data snapshot</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (item of stockItems(); track item.id) {
+                <tr data-testid="stock-row">
+                  <td data-testid="stock-product">{{ item.product.name }}</td>
+                  <td data-testid="stock-qty">{{ item.qty }}</td>
+                  <td data-testid="stock-unit">{{ item.unit }}</td>
+                  <td data-testid="stock-date">{{ item.snapshotDate }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ── Orders Tab ─────────────────────────────────────────────────── -->
+  @if (activeTab() === 'orders') {
+    <div class="tab-panel" role="tabpanel" data-testid="panel-orders">
+      <div class="tab-panel__header">
+        <select
+          class="filter-select"
+          data-testid="filter-status"
+          [value]="filterStatus()"
+          (change)="filterStatus.set($any($event.target).value); ordersPage.set(0); loadOrders()"
+        >
+          @for (opt of statusOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+
+        @if (canImport()) {
+          <button
+            type="button"
+            class="btn btn--primary"
+            data-testid="btn-import-orders"
+            (click)="toggleOrdersUpload()"
+          >
+            Importar Ordens
+          </button>
+        }
+      </div>
+
+      @if (ordersUploadExpanded()) {
+        <div class="upload-panel" data-testid="upload-panel-orders">
+          <h2 class="upload-panel__title">Importar ordens de produção</h2>
+          <div
+            class="drop-zone"
+            (dragover)="onOrdersDragOver($event)"
+            (drop)="onOrdersDrop($event)"
+            data-testid="drop-zone-orders"
+          >
+            @if (ordersSelectedFile()) {
+              <p class="drop-zone__file" data-testid="orders-filename">{{ ordersSelectedFile()!.name }}</p>
+            } @else {
+              <p class="drop-zone__hint">Arraste o arquivo ou</p>
+              <label class="btn btn--secondary" for="orders-file-input">Selecionar arquivo</label>
+              <input
+                id="orders-file-input"
+                type="file"
+                accept=".xlsx,.xls"
+                class="sr-only"
+                data-testid="orders-file-input"
+                (change)="onOrdersFileChange($event)"
+              />
+            }
+          </div>
+          <div class="upload-actions">
+            <button
+              type="button"
+              class="btn btn--primary"
+              data-testid="btn-confirm-orders-upload"
+              [disabled]="!ordersSelectedFile() || ordersIsUploading()"
+              (click)="confirmOrdersUpload()"
+            >
+              @if (ordersIsUploading()) { Importando... } @else { Confirmar }
+            </button>
+            <button type="button" class="btn btn--ghost" (click)="toggleOrdersUpload()">Cancelar</button>
+          </div>
+          @if (ordersUploadError()) {
+            <div class="alert alert--error" role="alert" data-testid="orders-upload-error">{{ ordersUploadError() }}</div>
+          }
+          @if (ordersImportResult()) {
+            <div class="import-result" data-testid="orders-import-result">
+              <div class="import-result__cards">
+                <div class="import-result__card import-result__card--success" data-testid="orders-result-imported">
+                  <span class="import-result__value">{{ ordersImportResult()!.imported }}</span>
+                  <span class="import-result__label">Importados</span>
+                </div>
+                <div class="import-result__card import-result__card--info" data-testid="orders-result-updated">
+                  <span class="import-result__value">{{ ordersImportResult()!.updated }}</span>
+                  <span class="import-result__label">Atualizados</span>
+                </div>
+                <div class="import-result__card" [class.import-result__card--error]="ordersImportResult()!.errors.length > 0">
+                  <span class="import-result__value">{{ ordersImportResult()!.errors.length }}</span>
+                  <span class="import-result__label">Erros</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+
+      <div class="table-wrapper">
+        @if (isLoadingOrders()) {
+          <table class="data-table" data-testid="skeleton-orders">
+            <thead><tr><th>Nº OP</th><th>Produto</th><th>Status</th><th>Planejado</th><th>Produzido</th><th>Prazo</th></tr></thead>
+            <tbody>
+              @for (row of skeletonRows; track row) {
+                <tr class="skeleton-row"><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell"></span></td><td><span class="skeleton-cell skeleton-cell--short"></span></td><td><span class="skeleton-cell skeleton-cell--short"></span></td><td><span class="skeleton-cell skeleton-cell--short"></span></td><td><span class="skeleton-cell"></span></td></tr>
+              }
+            </tbody>
+          </table>
+        } @else if (orders().length === 0) {
+          <div class="empty-state" data-testid="empty-orders">Nenhuma ordem de produção encontrada.</div>
+        } @else {
+          <table class="data-table" aria-label="Ordens de produção" data-testid="orders-table">
+            <thead>
+              <tr>
+                <th scope="col">Nº OP</th>
+                <th scope="col">Produto</th>
+                <th scope="col">Status</th>
+                <th scope="col">Planejado</th>
+                <th scope="col">Produzido</th>
+                <th scope="col">Prazo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (order of orders(); track order.id) {
+                <tr data-testid="order-row">
+                  <td data-testid="order-number">{{ order.dynamicsOrderNumber }}</td>
+                  <td data-testid="order-product">{{ order.product.name }}</td>
+                  <td>
+                    <span [class]="statusChipClass(order.status)" data-testid="order-status-chip">
+                      {{ statusLabel(order.status) }}
+                    </span>
+                  </td>
+                  <td data-testid="order-planned-qty">{{ order.plannedQty }}</td>
+                  <td data-testid="order-produced-qty">{{ order.producedQty ?? '—' }}</td>
+                  <td data-testid="order-due-date">{{ order.dueDate }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+
+          <!-- Pagination -->
+          @if (ordersTotalPages() > 1) {
+            <div class="pagination" role="navigation" aria-label="Paginação" data-testid="pagination">
+              @for (page of pageRange(); track page) {
+                <button
+                  type="button"
+                  class="page-btn"
+                  [class.page-btn--active]="ordersPage() === page"
+                  data-testid="page-btn"
+                  (click)="goToPage(page)"
+                >
+                  {{ page + 1 }}
+                </button>
+              }
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+</div>
