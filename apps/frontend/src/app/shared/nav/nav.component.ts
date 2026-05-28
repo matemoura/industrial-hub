@@ -10,7 +10,7 @@ import {
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval, timer } from 'rxjs';
-import { startWith, switchMap } from 'rxjs/operators';
+import { filter, startWith, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../auth/auth.service';
 import {
   Notification,
@@ -87,6 +87,7 @@ export class NavComponent implements OnInit {
     interval(60_000)
       .pipe(
         startWith(0),
+        filter(() => this.authService.isAuthenticated()),
         switchMap(() => this.notificationService.getUnreadCount()),
         takeUntilDestroyed(this.destroyRef),
       )
@@ -98,6 +99,7 @@ export class NavComponent implements OnInit {
     interval(300_000)
       .pipe(
         startWith(0),
+        filter(() => this.authService.isAuthenticated()),
         switchMap(() => this.maintenanceService.countBelowMin()),
         takeUntilDestroyed(this.destroyRef),
       )

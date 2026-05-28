@@ -10,13 +10,15 @@ import java.util.UUID;
 
 public interface SparePartRepository extends JpaRepository<SparePart, UUID> {
 
-    @Query("""
-        SELECT p FROM SparePart p
-        WHERE p.active = true
-          AND (:category IS NULL OR LOWER(p.category) = LOWER(:category))
-          AND (:belowMin = false OR p.stockQty < p.minStockQty)
-        ORDER BY p.name ASC
-    """)
+    // native query — CAST(:category AS TEXT) prevents PostgreSQL from inferring bytea
+    // for null parameters, which would cause "function lower(bytea) does not exist"
+    @Query(value = """
+        SELECT * FROM spare_part
+        WHERE active = true
+          AND (CAST(:category AS TEXT) IS NULL OR LOWER(category) = LOWER(CAST(:category AS TEXT)))
+          AND (:belowMin = false OR stock_qty < min_stock_qty)
+        ORDER BY name ASC
+    """, nativeQuery = true)
     List<SparePart> findActiveWithFilters(
         @Param("category") String category,
         @Param("belowMin") boolean belowMin

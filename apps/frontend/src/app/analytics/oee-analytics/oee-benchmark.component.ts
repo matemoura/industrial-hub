@@ -216,7 +216,7 @@ export class OeeBenchmarkComponent implements OnInit {
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((results) => {
         if (results.workers) {
-          this.benchmarkWorkers.set(results.workers.ranking);
+          this.benchmarkWorkers.set(results.workers.ranking ?? []);
           this.workersError.set(null);
         }
         if (results.shifts) {
@@ -224,7 +224,7 @@ export class OeeBenchmarkComponent implements OnInit {
           this.shiftsError.set(null);
         }
         if (results.equipment) {
-          this.benchmarkEquipment.set(results.equipment.ranking);
+          this.benchmarkEquipment.set(results.equipment.ranking ?? []);
           this.equipmentError.set(null);
         }
         this.isBenchmarkLoading.set(false);

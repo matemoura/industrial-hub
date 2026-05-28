@@ -160,6 +160,6 @@ export class OeeService {
     const fd = new FormData();
     fd.append('file', file);
     fd.append('overwrite', String(overwrite));
-    return this.http.post<ImportResultDto>(`${this.baseUrl}/import`, fd);
+    return this.http.post<ImportResultDto>(`${this.baseUrl}/imports`, fd);
   }
 }
