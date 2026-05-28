@@ -5,6 +5,7 @@ import com.industrialhub.backend.production.application.usecase.*;
 import com.industrialhub.backend.production.domain.ProductionImportType;
 import com.industrialhub.backend.production.domain.ProductionOrderStatus;
 import com.industrialhub.backend.production.domain.ProductType;
+import com.industrialhub.backend.production.domain.ProductionOrderDisplayStatus;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
@@ -36,6 +37,9 @@ public class ProductionController {
     private final ListProductionOrdersUseCase listOrders;
     private final ListCycleTimesUseCase listCycleTimes;
     private final GetImportHistoryUseCase importHistory;
+    private final GetProductionTrackingUseCase getTracking;
+    private final GetProductionSummaryUseCase getSummary;
+    private final ListProductionOrdersForTrackingUseCase listTrackingOrders;
 
     public ProductionController(
             ImportProductCatalogUseCase importProductCatalog,
@@ -48,7 +52,10 @@ public class ProductionController {
             ListStockSnapshotsUseCase listStock,
             ListProductionOrdersUseCase listOrders,
             ListCycleTimesUseCase listCycleTimes,
-            GetImportHistoryUseCase importHistory) {
+            GetImportHistoryUseCase importHistory,
+            GetProductionTrackingUseCase getTracking,
+            GetProductionSummaryUseCase getSummary,
+            ListProductionOrdersForTrackingUseCase listTrackingOrders) {
         this.importProductCatalog = importProductCatalog;
         this.importStockSnapshot = importStockSnapshot;
         this.importProductionOrders = importProductionOrders;
@@ -60,6 +67,9 @@ public class ProductionController {
         this.listOrders = listOrders;
         this.listCycleTimes = listCycleTimes;
         this.importHistory = importHistory;
+        this.getTracking = getTracking;
+        this.getSummary = getSummary;
+        this.listTrackingOrders = listTrackingOrders;
     }
 
     // ===== Import endpoints =====
@@ -182,5 +192,32 @@ public class ProductionController {
     public List<CycleTimeResponse> listCycleTimes(
             @RequestParam(required = false) UUID productId) {
         return listCycleTimes.execute(productId);
+    }
+
+    // ===== Tracking endpoints (US-082 / ADR-041) =====
+
+    @GetMapping("/tracking/families")
+    @PreAuthorize("isAuthenticated()")
+    public ProductionTrackingResponse getTracking(
+            @RequestParam(required = false) String familyCode,
+            @RequestParam(required = false) Boolean overdue) {
+        return getTracking.execute(familyCode, overdue);
+    }
+
+    @GetMapping("/tracking/orders")
+    @PreAuthorize("isAuthenticated()")
+    public ProductionOrderListResponse getTrackingOrders(
+            @RequestParam(required = false) String familyCode,
+            @RequestParam(required = false) String displayStatus,
+            @RequestParam(required = false) Boolean overdue,
+            @RequestParam(required = false) String productType,
+            @PageableDefault(size = 50) Pageable pageable) {
+        return listTrackingOrders.execute(familyCode, displayStatus, overdue, productType, pageable);
+    }
+
+    @GetMapping("/tracking/summary")
+    @PreAuthorize("isAuthenticated()")
+    public ProductionSummaryResponse getSummary() {
+        return getSummary.execute();
     }
 }
