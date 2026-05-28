@@ -127,7 +127,8 @@ public class ImportCycleTimesUseCase {
                 }
             }
         } catch (IOException e) {
-            errors.add(new ImportErrorDto(0, "Erro ao ler o arquivo Excel: " + e.getMessage()));
+            log.warn("Erro ao processar arquivo Excel na importação de cycle times: {}", e.getMessage());
+            errors.add(new ImportErrorDto(0, "Erro ao processar o arquivo Excel. Verifique o formato e tente novamente."));
         }
 
         return saveBatch(fileName, username, total, created, updated, errors);

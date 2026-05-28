@@ -12,7 +12,6 @@ public record CycleTimeResponse(
         String productCode,
         Double secondsPerUnit,
         LocalDate effectiveDate,
-        String importedBy,
         LocalDateTime importedAt
 ) {
     public static CycleTimeResponse from(CycleTime c) {
@@ -22,7 +21,6 @@ public record CycleTimeResponse(
                 c.getProduct().getDynamicsCode(),
                 c.getSecondsPerUnit(),
                 c.getEffectiveDate(),
-                c.getImportedBy(),
                 c.getImportedAt()
         );
     }

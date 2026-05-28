@@ -105,6 +105,7 @@ Font: Inter (sans-serif), professional industrial look
 | Multi-plant Support | `common/` | 23 | ✅ done |
 | LGPD / Privacy | `common/` | 25 | ✅ done |
 | PWA / Offline | `apps/frontend/` | 26 | ✅ done |
+| Production (Dynamics import) | `production/` | 29 | ✅ done |
 
 ## Key Conventions
 

@@ -1,5 +1,26 @@
 # Log Aisha
 
+## [2026-05-28] Sincronização pós-Sprint 29
+Fontes lidas:
+- `CLAUDE.md` (raiz — tabela Domain Modules)
+- `.claude/sprint-atual.md` (estado atual do backlog)
+- `.claude/logs/log-mateus.md` (Sprint 29 — US-079/080/081/097 backend + blockers Beatriz/Maiana; 420 testes)
+- `.claude/logs/log-maiana.md` (Sprint 29 — 56/58 ACs cobertos; blocker US-081 AC#6 corrigido por Mateus; aprovado 58/58)
+- `.claude/logs/log-maite.md` (Sprint 29 — ready-to-deploy; 420 backend, 540 frontend; aprovado Maitê)
+- `.claude/logs/log-beatriz.md` (Sprint 29 — aprovado com ressalvas; SEC-101/102/103/104/105/106 CORRIGIDOS; SEC-107 HIGH, SEC-108/109 MEDIUM, SEC-110 LOW, SEC-111 INFO diferidos Sprint 30)
+
+Mudanças feitas:
+- `CLAUDE.md`: nova linha na tabela Domain Modules — `Production (Dynamics import) | production/ | 29 | ✅ done`
+- `.claude/sprint-atual.md`: Sprint 29 `⬜` → `✅`; status `pendente` → `concluída`
+- `.claude/sprint-atual.md`: US-079, US-080, US-081, US-097 `⬜ pendente` → `✅ concluído`
+- `.claude/sprint-atual.md`: roadmap linha Sprint 29 `⬜` → `✅`
+- `.claude/sprint-atual.md`: seção "Tech Debt diferido do Sprint 29 (Beatriz — SEC-107 a SEC-111)" adicionada antes das User Stories do Sprint 30 com tabela descritiva (severidade, descrição, fix proposto)
+
+Inconsistências encontradas:
+- SEC-111 (INFO de Beatriz): discrepância de URLs entre `ProductionService` (frontend) e `ProductionController` (backend) nas chamadas de import. Documentado no tech debt Sprint 30 para correção. Não altera os ACs do Sprint 29 (Maiana aprovou com justificativa de review de código para SEC-111 como INFO, não blocker).
+- Sprint 29 já tinha ADR-028 referenciado corretamente no roadmap e na seção de sprint — nenhuma correção adicional necessária.
+- SEC-109 é o único item novo com impacto de produto (decisão de exposição de `importedBy` para SUPERVISOR) — diferido com nota de decisão necessária para Sprint 30.
+
 ## [2026-05-26] Sincronização pós-Sprint 28 (pós-commit)
 Fontes lidas:
 - `CLAUDE.md` (raiz — tabela Domain Modules)

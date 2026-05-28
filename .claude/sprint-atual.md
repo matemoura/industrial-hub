@@ -2224,17 +2224,17 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 26 | Progressive Web App (PWA + offline queue) + tech debt LGPD/security | US-069, US-070, US-095 | ADR-023 |
 | ✅ Sprint 27 | Outbound webhooks para integração com sistemas externos | US-071, US-072 | ADR-024, ADR-040 |
 | ✅ Sprint 28 | Dashboard customizável por usuário (widgets drag-and-drop) | US-077, US-078, US-096 | ADR-027 |
-| ⬜ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) + tech debt S28 | US-079, US-080, US-081, US-097 | ADR-028 |
-| ⬜ Sprint 30 | Acompanhamento visual de produção e tracking de OPs por família | US-082, US-083 | ADR-029 |
+| ✅ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) + tech debt S28 | US-079, US-080, US-081, US-097 | ADR-028 |
+| ⬜ Sprint 30 | Acompanhamento visual de produção e tracking de OPs por família + tech debt S29 | US-082, US-083, US-098 | ADR-029 |
 | ⬜ Sprint 31 | Gestão de cargas de esterilização (Hub-managed) | US-084 | ADR-029 |
 | ⬜ Sprint 32 | Motor MRP, planejamento por família e staffing por OP | US-085, US-086, US-087 | ADR-030 |
 
 ---
 
-## Sprint 29 ⬜
+## Sprint 29 ✅
 **Objetivo**: Production module — importação de dados do Dynamics (catálogo de produtos, snapshots de estoque, ordens de produção, tempos de ciclo e lead times) + liquidação do tech debt de segurança diferido do Sprint 28
 **ADR**: ADR-028
-**Status**: pendente
+**Status**: concluída
 
 ### Tech Debt diferido do Sprint 28 (Beatriz — SEC-101 a SEC-106)
 
@@ -2250,10 +2250,10 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-079 | Importação de catálogo de produtos e famílias do Dynamics | 4 | ⬜ pendente |
-| US-080 | Importação de snapshots de estoque e ordens de produção | 4 | ⬜ pendente |
-| US-081 | Importação de tempos de ciclo e lead times + histórico de importações | 3 | ⬜ pendente |
-| US-097 | Tech debt Sprint 28 — SEC-101 a SEC-106 (dashboard JSON, auditoria, webhooks) | 2 | ⬜ pendente |
+| US-079 | Importação de catálogo de produtos e famílias do Dynamics | 4 | ✅ concluído |
+| US-080 | Importação de snapshots de estoque e ordens de produção | 4 | ✅ concluído |
+| US-081 | Importação de tempos de ciclo e lead times + histórico de importações | 3 | ✅ concluído |
+| US-097 | Tech debt Sprint 28 — SEC-101 a SEC-106 (dashboard JSON, auditoria, webhooks) | 2 | ✅ concluído |
 
 **Total**: 13 pontos
 
@@ -2389,41 +2389,112 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 ---
 
 ## Sprint 30 ⬜
-**Objetivo**: Acompanhamento visual de produção — tracking de OPs por família e por status
+**Objetivo**: Acompanhamento visual de produção — tracking de OPs em kanban por família + liquidação do tech debt de segurança do Sprint 29 (SEC-107 a SEC-111)
 **ADR**: ADR-029
 **Status**: pendente
+**Pontos totais**: 11 pts (US-082: 3 + US-083: 5 + US-098: 3)
+
+### Tech Debt diferido do Sprint 29 (Beatriz — SEC-107 a SEC-111)
+
+| ID | Severidade | Descrição | Fix |
+|----|-----------|-----------|-----|
+| SEC-107 | HIGH | Endpoints de import Excel sem validação de MIME type via magic bytes (Tika); ZIP bomb mitigado pelo POI default mas limites não configurados explicitamente | Chamar `ExcelFileValidator` (já criado) antes de `WorkbookFactory.create()`; verificar MIME `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` / `vnd.ms-excel`; lançar `InvalidFileTypeException` com 415 se inválido |
+| SEC-108 | MEDIUM | `e.getMessage()` de exceções inesperadas exposto diretamente em `ImportErrorDto.message` e retornado ao chamador via HTTP 201 nos 5 use cases de import | Substituir `e.getMessage()` por mensagem genérica `"Erro ao processar linha"` no catch genérico; logar detalhes apenas via `log.warn()` |
+| SEC-109 | MEDIUM | `ImportProductionBatchResponse` expõe `importedBy` (username) no endpoint `GET /api/v1/production/import/history` acessível a SUPERVISOR+; inconsistente com o padrão do `AuditLog` (ADMIN-only) | Decisão de produto necessária: (a) restringir `/import/history` a ADMIN-only, ou (b) omitir `importedBy` do response para SUPERVISOR |
+| SEC-110 | LOW | `OfflineSyncService.clearFailedTitles()` implementado mas não chamado no logout; `failedTitles` signal persiste entre sessões no mesmo tab | Chamar `offlineSyncService.clearFailedTitles()` em `AuthService.logout()`, analogamente ao `offlineQueue.clearAll()` já presente (SEC-089) |
+| SEC-111 | INFO | `ProductionService` (frontend) usa URLs `/products/import`, `/stock/import`, `/orders/import` mas o controller backend mapeia `/import/products`, `/import/stock`, `/import/production-orders` — chamadas de import retornam 404 | Corrigir URLs em `production.service.ts` para alinhar com o controller |
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
 | US-082 | Backend de tracking visual por família (display status calculado) | 3 | ⬜ pendente |
 | US-083 | Frontend de acompanhamento — kanban de OPs por família e status | 5 | ⬜ pendente |
+| US-098 | Tech debt Sprint 29 — SEC-107 a SEC-111 (validação MIME, sanitização de erros, importedBy, logout, URLs) | 3 | ⬜ pendente |
+
+### Dependências
+- US-082 é pré-requisito bloqueante de US-083 (frontend consome os endpoints de tracking)
+- US-098 é totalmente independente — pode ser desenvolvida em paralelo desde o início da sprint
+- US-083 depende do enum `ProductionOrderDisplayStatus` definido em US-082 para tipagem do frontend
+
+### Sequência de entrega sugerida
+1. US-098 backend (SEC-107/108/109 — fixes cirúrgicos nos use cases de import, sem novas entidades)
+2. US-082 backend (enum `ProductionOrderDisplayStatus`, use cases, controller, testes)
+3. US-098 frontend (SEC-110/111 — `AuthService.logout` + URLs do `ProductionService`)
+4. US-083 frontend (kanban completo com componente de card, painel lateral, filtros, spec)
 
 ---
 
-#### US-082 — Backend de tracking visual (3 pts)
+#### US-082 — Backend de tracking visual por família (3 pts)
+
+**Contexto**: Expõe os dados de OPs agrupados por família com o `ProductionOrderDisplayStatus` calculado em Java (nunca persistido), conforme ADR-029 Decisão 3. Pré-requisito direto para o kanban do US-083.
 
 **Backend**
-1. `GET /api/v1/production/tracking/families` retorna `List<FamilyTrackingResponse>` com OPs não-concluídas agrupadas por família (OPERATOR+)
-2. `ProductionOrderDisplayStatus` calculado em Java por OP (não persistido): lógica baseada em `status` do Dynamics + `sterilizationLoad.status` do Hub
-3. `GET /api/v1/production/tracking/orders` lista OPs com `displayStatus`, `completionPct` (`producedQty/plannedQty*100`), `overdue` (`dueDate < today && displayStatus != DONE`), `plannedPeople`; filtros: `family`, `displayStatus`, `overdue`, `productType`
-4. `GET /api/v1/production/tracking/summary` retorna contagens por status:
-   ```json
-   { "inProgress": 12, "pendingSterilization": 5, "sterilizing": 3, "overdue": 2, "doneThisWeek": 8 }
-   ```
-5. `lastSyncAt` da última importação de OPs retornado em todos os responses — frontend exibe defasagem
+1. Enum `ProductionOrderDisplayStatus` criado em `production/domain/` com os valores: `PLANNED`, `RELEASED`, `IN_PROGRESS`, `PENDING_STERILIZATION`, `IN_LOAD`, `STERILIZING`, `DONE` — cada valor corresponde à lógica: `PLANNED` = Dynamics PLANNED; `RELEASED` = Dynamics RELEASED; `IN_PROGRESS` = Dynamics IN_PROGRESS; `PENDING_STERILIZATION` = Dynamics DONE + `requiresSterilization=true` + `sterilizationLoad=null`; `IN_LOAD` = Dynamics DONE + `requiresSterilization=true` + carga em status OPEN ou CLOSED; `STERILIZING` = Dynamics DONE + carga STERILIZING; `DONE` = Dynamics DONE + (`requiresSterilization=false` OU carga RELEASED)
+2. `GetProductionTrackingUseCase` em `production/application/usecase/`: método `execute()` que busca todas as OPs ativas (não canceladas), calcula `displayStatus` por OP em Java via método privado `resolveDisplayStatus(ProductionOrder op)`, e retorna agrupado por família
+3. `GET /api/v1/production/tracking/families` (OPERATOR+): retorna `List<FamilyTrackingResponse>` — cada família contém somente OPs com `displayStatus != DONE` e `status != CANCELLED`; famílias sem OPs ativas são omitidas do response
+4. `FamilyTrackingResponse` record: `familyId` (UUID), `familyCode` (String), `familyName` (String), `overdueCount` (int — OPs com `overdue=true`), `orders` (List<OrderTrackingEntry>)
+5. `OrderTrackingEntry` record: `dynamicsOrderNumber` (String), `productCode` (String), `productName` (String), `productType` (ProductType enum), `plannedQty` (Integer), `producedQty` (Integer), `completionPct` (Double — `producedQty / plannedQty * 100`, null se `plannedQty == 0 ou null`), `dueDate` (LocalDate), `overdue` (boolean — `dueDate != null && dueDate.isBefore(LocalDate.now()) && displayStatus != DONE`), `displayStatus` (ProductionOrderDisplayStatus), `loadNumber` (String nullable), `loadStatus` (LoadStatus nullable), `plannedPeople` (Integer nullable)
+6. `GET /api/v1/production/tracking/orders` (OPERATOR+): lista flat de OPs com filtros opcionais via `@RequestParam`: `familyCode` (String), `displayStatus` (ProductionOrderDisplayStatus), `overdue` (boolean), `productType` (ProductType); retorna `List<OrderTrackingEntry>` sem paginação (volume controlado: 53 usuários, OPs abertas tipicamente < 200); controller com `@Validated`
+7. `GET /api/v1/production/tracking/summary` (OPERATOR+): retorna `ProductionTrackingSummaryResponse` record com: `inProgress` (int), `pendingSterilization` (int), `inLoad` (int), `sterilizing` (int), `overdue` (int), `doneThisWeek` (int — OPs com `displayStatus=DONE` e `updatedAt >= início da semana ISO atual`); campos calculados iterando sobre todas as OPs em memória no use case (sem SQL nativo, conforme padrão do projeto)
+8. `lastSyncAt` (LocalDateTime nullable) incluído em `FamilyTrackingResponse`, na response de `/tracking/orders` como campo raiz, e em `ProductionTrackingSummaryResponse`: valor = `MAX(createdAt)` do `ImportProductionBatch` com `batchType = PRODUCTION_ORDERS` — calculado via JPQL `@Query("SELECT MAX(b.createdAt) FROM ImportProductionBatch b WHERE b.batchType = 'PRODUCTION_ORDERS'")` no `ImportProductionBatchRepository`
+9. Nenhuma query com SQL nativo — apenas JPQL e cálculo em Java; relacionamento `ProductionOrder → SterilizationLoad` carregado via `@EntityGraph` ou `JOIN FETCH` no repositório para evitar N+1 ao calcular `displayStatus`
+10. Testes unitários em `GetProductionTrackingUseCaseTest`: (a) OP com Dynamics=DONE, `requiresSterilization=false` → `DONE`; (b) OP com Dynamics=DONE, `requiresSterilization=true`, `sterilizationLoad=null` → `PENDING_STERILIZATION`; (c) OP com carga STERILIZING → `STERILIZING`; (d) OP com carga RELEASED → `DONE`; (e) OP com `dueDate` ontem e displayStatus != DONE → `overdue=true`; (f) OP com carga OPEN → `IN_LOAD`
+11. `TrackingController` criado em `production/presentation/` com `@RestController`, `@RequestMapping("/api/v1/production/tracking")`, `@Validated`; os três endpoints delegam para `GetProductionTrackingUseCase`; erros de validação de `@RequestParam` retornam 400 via `GlobalExceptionHandler` (ADR-031)
 
 ---
 
-#### US-083 — Frontend de acompanhamento visual (5 pts)
+#### US-083 — Frontend de acompanhamento visual — kanban de OPs (5 pts)
 
-1. Rota `/production/tracking`: cards por família com aba de seleção
-2. Dentro de cada família: colunas kanban por `displayStatus` (PLANNED, RELEASED, IN_PROGRESS, PENDING_STERILIZATION, IN_LOAD, STERILIZING, DONE)
-3. Card de OP: número da OP, produto, barra de progresso (producedQty/plannedQty), prazo (vermelho se overdue), chip de status colorido, badge de pessoas (plannedPeople)
-4. Filtro global acima do kanban: família, tipo (FINISHED/INTERMEDIATE), mostrar apenas atrasadas
-5. Card de resumo no topo: total em produção, aguardando esterilização, esterilizando, atrasadas
-6. Banner "Última sincronização: há N minutos" com botão "Atualizar" (dispara nova importação de OPs — SUPERVISOR+)
-7. Clique em card de OP abre panel lateral com todos os campos da OP + histórico de cargas (se aplicável)
+**Contexto**: Tela principal de tracking de produção consumindo os endpoints de US-082. Kanban por família, com cards de OP, filtros, painel lateral de detalhe e banner de sincronização.
+
+**Frontend**
+1. Rota `/production/tracking` lazy-loaded em `production.routes.ts`; componente `ProductionTrackingComponent` standalone com `ChangeDetectionStrategy.OnPush`; serviço `ProductionTrackingService` separado em `production/production-tracking.service.ts` com métodos `getFamilies()`, `getOrders(filters)` e `getSummary()` — HTTP calls para os três endpoints de US-082
+2. Seção de resumo no topo: 4 cards KPI usando signals: `inProgress` (azul, ícone de engrenagem), `pendingSterilization` (laranja, ícone de ampulheta), `sterilizing` (roxo, ícone de temperatura), `overdue` (vermelho, ícone de alerta); dados carregados via `getSummary()` no `ngOnInit`; skeleton loaders enquanto carrega; erro exibe snackbar não-dismissível
+3. Seletor de família: chips horizontais rolável com o nome de cada família + badge com contagem de OPs atrasadas (vermelho); seleção via signal `selectedFamily = signal<string | null>(null)`; "Todas" como opção inicial; troca de família re-filtra o kanban sem nova chamada HTTP (apenas `computed()` sobre o signal de dados)
+4. Filtros adicionais acima do kanban: dropdown "Tipo" (FINISHED / INTERMEDIATE / Todos), toggle "Apenas atrasadas"; aplicados via `computed()` sobre os dados carregados — sem chamadas HTTP adicionais para filtros locais
+5. Kanban: 7 colunas em `display: grid; grid-template-columns: repeat(7, minmax(220px, 1fr))`, scroll horizontal; cada coluna tem header com nome do status (traduzido: PLANNED=Planejada, RELEASED=Liberada, IN_PROGRESS=Em Produção, PENDING_STERILIZATION=Aguard. Esterilização, IN_LOAD=Em Carga, STERILIZING=Esterilizando, DONE=Concluída) e contagem de cards; colunas PENDING_STERILIZATION e IN_LOAD visíveis somente se há OPs do tipo FINISHED; colunas sem OPs exibem placeholder "Nenhuma OP" em cinza
+6. Card de OP com `@for (order of columnOrders(status); track order.dynamicsOrderNumber)`: chip de status colorido (PLANNED=cinza, RELEASED=azul-claro, IN_PROGRESS=azul `#0099B8`, PENDING_STERILIZATION=laranja, IN_LOAD=âmbar, STERILIZING=roxo, DONE=verde), número da OP em negrito, código e nome do produto (truncado a 25 chars com tooltip completo), barra de progresso Angular Material `<mat-progress-bar>` com valor `completionPct`, percentual ao lado, data de prazo (vermelho em negrito se `overdue=true`), badge de pessoas (`plannedPeople` ou "—"), borda esquerda vermelha se `overdue=true`
+7. Clique no card abre painel lateral `<mat-drawer>` (posição end, largura 400px) com todos os campos da OP: número, produto (código + nome), família, tipo, `plannedQty`, `producedQty`, `completionPct`, `dueDate`, `displayStatus`, `plannedPeople`, `loadNumber` + `loadStatus` (se alocada em carga); link "Ver carga →" navegando para `/production/sterilization-loads/{loadId}` quando `loadNumber` presente; painel fecha com botão X ou clique fora
+8. Banner de sincronização abaixo dos filtros: `"Última sincronização: {{lastSyncAgo}}"` calculado via `computed(() => formatDistanceToNow(lastSyncAt()))` (sem dependência externa — implementado com `Date.now() - lastSyncAt.getTime()` e formatação simples em pt-BR: "há N minutos" / "há N horas" / "há N dias"); botão "Atualizar" (visível para SUPERVISOR+) que dispara `POST /api/v1/production/import` para OPs (endpoint existente de US-080) e então recarrega o tracking; spinner no botão durante o reload; se `lastSyncAt=null` exibe "Nunca sincronizado"
+9. Auto-refresh: `interval(300_000).pipe(startWith(0), switchMap(() => trackingService.getFamilies()), takeUntilDestroyed())` — recarrega automaticamente a cada 5 minutos sem interação do usuário; spinner discreto no canto superior direito do kanban durante o refresh
+10. Responsividade: em telas < 768px o kanban colapsa para uma listagem vertical simples agrupada por status (sem colunas), mantendo todos os filtros; nenhuma quebra de layout em telas grandes
+11. Testes em `production-tracking.component.spec.ts`: (a) carrega dados e renderiza N colunas; (b) selecionar família filtra cards sem nova chamada HTTP; (c) toggle "Apenas atrasadas" oculta cards sem `overdue=true`; (d) clique em card abre painel lateral com os campos corretos; (e) botão "Atualizar" desabilitado para OPERATOR (sem role SUPERVISOR); (f) `lastSyncAt=null` exibe "Nunca sincronizado"; (g) OP com `overdue=true` exibe borda vermelha e data em vermelho
+
+---
+
+#### US-098 — Tech debt Sprint 29 — SEC-107 a SEC-111 (3 pts)
+
+**Contexto**: Liquidação dos 5 itens de segurança diferidos da Sprint 29 por Beatriz. SEC-107 é HIGH — tratado com prioridade. SEC-108 e SEC-109 são MEDIUM. SEC-110 e SEC-111 são LOW/INFO e de correção cirúrgica no frontend.
+
+**Backend — SEC-107: validação de MIME type nos imports (HIGH)**
+1. `ExcelFileValidator` (já existente em `production/` após Sprint 29) integrado em todos os 5 controllers de import que usam `WorkbookFactory.create()`: `ImportProductsUseCase`, `ImportStockUseCase`, `ImportProductionOrdersUseCase`, `ImportCycleTimesUseCase`, `ImportLeadTimesUseCase`; a chamada `ExcelFileValidator.validate(inputStream)` ocorre antes de `WorkbookFactory.create()` — se falhar, lança `InvalidFileTypeException`
+2. `GlobalExceptionHandler` trata `InvalidFileTypeException` retornando `415 Unsupported Media Type` com body `{ "message": "Tipo de arquivo inválido. Envie um arquivo Excel (.xlsx ou .xls)" }` — handler adicionado em `GlobalExceptionHandler.java`; se `InvalidFileTypeException` já existia sem handler dedicado, verificar e adicionar
+3. `ExcelFileValidator` deve verificar magic bytes (via Apache Tika `tika-core`, dependência já adicionada em US-091 AC#2) aceitando apenas MIME types `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet` (xlsx) e `application/vnd.ms-excel` (xls); arquivo com extensão `.xlsx` mas conteúdo ZIP malicioso retorna 415
+4. Testes unitários em `ExcelFileValidatorTest` (ou teste de integração no controller mais adequado): (a) arquivo .xlsx legítimo → `validate()` não lança exceção; (b) arquivo PDF com extensão .xlsx renomeada → lança `InvalidFileTypeException`; (c) arquivo ZIP com extensão .xlsx → lança `InvalidFileTypeException`; (d) `InputStream` vazio → lança `InvalidFileTypeException`
+5. Teste de integração em `ImportProductsControllerTest` (ou equivalente): `POST /api/v1/production/import/products` com arquivo PDF renomeado → resposta 415 com `{ "message": "..." }`
+
+**Backend — SEC-108: sanitização de mensagens de erro nos imports (MEDIUM)**
+6. Nos 5 use cases de import (`ImportProductsUseCase`, `ImportStockUseCase`, `ImportProductionOrdersUseCase`, `ImportCycleTimesUseCase`, `ImportLeadTimesUseCase`): substituir `catch (Exception e) { errors.add(new ImportErrorDto(rowNum, e.getMessage())); }` por `catch (Exception e) { log.warn("Erro inesperado ao processar linha {}: {}", rowNum, e.getMessage(), e); errors.add(new ImportErrorDto(rowNum, "Erro ao processar linha")); }` — mensagem genérica exposta ao cliente, detalhe apenas no log
+7. Exceções de domínio esperadas (ex: `EntityNotFoundException`, `DuplicateKeyException`) que já retornam mensagens amigáveis de negócio devem permanecer com suas mensagens originais — apenas o catch genérico de `Exception` é substituído; verificar cada use case para garantir que não haja catch-all mascarando erros de negócio legítimos
+8. Teste unitário verifica que, dado um `InputStream` que lança `RuntimeException("stack trace interno")` ao ser processado, o `ImportErrorDto.message` retornado é `"Erro ao processar linha"` (não contém o stack trace ou mensagem interna)
+
+**Backend — SEC-109: exposição de `importedBy` em `/import/history` para SUPERVISOR (MEDIUM)**
+9. Decisão de produto adotada: **opção (b) — omitir `importedBy` do response para SUPERVISOR**; motivo: SUPERVISOR precisa de visibilidade do histórico de importações (quais batches foram importados e quando) para operar o módulo de produção, mas não precisa do username de quem importou — isso é dado de auditoria restrito ao ADMIN; solução sem quebrar o endpoint para ADMIN
+10. `ImportProductionBatchResponse` record recebe campo `importedBy` como `String` nullable; `GetImportHistoryUseCase` (ou use case equivalente) preenche `importedBy` apenas quando o usuário autenticado tem role ADMIN — usa `SecurityContextHolder.getContext().getAuthentication().getAuthorities()` para verificar; para SUPERVISOR, `importedBy = null` no record retornado
+11. Teste unitário `GetImportHistoryUseCaseTest`: (a) autenticado como ADMIN → `importedBy` preenchido com username real; (b) autenticado como SUPERVISOR → `importedBy = null`; endpoint `GET /api/v1/production/import/history` continua acessível para SUPERVISOR+ (sem mudança de `@PreAuthorize`)
+
+**Frontend — SEC-110: `clearFailedTitles()` no logout (LOW)**
+12. Em `AuthService.logout()` (arquivo `apps/frontend/src/app/auth/auth.service.ts`): após a chamada existente `this.offlineQueueService.clearAll()` (ou o equivalente SEC-089), adicionar `this.offlineSyncService.clearFailedTitles()` — limpa o signal `failedTitles` ao deslogar; verificar que a injeção de `OfflineSyncService` em `AuthService` não cria dependência circular (se `OfflineSyncService` injeta `AuthService`, usar `inject()` com `{optional: true}` ou mover a limpeza para um `APP_INITIALIZER`/guard de logout); preferir a solução sem circular dependency
+13. Teste em `auth.service.spec.ts`: ao chamar `logout()`, `offlineSyncService.clearFailedTitles()` é invocado uma vez; verificar com spy que o signal `failedTitles` fica vazio após o logout
+
+**Frontend — SEC-111: URLs invertidas em `ProductionService` (INFO)**
+14. Em `production.service.ts` (arquivo `apps/frontend/src/app/production/production.service.ts`): corrigir as 3 URLs de import:
+    - `/products/import` → `/import/products`
+    - `/stock/import` → `/import/stock`
+    - `/orders/import` → `/import/production-orders`
+    (conforme mapeamento do `ProductionController` backend que usa `/api/v1/production/import/{type}`)
+15. Após correção, nenhuma chamada de import retorna 404; verificar também se há outras URLs do `ProductionService` com inversão similar (ex: `/cycle-times/import` vs `/import/cycle-times` e `/lead-times/import` vs `/import/lead-times`) e corrigir todas as ocorrências encontradas
+16. Teste em `production.service.spec.ts` (ou equivalente): verificar que as URLs construídas pela service batem com os endpoints do controller; se o spec usa `HttpTestingController`, confirmar que os `expectOne()` são chamados com as URLs corretas pós-correção
 
 ---
 
