@@ -2225,9 +2225,9 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 27 | Outbound webhooks para integração com sistemas externos | US-071, US-072 | ADR-024, ADR-040 |
 | ✅ Sprint 28 | Dashboard customizável por usuário (widgets drag-and-drop) | US-077, US-078, US-096 | ADR-027 |
 | ✅ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) + tech debt S28 | US-079, US-080, US-081, US-097 | ADR-028 |
-| ⬜ Sprint 30 | Acompanhamento visual de produção e tracking de OPs por família + tech debt S29 | US-082, US-083, US-098 | ADR-029 |
-| ⬜ Sprint 31 | Gestão de cargas de esterilização (Hub-managed) | US-084 | ADR-029 |
-| ⬜ Sprint 32 | Motor MRP, planejamento por família e staffing por OP | US-085, US-086, US-087 | ADR-030 |
+| ✅ Sprint 30 | Acompanhamento visual de produção e tracking de OPs por família + tech debt S29 | US-082, US-083, US-098 | ADR-029, ADR-041 |
+| ✅ Sprint 31 | Gestão de cargas de esterilização (Hub-managed) + tech debt S30 | US-084, US-099 | ADR-029, ADR-042 |
+| ⬜ Sprint 32 | Motor MRP, planejamento por família e staffing por OP + tech debt S31 | US-085, US-086, US-087, US-100 | ADR-030, ADR-043 |
 
 ---
 
@@ -2388,10 +2388,10 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 30 ⬜
+## Sprint 30 ✅
 **Objetivo**: Acompanhamento visual de produção — tracking de OPs em kanban por família + liquidação do tech debt de segurança do Sprint 29 (SEC-107 a SEC-111)
-**ADR**: ADR-029
-**Status**: pendente
+**ADR**: ADR-029, ADR-041
+**Status**: concluída
 **Pontos totais**: 11 pts (US-082: 3 + US-083: 5 + US-098: 3)
 
 ### Tech Debt diferido do Sprint 29 (Beatriz — SEC-107 a SEC-111)
@@ -2407,9 +2407,9 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-082 | Backend de tracking visual por família (display status calculado) | 3 | ⬜ pendente |
-| US-083 | Frontend de acompanhamento — kanban de OPs por família e status | 5 | ⬜ pendente |
-| US-098 | Tech debt Sprint 29 — SEC-107 a SEC-111 (validação MIME, sanitização de erros, importedBy, logout, URLs) | 3 | ⬜ pendente |
+| US-082 | Backend de tracking visual por família (display status calculado) | 3 | ✅ concluído |
+| US-083 | Frontend de acompanhamento — kanban de OPs por família e status | 5 | ✅ concluído |
+| US-098 | Tech debt Sprint 29 — SEC-107 a SEC-111 (validação MIME, sanitização de erros, importedBy, logout, URLs) | 3 | ✅ concluído |
 
 ### Dependências
 - US-082 é pré-requisito bloqueante de US-083 (frontend consome os endpoints de tracking)
@@ -2498,47 +2498,77 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 31 ⬜
-**Objetivo**: Gestão de cargas de esterilização — criação, alocação de OPs e ciclo completo
-**ADR**: ADR-029
-**Status**: pendente
+## Sprint 31 ✅
+**Objetivo**: Gestão de cargas de esterilização — criação, alocação de OPs e ciclo completo + tech debt SEC-115/069/060/074
+**ADR**: ADR-029, ADR-042
+**Status**: concluída
+**Pontos totais**: 11 pts (US-084: 8 + US-099: 3)
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-084 | Backend e frontend de cargas de esterilização (ciclo OPEN → RELEASED) | 8 | ⬜ pendente |
+| US-084 | Backend e frontend de cargas de esterilização (ciclo OPEN → RELEASED) | 8 | ✅ concluída |
+| US-099 | Tech debt Sprint 30 — SEC-115, SEC-069, SEC-060, SEC-074 | 3 | ✅ concluída |
+
+### Dependências
+- US-084 e US-099 são independentes — podem ser desenvolvidas em paralelo
+- US-099 é prioritária no frontend (SEC-060/SEC-074 são correções pontuais de baixo risco)
+
+### Sequência de entrega sugerida
+1. US-099 (tech debt — fixes cirúrgicos, sem entidades novas)
+2. US-084 backend (domínio, use cases, controller)
+3. US-084 frontend (sterilization-loads list + detail + allocation dialog)
 
 ---
 
 #### US-084 — Cargas de esterilização (8 pts)
 
+**Contexto**: Módulo Hub-managed para agrupar OPs DONE+requiresSterilization em lotes físicos de esterilização. Modelo de dados e fluxo de status definidos no ADR-029; decisões de implementação (geração de loadNumber, efeitos colaterais em Equipment, alocação por dialog) no ADR-042.
+
 **Backend**
-1. `POST /api/v1/production/sterilization-loads` cria carga (SUPERVISOR+); campos: `sterilizerId` (UUID, nullable), `method` (enum), `sterilizationDate` (optional), `notes`; `loadNumber` gerado sequencialmente "CARGA-{ANO}-{NNN}"
-2. `GET /api/v1/production/sterilization-loads` lista cargas (OPERATOR+); filtros: `status`, `method`, `dateFrom`, `dateTo`
-3. `GET /api/v1/production/sterilization-loads/{id}` detalhe + lista de OPs alocadas + quantidades totais (OPERATOR+)
-4. `GET /api/v1/production/sterilization-loads/pending-orders` retorna OPs com `status=DONE` no Dynamics + `requiresSterilization=true` + `sterilizationLoad=null` — ordenadas por `dueDate ASC` (SUPERVISOR+)
-5. `POST /api/v1/production/sterilization-loads/{id}/orders` adiciona OP à carga (SUPERVISOR+); valida: `status=DONE`, `requiresSterilization=true`, OP não alocada em outra carga ativa → `409` se violação
-6. `DELETE /api/v1/production/sterilization-loads/{id}/orders/{opId}` remove OP (SUPERVISOR+, apenas quando `loadStatus=OPEN`)
-7. `PUT /api/v1/production/sterilization-loads/{id}/status` transições (SUPERVISOR+):
-   - `OPEN → CLOSED`: congela lista de OPs; atualiza `closedAt`; se `sterilizerId` configurado: `Equipment.status → UNDER_MAINTENANCE` (mesma `@Transactional`)
-   - `CLOSED → STERILIZING`: registra início da esterilização
-   - `STERILIZING → RELEASED`: `releasedAt = now()`; `Equipment.status → OPERATIONAL`; exibe confirmação de que estoque deve ser atualizado no Dynamics manualmente
-   - `STERILIZING → REJECTED`: OPs da carga voltam para `sterilizationLoad = null` (fila de pendentes)
-8. Transição inválida retorna `422` com mensagem
+1. `POST /api/v1/production/sterilization-loads` cria carga (SUPERVISOR+); campos: `sterilizerId` (UUID, nullable), `method` (enum `SterilizationMethod`), `sterilizationDate` (optional `LocalDate`), `batchCode` (nullable — lote ANVISA), `notes`; `loadNumber` gerado sequencialmente "CARGA-{ANO}-{NNN}" via `nextSequenceForYear()` (ADR-042 Decisão 1); resposta 201 com `SterilizationLoadResponse`
+2. `GET /api/v1/production/sterilization-loads` lista cargas (OPERATOR+); filtros: `status` (enum), `method` (enum), `dateFrom` (`LocalDate`), `dateTo` (`LocalDate`); paginação `@PageableDefault(size=20)`
+3. `GET /api/v1/production/sterilization-loads/{id}` detalhe da carga + lista de OPs alocadas + totais (quantidade total de OPs, quantidade total planejada) (OPERATOR+); 404 se não existir
+4. `GET /api/v1/production/sterilization-loads/pending-orders` retorna OPs com `status=DONE` no Dynamics + `product.requiresSterilization=true` + `sterilizationLoad IS NULL` — ordenadas por `dueDate ASC NULLS LAST` (SUPERVISOR+)
+5. `POST /api/v1/production/sterilization-loads/{id}/orders` body `{ "productionOrderId": UUID }` (SUPERVISOR+); valida: OP existe, `status=DONE`, `product.requiresSterilization=true`, OP não alocada em outra carga ativa (`status ≠ REJECTED`) → 409 com `{ "message": "OP já alocada na carga CARGA-2026-XXX" }` se violação; 404 se carga/OP não encontrada; 204 em sucesso
+6. `DELETE /api/v1/production/sterilization-loads/{id}/orders/{opId}` remove OP da carga (SUPERVISOR+); apenas quando `loadStatus=OPEN` → 422 se carga não está OPEN; 204 em sucesso
+7. `PUT /api/v1/production/sterilization-loads/{id}/status` body `{ "targetStatus": LoadStatus }` (SUPERVISOR+); transições válidas e efeitos colaterais conforme ADR-042 Decisão 3:
+   - `OPEN → CLOSED`: `closedAt = now()`; se `sterilizer != null` → `equipment.status = UNDER_MAINTENANCE` (mesma `@Transactional`)
+   - `CLOSED → STERILIZING`: sem efeito colateral adicional
+   - `STERILIZING → RELEASED`: `releasedAt = now()`; se `sterilizer != null` → `equipment.status = OPERATIONAL`
+   - `STERILIZING → REJECTED`: todas as OPs da carga → `sterilizationLoad = null` (bulk UPDATE via JPQL)
+8. Transição inválida retorna `422` com `{ "message": "Transição inválida: {current} → {target}" }` via `InvalidLoadTransitionException`
+9. `AuditLog` registrado em: criação de carga (`STERILIZATION_LOAD_CREATED`), adição de OP (`STERILIZATION_ORDER_ALLOCATED`), transição de status (`STERILIZATION_LOAD_STATUS_CHANGED`) — via `auditService.log()` existente
+10. Testes unitários: `CreateSterilizationLoadUseCaseTest` (3 cenários), `AddOrderToLoadUseCaseTest` (4 cenários incluindo 409 e OP já em carga REJECTED re-alocável), `TransitionLoadStatusUseCaseTest` (5 cenários: 4 transições válidas + 1 inválida → 422)
 
 **Frontend**
-9. Rota `/production/sterilization-loads`: cards de carga agrupados por status com badge de quantidade de OPs
-10. Carga OPEN: lista de OPs alocadas + painel lateral "Aguardando Carga" com OPs pendentes; botão "+ Adicionar" por OP; botão "Fechar Carga" (SUPERVISOR+) com confirmação
-11. Detalhe da carga: tabela de OPs (produto, nº OP, quantidade, família), totais, esterilizador, método, datas; botões de transição com confirmação por dialog
-12. Ao liberar carga (RELEASED): dialog informa "Lembre-se de atualizar o estoque no Dynamics para essas OPs"
-13. Status de carga com cores: OPEN=azul, CLOSED=âmbar, STERILIZING=roxo, RELEASED=verde, REJECTED=vermelho
+11. Rota `/production/sterilization-loads` lazy-loaded; componente `SterilizationLoadsComponent` standalone `OnPush`; serviço `SterilizationLoadsService` com métodos: `listLoads(filters?)`, `getLoad(id)`, `createLoad(body)`, `addOrder(loadId, orderId)`, `removeOrder(loadId, orderId)`, `transitionStatus(loadId, target)`, `getPendingOrders()`
+12. Listagem: cards de carga agrupados por status com badge de nº de OPs; botão "Nova Carga" (SUPERVISOR+); filtros por status e método no topo
+13. Carga OPEN: tabela de OPs alocadas com botão "×" por linha (SUPERVISOR+, remove via `DELETE`); painel lateral "Aguardando Carga" com OPs pendentes ordenadas por dueDate; botão "+ Adicionar" abre dialog de confirmação (ADR-042 Decisão 4); botão "Fechar Carga" (SUPERVISOR+) com confirmação
+14. Rota `/production/sterilization-loads/:id` detalhe: tabela de OPs (produto, nº OP, quantidade, família, dueDate), totais, chip de esterilizador, método, datas; botões de transição com confirmação por dialog (SUPERVISOR+); chips de status coloridos: OPEN=azul, CLOSED=âmbar, STERILIZING=roxo, RELEASED=verde, REJECTED=vermelho
+15. Ao confirmar RELEASED: dialog adicional com mensagem "Lembre-se de atualizar o estoque no Dynamics para as OPs desta carga"
+16. Link "Cargas" adicionado ao grupo "Produção" no nav (SUPERVISOR+ visível; OPERATOR sem botões de ação)
+17. Testes Vitest: listagem renderiza cards por status; alocação via dialog chama `addOrder()`; transição OPEN→CLOSED exibe confirmação; RELEASED exibe dialog de reminder Dynamics
+
+---
+
+#### US-099 — Tech debt Sprint 30 — SEC-115, SEC-069, SEC-060, SEC-074 (3 pts)
+
+**Backend**
+1. **SEC-115**: em `ProductionController`, substituir `@PreAuthorize("isAuthenticated()")` por `@PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")` nos endpoints `GET /tracking/families`, `GET /tracking/orders` e `GET /tracking/summary` — torna a permissão explícita e consistente com o restante do projeto; sem impacto funcional (todos os roles autenticados já tinham acesso, conforme ADR-041 Decisão 8)
+2. **SEC-069**: em `DashboardController.get()` e `AlertThresholdController.evaluateNow()`, adicionar null-guard para `Authentication` antes de `.getAuthorities()` / `.getName()` — atualmente `@PreAuthorize` garante que o principal nunca é null em produção, mas o null check morto cria dead code; remover branch morto ou adicionar `Objects.requireNonNull()` com mensagem clara; teste unitário para o caminho `authentication != null`
+
+**Frontend**
+3. **SEC-060**: corrigir URL de `markAllRead()` em `notifications.service.ts` — atual: `/api/v1/notifications/mark-all-read`, correto: `/api/v1/notifications/read-all` (alinhado com endpoint backend `@PutMapping("/read-all")` do `NotificationController`); atualizar spec correspondente
+4. **SEC-074**: em `file-attachments.component.html`, adicionar `rel="noopener noreferrer"` a todos os elementos `<a>` com `target="_blank"` que abrem anexos; previne `window.opener` access de origem cruzada; teste: verificar que elemento `<a>` possui atributo `rel` com valor correto
 
 ---
 
 ## Sprint 32 ⬜
-**Objetivo**: Motor MRP, staffing por OP (tempo de ciclo → pessoas) e board de planejamento por família
-**ADR**: ADR-030
+**Objetivo**: Motor MRP, staffing por OP (tempo de ciclo → pessoas), board de planejamento por família + tech debt S31
+**ADR**: ADR-030, ADR-043
 **Status**: pendente
+**Pontos totais**: 16 pts (US-085: 5 + US-086: 3 + US-087: 5 + US-100: 3)
 
 ### User Stories
 | ID | Título | Pontos | Status |
@@ -2546,51 +2576,85 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | US-085 | Motor MRP — dry-run, run e gerenciamento de sugestões | 5 | ⬜ pendente |
 | US-086 | Cálculo de staffing por OP (ciclo → pessoas) + edição por SUPERVISOR | 3 | ⬜ pendente |
 | US-087 | Board de planejamento por família + timeline (Gantt simplificado) | 5 | ⬜ pendente |
+| US-100 | Tech debt Sprint 31 — badge totalOrders nas cargas + refinamentos de UX | 3 | ⬜ pendente |
+
+### Dependências
+- US-085 e US-086 são independentes entre si — podem ser desenvolvidas em paralelo
+- US-087 depende de US-085 (motor MRP) e US-086 (staffing); deve ser entregue por último
+- US-100 é independente — pode ser desenvolvida em paralelo a qualquer US
+
+### Sequência de entrega sugerida
+1. US-086 backend (staffing — mais simples, sem novas entidades complexas)
+2. US-085 backend (motor MRP — entidades MrpRun + MrpPlannedOrder)
+3. US-086 frontend (inline edit staffing no tracking)
+4. US-087 backend + frontend (board e timeline — integra ambos)
+5. US-100 (tech debt — fixes pontuais)
 
 ---
 
 #### US-085 — Motor MRP (5 pts)
 
 **Backend**
-1. `POST /api/v1/production/mrp/dry-run` (SUPERVISOR+): executa MRP em memória sem persistir; retorna `MrpRunResult` com sugestões, necessidades de compra e alertas
-2. `POST /api/v1/production/mrp/run` (SUPERVISOR+): executa MRP e persiste `MrpPlannedOrder` com `status=SUGGESTED`; retorna `MrpRunResult`
-3. Algoritmo Net Change 2 níveis: FINISHED → intermediários via BOM (se BOM importado) → RAW_MATERIAL em purchaseNeeds
-4. `openOrdersQty` inclui OPs Dynamics abertas + `MrpPlannedOrders` SUGGESTED/ACCEPTED — evita geração dupla
-5. `suggestedQty = ceil(netNeed / batchSize) * batchSize`; `dueDate = today + leadTimeDays`
-6. `GET /api/v1/production/mrp/runs` histórico de runs (SUPERVISOR+); paginado
-7. `GET /api/v1/production/mrp/suggested-orders` lista sugestões com `status=SUGGESTED` (SUPERVISOR+)
-8. `PUT /api/v1/production/mrp/suggested-orders/{id}/accept` aceita sugestão; body opcional `{ "adjustedQty": N }`; `status → ACCEPTED`
-9. `PUT /api/v1/production/mrp/suggested-orders/{id}/reject` rejeita com `{ "reason": "..." }`; `status → REJECTED`
-10. `PUT /api/v1/production/mrp/suggested-orders/{id}/convert` marca que a OP foi criada no Dynamics; `status → CONVERTED`
+1. `POST /api/v1/production/mrp/dry-run` (SUPERVISOR+): executa MRP em memória sem persistir; retorna `MrpRunResult` com sugestões, necessidades de compra e alertas; 200 OK
+2. `POST /api/v1/production/mrp/run` (SUPERVISOR+): executa MRP, persiste `MrpRun` + `MrpPlannedOrder` com `status=SUGGESTED`; retorna `MrpRunResult`; 201 Created
+3. Algoritmo Net Change conforme ADR-030 Decisão 3: `netNeed = max(0, minStockQty - stockCurrent - openOrdersQty)`; apenas `netNeed > 0` gera sugestão; produtos sem `minStockQty` definido são ignorados
+4. `openOrdersQty` inclui OPs Dynamics com status em `[PLANNED, RELEASED, IN_PROGRESS]` + `MrpPlannedOrders` com status em `[SUGGESTED, ACCEPTED]` — evita duplicação de sugestões
+5. `suggestedQty = ceil(netNeed / batchSize) * batchSize`; `suggestedDueDate = today + leadTimeDays`; produtos sem `batchSize` usam `batchSize = 1`
+6. `GET /api/v1/production/mrp/runs` histórico de runs (SUPERVISOR+); paginado `@PageableDefault(size=20)`, ordenado por `runAt DESC`; resposta inclui `runAt`, `runBy`, `isDryRun`, `suggestionsGenerated`, `productsAnalyzed`
+7. `GET /api/v1/production/mrp/suggested-orders` lista `MrpPlannedOrders` com `status=SUGGESTED` (SUPERVISOR+); inclui `productCode`, `productName`, `familyName`, `suggestedQty`, `adjustedQty`, `suggestedDueDate`
+8. `PUT /api/v1/production/mrp/suggested-orders/{id}/accept` (SUPERVISOR+): body opcional `{ "adjustedQty": N }`; `status → ACCEPTED`; se `adjustedQty` fornecido e `> 0`, persiste no campo; 200 + `MrpPlannedOrderResponse`
+9. `PUT /api/v1/production/mrp/suggested-orders/{id}/reject` (SUPERVISOR+): body `{ "reason": "..." }`; `status → REJECTED`; `rejectionReason` persistido; 200
+10. `PUT /api/v1/production/mrp/suggested-orders/{id}/convert` (SUPERVISOR+): marca sugestão como criada no Dynamics; `status → CONVERTED`; 200
+11. Entidades `MrpRun` e `MrpPlannedOrder` conforme ADR-030 Decisões 1 e 2; `MrpOrderStatus` enum: `SUGGESTED | ACCEPTED | REJECTED | CONVERTED`
+12. Testes unitários: `RunMrpUseCaseTest` — (a) produto com `netNeed > 0` gera sugestão com `suggestedQty` correto; (b) produto com `estoque >= minStock` não gera sugestão; (c) `dry-run=true` não persiste `MrpPlannedOrder`; (d) `openOrdersQty` inclui `MrpPlannedOrders SUGGESTED`; `AcceptMrpSuggestionUseCaseTest` — (e) aceitar com `adjustedQty` persiste ajuste; (f) status inválido para aceitar (REJECTED) → 409
 
 ---
 
 #### US-086 — Staffing por OP (3 pts)
 
 **Backend**
-1. `StaffingConfig` singleton com `shiftHours=8` e `shiftsPerDay=1` default; `GET /api/v1/production/staffing-config` (OPERATOR+); `PUT` (ADMIN)
-2. Cálculo automático: `peopleNeeded = ceil((plannedQty * cycleTime) / (shiftHours * shiftsPerDay * 3600 * businessDays))`; executado na importação de OPs para OPs sem `peopleOverridden=true`
-3. `PUT /api/v1/production/production-orders/{id}/staffing` body `{ "plannedPeople": N }` (SUPERVISOR+); seta `plannedPeople=N`, `peopleOverridden=true`
-4. `DELETE /api/v1/production/production-orders/{id}/staffing` (SUPERVISOR+): recalcula `plannedPeople` do zero; seta `peopleOverridden=false`
-5. OPs sem `CycleTime` cadastrado: `plannedPeople=null` (exibido como "—" no frontend)
+1. `StaffingConfig` singleton conforme ADR-030 Decisão 5: `shiftHours=8`, `shiftsPerDay=1` default; `GET /api/v1/production/staffing-config` (OPERATOR+); `PUT /api/v1/production/staffing-config` (ADMIN) com body `{ "shiftHours": N, "shiftsPerDay": N }`; `updatedAt` e `updatedBy` auditados
+2. Cálculo automático ao importar OPs: `peopleNeeded = ceil((plannedQty * cycleTime) / (shiftHours * shiftsPerDay * 3600 * businessDays))`; `businessDays = max(1, workdaysUntil(dueDate))`; executado apenas para OPs com `peopleOverridden = false`
+3. `PUT /api/v1/production/production-orders/{id}/staffing` (SUPERVISOR+): body `{ "plannedPeople": N }` onde `N >= 1`; seta `plannedPeople = N`, `peopleOverridden = true`; retorna 200 + `ProductionOrderStaffingResponse`
+4. `DELETE /api/v1/production/production-orders/{id}/staffing` (SUPERVISOR+): recalcula `plannedPeople` a partir de `CycleTime` + `StaffingConfig`; seta `peopleOverridden = false`; retorna 200 + `ProductionOrderStaffingResponse`
+5. OPs sem `CycleTime` cadastrado: `plannedPeople = null` (não bloqueante); `peopleOverridden` permanece `false`
+6. Testes unitários: `CalculateStaffingUseCaseTest` — (a) OP com `cycleTime` e `dueDate` futuro calcula `peopleNeeded` correto; (b) `peopleOverridden = true` preserva valor na reimportação; (c) reset (`DELETE`) recalcula mesmo com `peopleOverridden = true`; (d) OP sem `CycleTime` retorna `null` sem lançar exceção
 
 **Frontend**
-6. Coluna "Pessoas" nas listagens de OP com ícone de lápis (SUPERVISOR+): clique abre input inline + botões salvar/cancelar
-7. Ícone de calculadora ao lado do valor: tooltip "Calculado automaticamente: X pessoas. Clique para resetar" (SUPERVISOR+)
-8. Card de OP no tracking (US-083) exibe badge de pessoas com destaque visual se `peopleOverridden=true`
+7. Coluna/campo "Pessoas" nas listagens de OP (`/production/orders`): exibe valor ou "—"; ícone de lápis (SUPERVISOR+): clique abre input inline com valor atual + botões Salvar / Cancelar; salvar chama `PUT /staffing`; cancelar restaura display
+8. Ícone de calculadora ao lado do valor quando `peopleOverridden = true`: clique chama `DELETE /staffing` com confirmação inline "Recalcular automaticamente?" — Sim / Não
+9. Testes Vitest: inline edit exibe input ao clicar lápis; salvar chama `updateStaffing()`; cancelar restaura valor; ícone calculadora visível apenas quando `peopleOverridden = true`
 
 ---
 
 #### US-087 — Board de planejamento e timeline (5 pts)
 
 **Backend**
-1. `GET /api/v1/production/planning/families` (SUPERVISOR+): retorna `List<FamilyPlanningBoard>` com `ProductPlanningRow` por produto — estoque, OPs abertas, necessidade líquida, `planningStatus`, `totalPlannedPeople`
-2. `GET /api/v1/production/planning/timeline?familyCode=X&weeks=8` (SUPERVISOR+): retorna `List<TimelineEntry>` com OPs Dynamics abertas + sugestões MRP da família, ordenadas por `dueDate`
-3. `GET /api/v1/production/planning/purchase-needs` (SUPERVISOR+): retorna necessidades de matéria-prima do último `MrpRun` com `status=SUGGESTED/ACCEPTED`
+1. `GET /api/v1/production/planning/families` (SUPERVISOR+): retorna `List<FamilyPlanningBoard>` conforme ADR-030 Decisão 6; `planningStatus` calculado: `OK` se `netNeed = 0`, `ALERT` se `0 < netNeed <= minStockQty * 0.5`, `CRITICAL` se `netNeed > minStockQty * 0.5`
+2. `GET /api/v1/production/planning/timeline?familyCode=X&weeks=8` (SUPERVISOR+): retorna `List<TimelineEntry>` conforme ADR-030 Decisão 7; `weeks` padrão = 8, máx = 26; OPs sem `dueDate` excluídas
+3. `GET /api/v1/production/planning/purchase-needs` (SUPERVISOR+): retorna necessidades de matéria-prima do `MrpRun` mais recente com sugestões `SUGGESTED/ACCEPTED`; inclui `productCode`, `productName`, `quantity`, `unit`; 404 se nenhum run executado
+4. Testes unitários: `GetPlanningBoardUseCaseTest` — (a) produto com `netNeed = 0` → `planningStatus = OK`; (b) produto com `netNeed > 0` → `ALERT` ou `CRITICAL`; (c) família sem produtos ativos → lista vazia
 
 **Frontend**
-4. Rota `/production/planning`: board com card por família; cada card expande para tabela de produtos com colunas: código, estoque atual, mínimo, OPs abertas (qtd), sugestões MRP (qtd), necessidade líquida, status (chip OK/ALERT/CRITICAL), pessoas planejadas total
-5. Botão "Executar MRP" (SUPERVISOR+) no topo: → chama dry-run → modal com tabela de sugestões (produto, qtd, prazo) com opção de ajustar qtd por linha → botão "Confirmar e Gerar" chama run → toast "X sugestões geradas"
-6. Rota `/production/planning/timeline?family=X`: grade CSS Grid com semanas em colunas; barras por OP; azul=Dynamics, laranja=sugestão MRP; barra vermelha se `overdue=true`
-7. Clique em barra da timeline: abre panel lateral com detalhes da OP/sugestão + botões aceitar/rejeitar (para sugestões)
-8. Painel "Necessidades de Compra" (SUPERVISOR+): tabela de RAW_MATERIAL a comprar com quantidade calculada pelo último MRP run
+5. Rota `/production/planning` lazy-loaded; serviço `PlanningService`; componente `PlanningBoardComponent` standalone `OnPush`; cards colapsáveis por família com tabela interna: código, estoque atual, mínimo, OPs abertas, sugestões MRP, necessidade líquida, chip `OK/ALERT/CRITICAL`, pessoas planejadas
+6. Botão "Executar MRP" (SUPERVISOR+): chama `dry-run` → exibe modal `MrpPreviewModalComponent` com tabela de sugestões editáveis (qtd por linha) → "Confirmar e Gerar" chama `run` → toast com "X sugestões geradas"; modal tem botão "Cancelar" sem persistir
+7. Rota `/production/planning/timeline/:familyCode` lazy-loaded; componente `PlanningTimelineComponent`; grade CSS Grid — semanas em colunas (X eixo), ordens em linhas (Y eixo); barras coloridas: `#0099B8`=Dynamics, `#F97316`=sugestão MRP; linha vermelha se `overdue=true`; navegação por setas ← → para avançar/retroceder semanas
+8. Clique em barra da timeline: abre side panel com detalhes da OP/sugestão; sugestões MRP exibem botões "Aceitar" / "Rejeitar" (SUPERVISOR+) que chamam os endpoints correspondentes
+9. Seção "Necessidades de Compra" no board: tabela de RAW_MATERIAL do último MRP run; exibe mensagem "Nenhum MRP executado ainda" se endpoint retornar 404
+10. Link "Planejamento" adicionado ao nav (SUPERVISOR+)
+11. Testes Vitest: board renderiza cards por família; chip `OK/ALERT/CRITICAL` reflete `planningStatus`; botão MRP exibe modal de preview; modal "Cancelar" não chama `run`; timeline renderiza barras; clique em barra abre side panel
+
+---
+
+#### US-100 — Tech debt Sprint 31 (3 pts)
+
+**Contexto**: gaps documentados pela Maiana na revisão do Sprint 31 — AC#12 (badge `totalOrders` ausente nos cards de listagem de cargas).
+
+**Backend**
+1. Adicionar campo `totalOrders` (contagem de OPs alocadas) ao `SterilizationLoadResponse` (summary DTO usado na listagem): novo campo `Integer totalOrders`; calculado via `@Query` no `SterilizationLoadRepository` usando `COUNT(po.id)` com `LEFT JOIN` nas `ProductionOrders` alocadas; 0 se não houver OPs
+2. `SterilizationLoadRepository`: nova query `findFilteredWithOrderCount(...)` retornando interface projection ou `@Formula`/`@Transient` — ou alternativa: adicionar `totalOrders` como campo calculado com `@Formula("(SELECT COUNT(*) FROM production_order po WHERE po.sterilization_load_id = id)")`
+
+**Frontend**
+3. Interface `SterilizationLoadSummary` em `sterilization-loads.service.ts`: adicionar campo `totalOrders: number`
+4. Template `sterilization-loads.component.html`: exibir badge com `totalOrders` no card de cada carga (ex: "3 OPs"), visível para todos os roles; badge com cor neutra (cinza) quando `totalOrders = 0`, teal quando `> 0`
+5. Testes Vitest: badge exibido com valor correto; badge cinza quando `totalOrders = 0`; badge teal quando `totalOrders > 0`

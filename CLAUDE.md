@@ -106,6 +106,8 @@ Font: Inter (sans-serif), professional industrial look
 | LGPD / Privacy | `common/` | 25 | ✅ done |
 | PWA / Offline | `apps/frontend/` | 26 | ✅ done |
 | Production (Dynamics import) | `production/` | 29 | ✅ done |
+| Production Tracking (kanban por família) | `production/` | 30 | ✅ done |
+| Sterilization Loads (Hub-managed) | `production/` | 31 | ✅ done |
 
 ## Key Conventions
 

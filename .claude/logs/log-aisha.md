@@ -1,5 +1,40 @@
 # Log Aisha
 
+## [2026-05-29] Sincronização pós-Sprint 31
+Fontes lidas: CLAUDE.md, sprint-atual.md, log-mateus.md, log-tadeu.md, log-maiana.md, log-maite.md
+Mudanças feitas:
+  - sprint-atual.md: roadmap linha Sprint 31 → ⬜ substituído por ✅
+  - sprint-atual.md: header "## Sprint 31 ⬜" → "## Sprint 31 ✅"; status "pendente" → "concluída"
+  - sprint-atual.md: US-084 e US-099 → ⬜ pendente substituído por ✅ concluída
+  - CLAUDE.md: tabela Domain Modules — 2 novas linhas adicionadas: "Production Tracking (kanban por família)" Sprint 30 e "Sterilization Loads (Hub-managed)" Sprint 31, ambas ✅ done
+Observações:
+  - BUG-1 (audit "from" field) corrigido por Mateus; teste de regressão adicionado → suite backend 447 testes
+  - AC#15 (released reminder dialog) e AC#17 (3 testes Vitest) implementados por Tadeu → suite frontend 603 testes
+  - Gap AC#12 (badge totalOrders nos cards da lista) documentado por Maiana — diferido para Sprint 32 (sugestão: adicionar totalOrders ao SterilizationLoadResponse)
+  - Maitê ainda não validou Sprint 31 — sincronização feita com base nos logs de Mateus/Tadeu e na revisão final de Maiana (blockers fechados)
+
+## [2026-05-29] Sincronização pós-Sprint 30
+Fontes lidas:
+- `CLAUDE.md` (raiz)
+- `docs/adr/ADR-041-production-kanban-tracking.md` (novo — Atlas, Sprint 30)
+- `.claude/sprint-atual.md`
+- `.claude/logs/log-mateus.md` (entradas Sprint 30: US-082, US-098, blockers Maiana+Beatriz)
+- `.claude/logs/log-tadeu.md` (entradas Sprint 30: US-083, US-098 frontend, blocker SEC-114)
+- `.claude/logs/log-maite.md` (pipeline Sprint 30: 434 backend + 553 frontend — READY-TO-DEPLOY)
+
+Mudanças feitas:
+- `.claude/sprint-atual.md`: Sprint 30 marcada ✅ na tabela de visão geral e no cabeçalho da seção
+- `.claude/sprint-atual.md`: `**ADR**` da Sprint 30 atualizado de `ADR-029` para `ADR-029, ADR-041` (ADR-041 criado por Atlas para kanban tracking)
+- `.claude/sprint-atual.md`: Status da Sprint 30 alterado de `pendente` → `concluída`
+- `.claude/sprint-atual.md`: US-082, US-083, US-098 marcadas `✅ concluído`
+
+Observações:
+- SEC-115 (INFO) diferido para Sprint 31 por Beatriz — não representa blocker; sem ação documental nesta sincronização
+- ADR-041 cobre decisões de kanban: 7 colunas, 50 OPs/coluna com flag `truncated`, polling 60s via RxJS `interval().pipe(takeUntilDestroyed())`, `displayStatus` calculado em Java (nunca persiste)
+- Sprint 31 permanece ⬜ (planejamento a cargo de Athos)
+
+---
+
 ## [2026-05-28] Sincronização pós-Sprint 29
 Fontes lidas:
 - `CLAUDE.md` (raiz — tabela Domain Modules)
