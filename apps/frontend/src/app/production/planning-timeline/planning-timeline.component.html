@@ -1,0 +1,168 @@
+<div class="timeline-page">
+
+  <!-- Back -->
+  <a class="back-link" routerLink="/production/planning" data-testid="back-link">
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Planejamento
+  </a>
+
+  <div class="timeline-header">
+    <h1 class="timeline-header__title">
+      Timeline
+      @if (familyCode()) {
+        <span class="timeline-header__family">{{ familyCode() }}</span>
+      }
+    </h1>
+    <div class="timeline-header__nav">
+      <button class="btn-nav" type="button" aria-label="Semanas anteriores" data-testid="btn-prev-weeks" (click)="prevWeeks()">←</button>
+      <span class="nav-label">Semanas {{ weekOffset() + 1 }}–{{ weekOffset() + weeks() }}</span>
+      <button class="btn-nav" type="button" aria-label="Próximas semanas" data-testid="btn-next-weeks" (click)="nextWeeks()">→</button>
+    </div>
+    <div class="timeline-legend">
+      <span class="legend-item"><span class="legend-dot" style="background:#0099B8"></span>Dynamics</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#F97316"></span>Sugestão MRP</span>
+    </div>
+  </div>
+
+  @if (error()) {
+    <div class="error-banner" role="alert" data-testid="error-banner">
+      {{ error() }}
+      <button type="button" class="btn-retry" (click)="loadTimeline()">Tentar novamente</button>
+    </div>
+  }
+
+  @if (loading()) {
+    <div class="timeline-skeleton" aria-hidden="true" data-testid="timeline-skeleton">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="bar-skeleton"></div>
+      }
+    </div>
+  } @else if (entries().length === 0) {
+    <div class="empty-state" data-testid="empty-timeline">
+      <p>Nenhuma OP ou sugestão MRP dentro do horizonte.</p>
+    </div>
+  } @else {
+    <!-- CSS Grid Timeline (ADR-043 Decisão 6) -->
+    <div
+      class="timeline-grid"
+      [style.--weeks]="weeks()"
+      [style.--rows]="entries().length + 1"
+      data-testid="timeline-grid"
+      role="grid"
+      aria-label="Timeline de ordens"
+    >
+      <!-- Column 1: row labels -->
+      <div class="grid-corner"></div>
+      @for (header of weekHeaders(); track $index) {
+        <div class="week-header" [attr.aria-label]="'Semana de ' + header">{{ header }}</div>
+      }
+
+      <!-- Row labels + bars -->
+      @for (entry of entries(); track entry.orderNumber) {
+        <div class="row-label" [attr.data-testid]="'row-label-' + entry.orderNumber">
+          <span class="row-label__number">{{ entry.orderNumber }}</span>
+          <span class="row-label__product">{{ entry.productCode }}</span>
+        </div>
+      }
+
+      <!-- Bars -->
+      @for (bar of bars(); track bar.entry.orderNumber) {
+        <button
+          class="timeline-bar"
+          [class.timeline-bar--mrp]="bar.entry.isMrpSuggestion"
+          [class.timeline-bar--overdue]="bar.entry.overdue"
+          [style.grid-row]="bar.row"
+          [style.grid-column]="bar.colStart + ' / ' + bar.colEnd"
+          [style.background]="barColor(bar.entry)"
+          type="button"
+          [attr.data-testid]="'bar-' + bar.entry.orderNumber"
+          [attr.aria-label]="bar.entry.orderNumber + ' — ' + bar.entry.productName"
+          (click)="openPanel(bar.entry)"
+        >
+          <span class="timeline-bar__label">{{ bar.entry.orderNumber }}</span>
+        </button>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- Side Panel -->
+@if (selectedEntry()) {
+  <div class="drawer-backdrop" role="presentation" data-testid="panel-backdrop" (click)="closePanel()"></div>
+  <aside class="side-panel" role="complementary" aria-label="Detalhes da ordem" data-testid="side-panel">
+    <div class="side-panel__header">
+      <h2 class="side-panel__title">Detalhes</h2>
+      <button class="side-panel__close" type="button" aria-label="Fechar" data-testid="btn-close-panel" (click)="closePanel()">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    <div class="side-panel__body">
+      @if (actionError()) {
+        <div class="error-banner-sm" role="alert">{{ actionError() }}</div>
+      }
+      <dl class="detail-list">
+        <div class="detail-list__item">
+          <dt>Nº</dt>
+          <dd>{{ selectedEntry()!.orderNumber }}</dd>
+        </div>
+        <div class="detail-list__item">
+          <dt>Produto</dt>
+          <dd>{{ selectedEntry()!.productCode }} — {{ selectedEntry()!.productName }}</dd>
+        </div>
+        <div class="detail-list__item">
+          <dt>Qtd.</dt>
+          <dd>{{ selectedEntry()!.qty }}</dd>
+        </div>
+        <div class="detail-list__item">
+          <dt>Início</dt>
+          <dd>{{ selectedEntry()!.startDate ?? '—' }}</dd>
+        </div>
+        <div class="detail-list__item">
+          <dt>Prazo</dt>
+          <dd [class.detail-overdue]="selectedEntry()!.overdue">
+            {{ selectedEntry()!.dueDate ?? '—' }}
+            @if (selectedEntry()!.overdue) { <span class="overdue-tag">Atrasado</span> }
+          </dd>
+        </div>
+        <div class="detail-list__item">
+          <dt>Tipo</dt>
+          <dd>
+            @if (selectedEntry()!.isMrpSuggestion) {
+              <span class="type-badge type-badge--mrp">Sugestão MRP</span>
+            } @else {
+              <span class="type-badge type-badge--dynamics">Dynamics</span>
+            }
+          </dd>
+        </div>
+        <div class="detail-list__item">
+          <dt>Status</dt>
+          <dd>{{ selectedEntry()!.statusLabel }}</dd>
+        </div>
+      </dl>
+
+      @if (selectedEntry()!.isMrpSuggestion && isSupervisor()) {
+        <div class="suggestion-actions" data-testid="suggestion-actions">
+          <button
+            class="btn-accept"
+            type="button"
+            data-testid="btn-accept-suggestion"
+            [disabled]="actionLoading()"
+            (click)="acceptSuggestion(selectedEntry()!)"
+          >Aceitar</button>
+          <button
+            class="btn-reject"
+            type="button"
+            data-testid="btn-reject-suggestion"
+            [disabled]="actionLoading()"
+            (click)="rejectSuggestion(selectedEntry()!, '')"
+          >Rejeitar</button>
+        </div>
+      }
+    </div>
+  </aside>
+}
