@@ -2,11 +2,15 @@ package com.industrialhub.backend.production;
 
 import com.industrialhub.backend.common.application.AuditService;
 import com.industrialhub.backend.production.application.dto.ImportProductionBatchResponse;
+import com.industrialhub.backend.production.application.usecase.GetStaffingConfigUseCase;
 import com.industrialhub.backend.production.application.usecase.ImportProductionOrdersUseCase;
 import com.industrialhub.backend.production.domain.*;
+import com.industrialhub.backend.production.infrastructure.CycleTimeRepository;
 import com.industrialhub.backend.production.infrastructure.ImportProductionBatchRepository;
 import com.industrialhub.backend.production.infrastructure.ProductRepository;
 import com.industrialhub.backend.production.infrastructure.ProductionOrderRepository;
+import com.industrialhub.backend.production.domain.CycleTime;
+import com.industrialhub.backend.production.domain.StaffingConfig;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,6 +22,7 @@ import org.springframework.mock.web.MockMultipartFile;
 
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,12 +38,16 @@ class ImportProductionOrdersUseCaseTest {
     @Mock private ProductionOrderRepository orderRepository;
     @Mock private ImportProductionBatchRepository batchRepository;
     @Mock private AuditService auditService;
+    @Mock private CycleTimeRepository cycleTimeRepository;
+    @Mock private GetStaffingConfigUseCase getStaffingConfig;
 
     private ImportProductionOrdersUseCase useCase;
 
     @BeforeEach
     void setUp() {
-        useCase = new ImportProductionOrdersUseCase(productRepository, orderRepository, batchRepository, auditService);
+        useCase = new ImportProductionOrdersUseCase(
+                productRepository, orderRepository, batchRepository, auditService,
+                cycleTimeRepository, getStaffingConfig);
     }
 
     private MockMultipartFile buildExcel(String... rows) throws Exception {
@@ -165,6 +174,71 @@ class ImportProductionOrdersUseCaseTest {
         assertThat(saved.getStatus()).isEqualTo(ProductionOrderStatus.DONE);  // updated
         assertThat(saved.getPlannedPeople()).isEqualTo(8);         // preserved
         assertThat(saved.isPeopleOverridden()).isTrue();            // preserved
+    }
+
+    // US-086 AC#2 — cálculo automático de staffing na importação
+
+    @Test
+    void shouldCalculateStaffingForNewOrders_whenCycleTimeExists() throws Exception {
+        MockMultipartFile file = buildExcel("OP-010|P010|PLANNED|100|0||2030-12-31");
+
+        Product product = Product.builder().id(UUID.randomUUID()).dynamicsCode("P010")
+                .name("Produto X").type(ProductType.FINISHED).active(true).build();
+
+        // 100 units * 288 sec/unit = 28800s; 1 shift * 8h * 3600 = 28800s/day; workdays ≈ large → 1 person
+        CycleTime cycleTime = CycleTime.builder()
+                .id(UUID.randomUUID()).product(product).secondsPerUnit(288.0)
+                .effectiveDate(LocalDate.now()).build();
+        StaffingConfig config = new StaffingConfig();
+        config.setShiftHours(8);
+        config.setShiftsPerDay(1);
+
+        when(productRepository.findByDynamicsCode("P010")).thenReturn(Optional.of(product));
+        when(orderRepository.findByDynamicsOrderNumber("OP-010")).thenReturn(Optional.empty());
+        when(cycleTimeRepository.findTopByProductIdOrderByEffectiveDateDesc(product.getId()))
+                .thenReturn(Optional.of(cycleTime));
+        when(getStaffingConfig.getOrCreate()).thenReturn(config);
+
+        ArgumentCaptor<ProductionOrder> captor = ArgumentCaptor.forClass(ProductionOrder.class);
+        when(orderRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+        stubBatchSave();
+
+        useCase.execute(file, "admin");
+
+        ProductionOrder saved = captor.getValue();
+        assertThat(saved.getPlannedPeople()).isNotNull();
+        assertThat(saved.getPlannedPeople()).isGreaterThanOrEqualTo(1);
+        assertThat(saved.isPeopleOverridden()).isFalse();
+    }
+
+    @Test
+    void shouldNotRecalculateStaffing_whenPeopleOverriddenIsTrue() throws Exception {
+        MockMultipartFile file = buildExcel("OP-003|P003|DONE|500|500|2024-04-01|2024-04-30");
+
+        UUID productId = UUID.randomUUID();
+        Product product = Product.builder().id(productId).dynamicsCode("P003")
+                .name("Produto C").type(ProductType.FINISHED).active(true).build();
+        ProductionOrder existing = ProductionOrder.builder()
+                .id(UUID.randomUUID()).dynamicsOrderNumber("OP-003").product(product)
+                .status(ProductionOrderStatus.IN_PROGRESS)
+                .plannedQty(BigDecimal.valueOf(500)).producedQty(BigDecimal.ZERO)
+                .plannedPeople(8)
+                .peopleOverridden(true)  // manually set — must not be recalculated
+                .importedAt(LocalDateTime.now()).updatedAt(LocalDateTime.now())
+                .build();
+
+        ArgumentCaptor<ProductionOrder> captor = ArgumentCaptor.forClass(ProductionOrder.class);
+        when(productRepository.findByDynamicsCode("P003")).thenReturn(Optional.of(product));
+        when(orderRepository.findByDynamicsOrderNumber("OP-003")).thenReturn(Optional.of(existing));
+        when(orderRepository.save(captor.capture())).thenAnswer(inv -> inv.getArgument(0));
+        stubBatchSave();
+
+        useCase.execute(file, "admin");
+
+        ProductionOrder saved = captor.getValue();
+        assertThat(saved.getPlannedPeople()).isEqualTo(8);   // preserved
+        assertThat(saved.isPeopleOverridden()).isTrue();      // preserved
+        verifyNoInteractions(cycleTimeRepository);            // no recalculation
     }
 
     @Test

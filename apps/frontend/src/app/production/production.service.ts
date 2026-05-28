@@ -35,6 +35,15 @@ export interface ProductionOrder {
   producedQty: number | null;
   startDate: string | null;
   dueDate: string;
+  plannedPeople: number | null;   // US-086 — staffing
+  peopleOverridden: boolean;       // US-086 — se editado manualmente
+}
+
+export interface StaffingResponse {
+  id: string;
+  dynamicsOrderNumber: string;
+  plannedPeople: number | null;
+  peopleOverridden: boolean;
 }
 
 export interface CycleTime {
@@ -145,5 +154,14 @@ export class ProductionService {
     let p = new HttpParams();
     if (params?.productId != null) p = p.set('productId', params.productId);
     return this.http.get<CycleTime[]>(`${this.BASE}/cycle-times`, { params: p });
+  }
+
+  // US-086 — staffing endpoints
+  updateStaffing(orderId: string, plannedPeople: number): Observable<StaffingResponse> {
+    return this.http.put<StaffingResponse>(`${this.BASE}/production-orders/${orderId}/staffing`, { plannedPeople });
+  }
+
+  resetStaffing(orderId: string): Observable<StaffingResponse> {
+    return this.http.delete<StaffingResponse>(`${this.BASE}/production-orders/${orderId}/staffing`);
   }
 }

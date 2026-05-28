@@ -264,6 +264,7 @@
                 <th scope="col">Planejado</th>
                 <th scope="col">Produzido</th>
                 <th scope="col">Prazo</th>
+                <th scope="col">Pessoas</th>
               </tr>
             </thead>
             <tbody>
@@ -279,6 +280,63 @@
                   <td data-testid="order-planned-qty">{{ order.plannedQty }}</td>
                   <td data-testid="order-produced-qty">{{ order.producedQty ?? '—' }}</td>
                   <td data-testid="order-due-date">{{ order.dueDate }}</td>
+                  <!-- US-086 — staffing inline edit -->
+                  <td class="staffing-cell" [attr.data-testid]="'staffing-cell-' + order.id">
+                    @if (staffingEdit() !== null && staffingEdit()!.orderId === order.id) {
+                      @if (staffingEdit()!.confirmReset) {
+                        <div class="staffing-reset-confirm" data-testid="staffing-reset-confirm">
+                          <span class="staffing-reset-confirm__text">Recalcular?</span>
+                          <button class="btn-confirm-xs" type="button" data-testid="btn-confirm-reset" (click)="confirmResetStaffing()">Sim</button>
+                          <button class="btn-cancel-xs" type="button" data-testid="btn-cancel-reset" (click)="cancelResetStaffing()">Não</button>
+                        </div>
+                      } @else {
+                        <div class="staffing-edit" data-testid="staffing-inline-edit">
+                          <input
+                            class="staffing-input"
+                            type="number"
+                            min="1"
+                            [value]="staffingEdit()!.inputValue"
+                            (input)="staffingEdit.set({...staffingEdit()!, inputValue: +$any($event.target).value})"
+                            aria-label="Número de pessoas"
+                            data-testid="staffing-input"
+                          />
+                          <button class="btn-confirm-xs" type="button" data-testid="btn-save-staffing" (click)="saveStaffing()" [disabled]="staffingEdit()!.saving">✓</button>
+                          <button class="btn-cancel-xs" type="button" data-testid="btn-cancel-staffing" (click)="cancelStaffingEdit()">✕</button>
+                        </div>
+                      }
+                    } @else {
+                      <div class="staffing-display" [attr.data-testid]="'staffing-display-' + order.id">
+                        <span class="staffing-value">{{ order.plannedPeople ?? '—' }}</span>
+                        @if (isSupervisor()) {
+                          <button
+                            class="staffing-edit-btn"
+                            type="button"
+                            [attr.data-testid]="'btn-edit-staffing-' + order.id"
+                            aria-label="Editar pessoas para OP {{ order.dynamicsOrderNumber }}"
+                            (click)="openStaffingEdit(order)"
+                          >
+                            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                              <path d="M7.5 1.5l2 2L3 10H1V8L7.5 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                          </button>
+                          @if (order.peopleOverridden) {
+                            <button
+                              class="staffing-reset-btn"
+                              type="button"
+                              [attr.data-testid]="'btn-reset-staffing-' + order.id"
+                              aria-label="Recalcular automaticamente para OP {{ order.dynamicsOrderNumber }}"
+                              title="Calculado manualmente. Clique para recalcular automaticamente."
+                              (click)="requestResetStaffing(order.id)"
+                            >
+                              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true">
+                                <path d="M9 5.5A4 4 0 1 1 5.5 2M9 2v3H6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+                              </svg>
+                            </button>
+                          }
+                        }
+                      </div>
+                    }
+                  </td>
                 </tr>
               }
             </tbody>

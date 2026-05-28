@@ -5,6 +5,7 @@ import com.industrialhub.backend.common.domain.AuditAction;
 import com.industrialhub.backend.production.application.dto.ImportErrorDto;
 import com.industrialhub.backend.production.application.dto.ImportProductionBatchResponse;
 import com.industrialhub.backend.production.domain.*;
+import com.industrialhub.backend.production.infrastructure.CycleTimeRepository;
 import com.industrialhub.backend.production.infrastructure.ImportProductionBatchRepository;
 import com.industrialhub.backend.production.infrastructure.ProductRepository;
 import com.industrialhub.backend.production.infrastructure.ProductionOrderRepository;
@@ -14,6 +15,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+
+import com.industrialhub.backend.production.application.util.BusinessDaysCalculator;
+import com.industrialhub.backend.production.domain.StaffingConfig;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -30,15 +34,21 @@ public class ImportProductionOrdersUseCase {
     private final ProductionOrderRepository orderRepository;
     private final ImportProductionBatchRepository batchRepository;
     private final AuditService auditService;
+    private final CycleTimeRepository cycleTimeRepository;
+    private final GetStaffingConfigUseCase getStaffingConfig;
 
     public ImportProductionOrdersUseCase(ProductRepository productRepository,
                                           ProductionOrderRepository orderRepository,
                                           ImportProductionBatchRepository batchRepository,
-                                          AuditService auditService) {
+                                          AuditService auditService,
+                                          CycleTimeRepository cycleTimeRepository,
+                                          GetStaffingConfigUseCase getStaffingConfig) {
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
         this.batchRepository = batchRepository;
         this.auditService = auditService;
+        this.cycleTimeRepository = cycleTimeRepository;
+        this.getStaffingConfig = getStaffingConfig;
     }
 
     @Transactional
@@ -122,10 +132,16 @@ public class ImportProductionOrdersUseCase {
                         order.setStartDate(startDate);
                         order.setDueDate(dueDate);
                         order.setUpdatedAt(LocalDateTime.now());
-                        // Do NOT touch: plannedPeople, peopleOverridden, sterilizationLoad (Hub-managed)
+                        // US-086 AC#2 — recalculate staffing on import if not manually overridden
+                        if (!order.isPeopleOverridden()) {
+                            order.setPlannedPeople(calculateStaffing(product, plannedQty, dueDate));
+                        }
+                        // Do NOT touch: peopleOverridden, sterilizationLoad (Hub-managed)
                         orderRepository.save(order);
                         updated++;
                     } else {
+                        // US-086 AC#2 — calculate staffing for new OPs on import
+                        Integer staffing = calculateStaffing(product, plannedQty, dueDate);
                         ProductionOrder order = ProductionOrder.builder()
                                 .dynamicsOrderNumber(orderNumber.trim())
                                 .product(product)
@@ -135,6 +151,7 @@ public class ImportProductionOrdersUseCase {
                                 .producedQty(producedQty)
                                 .startDate(startDate)
                                 .dueDate(dueDate)
+                                .plannedPeople(staffing)
                                 .importedAt(LocalDateTime.now())
                                 .updatedAt(LocalDateTime.now())
                                 .build();
@@ -153,6 +170,27 @@ public class ImportProductionOrdersUseCase {
         }
 
         return saveBatch(fileName, username, total, created, updated, errors);
+    }
+
+    /**
+     * US-086 AC#2 — cálculo automático de staffing na importação.
+     * Reutiliza a mesma lógica de ResetOrderStaffingUseCase.
+     * Retorna null se não há CycleTime ou plannedQty.
+     */
+    private Integer calculateStaffing(Product product, BigDecimal plannedQty, LocalDate dueDate) {
+        if (plannedQty == null) return null;
+        var cycleTimeOpt = cycleTimeRepository.findTopByProductIdOrderByEffectiveDateDesc(product.getId());
+        if (cycleTimeOpt.isEmpty()) return null;
+
+        double secondsPerUnit = cycleTimeOpt.get().getSecondsPerUnit();
+        StaffingConfig config = getStaffingConfig.getOrCreate();
+        int workdaySeconds = config.getShiftHours() * config.getShiftsPerDay() * 3600;
+        int workdays = dueDate != null
+                ? BusinessDaysCalculator.workdaysUntil(LocalDate.now(), dueDate)
+                : 1;
+
+        double totalSeconds = plannedQty.doubleValue() * secondsPerUnit;
+        return (int) Math.ceil(totalSeconds / ((double) workdaySeconds * workdays));
     }
 
     private ImportProductionBatchResponse saveBatch(String fileName, String username,

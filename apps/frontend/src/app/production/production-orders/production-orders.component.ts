@@ -17,6 +17,13 @@ import {
   StockSnapshot,
 } from '../production.service';
 
+interface StaffingEditState {
+  orderId: string;
+  inputValue: number;
+  saving: boolean;
+  confirmReset: boolean;
+}
+
 type ActiveTab = 'stock' | 'orders';
 
 @Component({
@@ -66,6 +73,14 @@ export class ProductionOrdersComponent implements OnInit {
   readonly ordersUploadError = signal<string | null>(null);
 
   readonly errorMsg = signal<string | null>(null);
+
+  // US-086 — staffing inline edit state
+  readonly staffingEdit = signal<StaffingEditState | null>(null);
+
+  readonly isSupervisor = computed(() => {
+    const r = this.role();
+    return r === 'SUPERVISOR' || r === 'ADMIN';
+  });
 
   readonly skeletonRows = [1, 2, 3];
 
@@ -226,6 +241,84 @@ export class ProductionOrdersComponent implements OnInit {
         error: (err: { error?: { message?: string } }) => {
           this.ordersUploadError.set(err?.error?.message ?? 'Erro ao importar ordens.');
           this.ordersIsUploading.set(false);
+        },
+      });
+  }
+
+  // ── Staffing inline edit (US-086) ────────────────────────────────────────
+
+  openStaffingEdit(order: ProductionOrder): void {
+    this.staffingEdit.set({
+      orderId: order.id,
+      inputValue: order.plannedPeople ?? 1,
+      saving: false,
+      confirmReset: false,
+    });
+  }
+
+  cancelStaffingEdit(): void {
+    this.staffingEdit.set(null);
+  }
+
+  saveStaffing(): void {
+    const edit = this.staffingEdit();
+    if (!edit || edit.saving || edit.inputValue < 1) return;
+    this.staffingEdit.set({ ...edit, saving: true });
+    this.service
+      .updateStaffing(edit.orderId, edit.inputValue)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (resp) => {
+          this.orders.update((list) =>
+            list.map((o) =>
+              o.id === resp.id
+                ? { ...o, plannedPeople: resp.plannedPeople, peopleOverridden: resp.peopleOverridden }
+                : o,
+            ),
+          );
+          this.staffingEdit.set(null);
+        },
+        error: () => {
+          this.staffingEdit.set({ ...edit, saving: false });
+          this.errorMsg.set('Erro ao atualizar staffing.');
+        },
+      });
+  }
+
+  requestResetStaffing(orderId: string): void {
+    const edit = this.staffingEdit();
+    if (edit?.orderId === orderId) {
+      this.staffingEdit.set({ ...edit, confirmReset: true });
+    } else {
+      this.staffingEdit.set({ orderId, inputValue: 1, saving: false, confirmReset: true });
+    }
+  }
+
+  cancelResetStaffing(): void {
+    this.staffingEdit.set(null);
+  }
+
+  confirmResetStaffing(): void {
+    const edit = this.staffingEdit();
+    if (!edit) return;
+    this.staffingEdit.set({ ...edit, saving: true });
+    this.service
+      .resetStaffing(edit.orderId)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: (resp) => {
+          this.orders.update((list) =>
+            list.map((o) =>
+              o.id === resp.id
+                ? { ...o, plannedPeople: resp.plannedPeople, peopleOverridden: resp.peopleOverridden }
+                : o,
+            ),
+          );
+          this.staffingEdit.set(null);
+        },
+        error: () => {
+          this.staffingEdit.set({ ...edit, saving: false, confirmReset: false });
+          this.errorMsg.set('Erro ao recalcular staffing.');
         },
       });
   }

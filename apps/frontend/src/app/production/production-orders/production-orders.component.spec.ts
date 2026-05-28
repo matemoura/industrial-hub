@@ -26,6 +26,8 @@ const mockOrders = [
     producedQty: 100,
     startDate: '2026-05-01',
     dueDate: '2026-05-31',
+    plannedPeople: 3,
+    peopleOverridden: false,
   },
   {
     id: 'o2',
@@ -36,6 +38,8 @@ const mockOrders = [
     producedQty: null,
     startDate: null,
     dueDate: '2026-06-15',
+    plannedPeople: null,
+    peopleOverridden: false,
   },
 ];
 
@@ -46,6 +50,8 @@ function makeService() {
     importStock: vi.fn(),
     importOrders: vi.fn(),
     listFamilies: vi.fn().mockReturnValue(of([])),
+    updateStaffing: vi.fn().mockReturnValue(of({ id: 'o1', dynamicsOrderNumber: 'OP-001', plannedPeople: 5, peopleOverridden: true })),
+    resetStaffing: vi.fn().mockReturnValue(of({ id: 'o1', dynamicsOrderNumber: 'OP-001', plannedPeople: 2, peopleOverridden: false })),
   };
 }
 
@@ -249,6 +255,62 @@ describe('ProductionOrdersComponent', () => {
       const errEl = fixture.nativeElement.querySelector('[data-testid="orders-upload-error"]');
       expect(errEl).not.toBeNull();
       expect(errEl.textContent).toContain('Formato inválido');
+    });
+  });
+
+  // US-086 — staffing inline edit
+  describe('staffing inline edit', () => {
+    it('should show inline input when edit button is clicked', async () => {
+      const { fixture } = await createComponent('SUPERVISOR');
+      const component = fixture.componentInstance;
+      component.setTab('orders'); // switch to orders tab first
+      component.openStaffingEdit(mockOrders[0] as never);
+      fixture.detectChanges();
+      const input = fixture.nativeElement.querySelector('[data-testid="staffing-input"]');
+      expect(input).toBeTruthy();
+    });
+
+    it('should restore display after cancelStaffingEdit', async () => {
+      const { fixture } = await createComponent('SUPERVISOR');
+      const component = fixture.componentInstance;
+      component.setTab('orders');
+      component.openStaffingEdit(mockOrders[0] as never);
+      component.cancelStaffingEdit();
+      fixture.detectChanges();
+      expect(component.staffingEdit()).toBeNull();
+      const input = fixture.nativeElement.querySelector('[data-testid="staffing-input"]');
+      expect(input).toBeFalsy();
+    });
+
+    it('should call updateStaffing when save is clicked', async () => {
+      const { fixture, svc } = await createComponent('SUPERVISOR');
+      const component = fixture.componentInstance;
+      component.openStaffingEdit(mockOrders[0] as never);
+      component.staffingEdit.set({ orderId: 'o1', inputValue: 5, saving: false, confirmReset: false });
+      component.saveStaffing();
+      expect(svc.updateStaffing).toHaveBeenCalledWith('o1', 5);
+    });
+
+    it('should show reset icon only when peopleOverridden is true', async () => {
+      const { fixture, svc } = await createComponent('SUPERVISOR');
+      const component = fixture.componentInstance;
+      component.setTab('orders');
+      (svc.listOrders as ReturnType<typeof vi.fn>).mockReturnValue(of({
+        content: [{ ...mockOrders[0], peopleOverridden: true }],
+        totalElements: 1, totalPages: 1, number: 0,
+      }));
+      component.loadOrders();
+      fixture.detectChanges();
+      const resetBtn = fixture.nativeElement.querySelector(`[data-testid="btn-reset-staffing-o1"]`);
+      expect(resetBtn).toBeTruthy();
+    });
+
+    it('should call resetStaffing after confirmResetStaffing', async () => {
+      const { fixture, svc } = await createComponent('SUPERVISOR');
+      const component = fixture.componentInstance;
+      component.requestResetStaffing('o1');
+      component.confirmResetStaffing();
+      expect(svc.resetStaffing).toHaveBeenCalledWith('o1');
     });
   });
 });
