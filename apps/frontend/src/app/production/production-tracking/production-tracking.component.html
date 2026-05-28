@@ -1,0 +1,354 @@
+<div class="tracking-page">
+
+  <!-- Header -->
+  <div class="tracking-header">
+    <div class="tracking-header__title-group">
+      <h1 class="tracking-header__title">Acompanhamento de Produção</h1>
+      @if (lastSyncAt()) {
+        <span class="tracking-header__sync-badge" data-testid="sync-badge">
+          Atualizado: {{ lastSyncAgo() }}
+        </span>
+      } @else {
+        <span class="tracking-header__sync-badge tracking-header__sync-badge--never" data-testid="sync-badge-never">
+          Nunca sincronizado
+        </span>
+      }
+    </div>
+    <div class="tracking-header__actions">
+      @if (isRefreshing()) {
+        <span class="tracking-header__spinner" aria-label="Atualizando..." role="status">
+          <svg class="spinner-icon" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" stroke="#0099B8" stroke-width="2" stroke-dasharray="25 13" stroke-linecap="round"/>
+          </svg>
+        </span>
+      }
+      <button
+        class="btn-refresh"
+        type="button"
+        data-testid="btn-refresh"
+        aria-label="Atualizar dados de produção"
+        (click)="loadTracking()"
+        [disabled]="isLoading()"
+      >
+        &#x21BB; Atualizar
+      </button>
+    </div>
+  </div>
+
+  <!-- Summary KPI Cards -->
+  @if (summary()) {
+    <div class="summary-cards" data-testid="summary-cards">
+      <div class="kpi-card kpi-card--blue" data-testid="kpi-in-progress">
+        <div class="kpi-card__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <circle cx="10" cy="10" r="8" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M10 6v4l3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="kpi-card__value">{{ summary()!.inProgress }}</div>
+        <div class="kpi-card__label">Em Produção</div>
+      </div>
+      <div class="kpi-card kpi-card--orange" data-testid="kpi-pending-sterilization">
+        <div class="kpi-card__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2v4M10 14v4M6 10H2M18 10h-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+        </div>
+        <div class="kpi-card__value">{{ summary()!.pendingSterilization }}</div>
+        <div class="kpi-card__label">Aguard. Esterilização</div>
+      </div>
+      <div class="kpi-card kpi-card--purple" data-testid="kpi-sterilizing">
+        <div class="kpi-card__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 3c0 3-4 4-4 8a4 4 0 0 0 8 0c0-4-4-5-4-8z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="kpi-card__value">{{ summary()!.sterilizing }}</div>
+        <div class="kpi-card__label">Esterilizando</div>
+      </div>
+      <div class="kpi-card kpi-card--red" data-testid="kpi-overdue">
+        <div class="kpi-card__icon" aria-hidden="true">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+            <path d="M10 2L2 17h16L10 2z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M10 8v4M10 14v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </div>
+        <div class="kpi-card__value">{{ summary()!.overdue }}</div>
+        <div class="kpi-card__label">Em Atraso</div>
+      </div>
+    </div>
+  } @else if (isLoading()) {
+    <div class="summary-cards summary-cards--skeleton" aria-hidden="true">
+      @for (i of [1, 2, 3, 4]; track i) {
+        <div class="kpi-card-skeleton"></div>
+      }
+    </div>
+  }
+
+  <!-- Error Banner -->
+  @if (errorMsg()) {
+    <div class="error-banner" role="alert" data-testid="error-banner">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="#DC2626" stroke-width="1.4"/>
+        <path d="M8 5v4M8 11v1" stroke="#DC2626" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <span>{{ errorMsg() }}</span>
+      <button type="button" class="btn-retry" (click)="loadTracking()">Tentar novamente</button>
+    </div>
+  }
+
+  <!-- Sync Banner -->
+  <div class="sync-banner" data-testid="sync-banner">
+    <span class="sync-banner__text">
+      Última sincronização: <strong>{{ lastSyncAgo() }}</strong>
+    </span>
+  </div>
+
+  <!-- Family Chips -->
+  @if (!isLoading() && !errorMsg()) {
+    <div class="family-chips" role="group" aria-label="Filtro por família" data-testid="family-chips">
+      <button
+        class="family-chip"
+        [class.family-chip--active]="selectedFamilyCode() === null"
+        type="button"
+        (click)="selectFamily(null)"
+        data-testid="chip-all"
+      >
+        Todas
+      </button>
+      @for (fam of familyChips(); track fam.familyCode) {
+        <button
+          class="family-chip"
+          [class.family-chip--active]="selectedFamilyCode() === fam.familyCode"
+          type="button"
+          [attr.data-testid]="'chip-' + fam.familyCode"
+          (click)="selectFamily(fam.familyCode)"
+        >
+          {{ fam.familyName }}
+          @if (fam.overdueCount > 0) {
+            <span class="family-chip__overdue-badge" aria-label="{{ fam.overdueCount }} OPs atrasadas">
+              {{ fam.overdueCount }}
+            </span>
+          }
+        </button>
+      }
+    </div>
+
+    <!-- Additional Filters -->
+    <div class="tracking-filters" data-testid="tracking-filters">
+      <div class="filter-group">
+        <label class="filter-label" for="filter-type">Tipo</label>
+        <select
+          id="filter-type"
+          class="filter-select"
+          data-testid="filter-type"
+          [value]="filterProductType()"
+          (change)="filterProductType.set($any($event.target).value)"
+        >
+          <option value="ALL">Todos</option>
+          <option value="FINISHED">Acabado</option>
+          <option value="INTERMEDIATE">Intermediário</option>
+        </select>
+      </div>
+      <label class="filter-toggle" data-testid="filter-overdue-toggle">
+        <input
+          type="checkbox"
+          [checked]="filterOnlyOverdue()"
+          (change)="filterOnlyOverdue.set($any($event.target).checked)"
+          data-testid="checkbox-overdue"
+        />
+        Apenas atrasadas
+      </label>
+    </div>
+  }
+
+  <!-- Kanban Board -->
+  @if (isLoading() && !errorMsg()) {
+    <!-- Skeleton -->
+    <div class="kanban-board kanban-board--skeleton" aria-hidden="true" data-testid="kanban-skeleton">
+      @for (col of skeletonColumns; track col) {
+        <div class="kanban-col-skeleton">
+          <div class="kanban-col-skeleton__header"></div>
+          @for (card of skeletonCards; track card) {
+            <div class="kanban-card-skeleton"></div>
+          }
+        </div>
+      }
+    </div>
+  } @else if (!errorMsg()) {
+    <div class="kanban-board" data-testid="kanban-board">
+      @for (status of visibleColumns(); track status) {
+        <div class="kanban-col" [attr.data-testid]="'col-' + status" [attr.aria-label]="statusLabels[status]">
+          <div class="kanban-col__header" [class]="statusClass(status)">
+            <span class="kanban-col__name">{{ statusLabels[status] }}</span>
+            <span class="kanban-col__count" aria-label="{{ columnOrders(status).length }} ordens">
+              {{ columnOrders(status).length }}
+            </span>
+          </div>
+          <div class="kanban-col__body">
+            @if (columnOrders(status).length === 0) {
+              <p class="kanban-col__empty" data-testid="col-empty">Nenhuma OP</p>
+            } @else {
+              @for (order of columnOrders(status); track order.dynamicsOrderNumber) {
+                <button
+                  class="kanban-card"
+                  [class.kanban-card--overdue]="order.overdue"
+                  type="button"
+                  [attr.data-testid]="'card-' + order.dynamicsOrderNumber"
+                  [attr.aria-label]="'OP ' + order.dynamicsOrderNumber + (order.overdue ? ' - atrasada' : '')"
+                  (click)="openPanel(order)"
+                >
+                  <div class="kanban-card__header">
+                    <span class="kanban-card__op-number" aria-label="Número da OP">{{ order.dynamicsOrderNumber }}</span>
+                    @if (order.overdue) {
+                      <span class="kanban-card__overdue-chip" data-testid="overdue-chip" aria-label="Em atraso">Atrasada</span>
+                    }
+                  </div>
+                  <div class="kanban-card__product" [title]="order.productName">
+                    <span class="kanban-card__product-code">{{ order.productCode }}</span>
+                    <span class="kanban-card__product-name">{{ truncate(order.productName) }}</span>
+                  </div>
+                  <div class="kanban-card__qty">
+                    <span>Planejado: <strong>{{ order.plannedQty }}</strong></span>
+                    @if (order.producedQty !== null) {
+                      <span>Produzido: <strong>{{ order.producedQty }}</strong></span>
+                    }
+                  </div>
+                  @if (order.completionPct !== null) {
+                    <div class="kanban-card__progress" role="progressbar"
+                         [attr.aria-valuenow]="order.completionPct"
+                         aria-valuemin="0"
+                         aria-valuemax="100">
+                      <div class="progress-track">
+                        <div class="progress-fill" [style.width.%]="order.completionPct"></div>
+                      </div>
+                      <span class="progress-pct">{{ formatPct(order.completionPct) }}%</span>
+                    </div>
+                  }
+                  <div class="kanban-card__footer">
+                    <span
+                      class="kanban-card__due-date"
+                      [class.kanban-card__due-date--overdue]="order.overdue"
+                      aria-label="Prazo: {{ formatDate(order.dueDate) }}"
+                    >
+                      {{ formatDate(order.dueDate) }}
+                    </span>
+                    <span class="kanban-card__people" aria-label="Pessoas planejadas">
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                        <circle cx="6" cy="4" r="2.5" stroke="currentColor" stroke-width="1.2"/>
+                        <path d="M1 11c0-2.761 2.239-5 5-5s5 2.239 5 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+                      </svg>
+                      {{ order.plannedPeople !== null ? order.plannedPeople : '—' }}
+                    </span>
+                  </div>
+                </button>
+              }
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- Side Panel (Drawer) -->
+@if (panelOpen()) {
+  <div class="drawer-backdrop" role="presentation" data-testid="drawer-backdrop" (click)="closePanel()"></div>
+  <aside
+    class="side-panel"
+    role="complementary"
+    aria-label="Detalhes da ordem de produção"
+    data-testid="side-panel"
+  >
+    <div class="side-panel__header">
+      <h2 class="side-panel__title">Detalhes da OP</h2>
+      <button
+        class="side-panel__close"
+        type="button"
+        aria-label="Fechar painel"
+        data-testid="btn-close-panel"
+        (click)="closePanel()"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+    @if (selectedOrder()) {
+      <div class="side-panel__body" data-testid="panel-body">
+        <dl class="detail-list">
+          <div class="detail-list__item">
+            <dt>Nº da OP</dt>
+            <dd data-testid="detail-op-number">{{ selectedOrder()!.dynamicsOrderNumber }}</dd>
+          </div>
+          <div class="detail-list__item">
+            <dt>Produto</dt>
+            <dd data-testid="detail-product">{{ selectedOrder()!.productCode }} — {{ selectedOrder()!.productName }}</dd>
+          </div>
+          <div class="detail-list__item">
+            <dt>Tipo</dt>
+            <dd>{{ selectedOrder()!.productType }}</dd>
+          </div>
+          <div class="detail-list__item">
+            <dt>Status</dt>
+            <dd>
+              <span class="status-chip" [class]="statusClass(selectedOrder()!.displayStatus)">
+                {{ statusLabels[selectedOrder()!.displayStatus] }}
+              </span>
+            </dd>
+          </div>
+          <div class="detail-list__item">
+            <dt>Qtd. Planejada</dt>
+            <dd>{{ selectedOrder()!.plannedQty }}</dd>
+          </div>
+          <div class="detail-list__item">
+            <dt>Qtd. Produzida</dt>
+            <dd>{{ selectedOrder()!.producedQty !== null ? selectedOrder()!.producedQty : '—' }}</dd>
+          </div>
+          @if (selectedOrder()!.completionPct !== null) {
+            <div class="detail-list__item">
+              <dt>Conclusão</dt>
+              <dd>{{ formatPct(selectedOrder()!.completionPct) }}%</dd>
+            </div>
+          }
+          <div class="detail-list__item">
+            <dt>Prazo</dt>
+            <dd
+              [class.detail-overdue]="selectedOrder()!.overdue"
+              data-testid="detail-due-date"
+            >
+              {{ formatDate(selectedOrder()!.dueDate) }}
+              @if (selectedOrder()!.overdue) {
+                <span class="detail-overdue-tag">Em atraso</span>
+              }
+            </dd>
+          </div>
+          <div class="detail-list__item">
+            <dt>Pessoas Planejadas</dt>
+            <dd>{{ selectedOrder()!.plannedPeople !== null ? selectedOrder()!.plannedPeople : '—' }}</dd>
+          </div>
+          @if (selectedOrder()!.loadNumber) {
+            <div class="detail-list__item">
+              <dt>Carga</dt>
+              <dd data-testid="detail-load">
+                {{ selectedOrder()!.loadNumber }}
+                @if (selectedOrder()!.loadStatus) {
+                  <span class="load-status-chip">{{ selectedOrder()!.loadStatus }}</span>
+                }
+                <a
+                  class="link-load"
+                  [routerLink]="['/production/sterilization-loads', selectedOrder()!.loadNumber]"
+                  aria-label="Ver carga {{ selectedOrder()!.loadNumber }}"
+                >
+                  Ver carga →
+                </a>
+              </dd>
+            </div>
+          }
+        </dl>
+      </div>
+    }
+  </aside>
+}

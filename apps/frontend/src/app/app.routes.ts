@@ -175,6 +175,13 @@ export const routes: Routes = [
             (m) => m.CycleTimesComponent,
           ),
       },
+      {
+        path: 'tracking',
+        loadComponent: () =>
+          import('./production/production-tracking/production-tracking.component').then(
+            (m) => m.ProductionTrackingComponent,
+          ),
+      },
     ],
   },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },

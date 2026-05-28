@@ -41,6 +41,7 @@
       }
     </a>
     <a routerLink="/production/products" routerLinkActive="active">Produção</a>
+    <a routerLink="/production/tracking" routerLinkActive="active">Acompanhamento</a>
     @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
       <a routerLink="/analytics/oee" routerLinkActive="active">Analytics</a>
     }

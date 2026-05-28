@@ -92,7 +92,7 @@ export class ProductionService {
   importProducts(file: File): Observable<ImportResult> {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post<ImportResult>(`${this.BASE}/products/import`, form);
+    return this.http.post<ImportResult>(`${this.BASE}/import/products`, form);
   }
 
   listProducts(params?: ProductListParams): Observable<Page<Product>> {
@@ -111,7 +111,7 @@ export class ProductionService {
   importStock(file: File): Observable<ImportResult> {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post<ImportResult>(`${this.BASE}/stock/import`, form);
+    return this.http.post<ImportResult>(`${this.BASE}/import/stock`, form);
   }
 
   listStock(params?: StockListParams): Observable<StockSnapshot[]> {
@@ -123,7 +123,7 @@ export class ProductionService {
   importOrders(file: File): Observable<ImportResult> {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post<ImportResult>(`${this.BASE}/orders/import`, form);
+    return this.http.post<ImportResult>(`${this.BASE}/import/production-orders`, form);
   }
 
   listOrders(params?: OrderListParams): Observable<Page<ProductionOrder>> {
@@ -138,7 +138,7 @@ export class ProductionService {
   importCycleTimes(file: File): Observable<ImportResult> {
     const form = new FormData();
     form.append('file', file);
-    return this.http.post<ImportResult>(`${this.BASE}/cycle-times/import`, form);
+    return this.http.post<ImportResult>(`${this.BASE}/import/cycle-times`, form);
   }
 
   listCycleTimes(params?: CycleTimeListParams): Observable<CycleTime[]> {
