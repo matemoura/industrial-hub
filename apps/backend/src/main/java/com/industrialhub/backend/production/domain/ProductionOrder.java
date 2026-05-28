@@ -61,6 +61,10 @@ public class ProductionOrder {
     @Builder.Default
     private boolean peopleOverridden = false;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "sterilization_load_id")
+    private SterilizationLoad sterilizationLoad;  // nullable — set when OP is allocated to a load
+
     @PreUpdate
     public void onPreUpdate() {
         this.updatedAt = LocalDateTime.now();

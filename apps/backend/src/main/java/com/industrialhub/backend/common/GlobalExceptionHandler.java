@@ -572,6 +572,69 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(com.industrialhub.backend.production.domain.SterilizationLoadNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleSterilizationLoadNotFound(
+            com.industrialhub.backend.production.domain.SterilizationLoadNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.production.domain.ProductionOrderNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleProductionOrderNotFound(
+            com.industrialhub.backend.production.domain.ProductionOrderNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.production.domain.InvalidLoadTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidLoadTransition(
+            com.industrialhub.backend.production.domain.InvalidLoadTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.production.domain.OrderAlreadyAllocatedException.class)
+    public ResponseEntity<Map<String, Object>> handleOrderAlreadyAllocated(
+            com.industrialhub.backend.production.domain.OrderAlreadyAllocatedException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.production.domain.MrpSuggestionNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleMrpSuggestionNotFound(
+            com.industrialhub.backend.production.domain.MrpSuggestionNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.production.domain.InvalidMrpSuggestionStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidMrpSuggestionStatus(
+            com.industrialhub.backend.production.domain.InvalidMrpSuggestionStatusException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.production.domain.NoMrpRunException.class)
+    public ResponseEntity<Map<String, Object>> handleNoMrpRun(
+            com.industrialhub.backend.production.domain.NoMrpRunException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         log.error("Erro não tratado", ex);

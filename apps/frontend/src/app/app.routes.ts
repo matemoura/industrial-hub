@@ -182,6 +182,34 @@ export const routes: Routes = [
             (m) => m.ProductionTrackingComponent,
           ),
       },
+      {
+        path: 'sterilization-loads',
+        loadComponent: () =>
+          import('./production/sterilization-loads/sterilization-loads.component').then(
+            (m) => m.SterilizationLoadsComponent,
+          ),
+      },
+      {
+        path: 'sterilization-loads/:id',
+        loadComponent: () =>
+          import('./production/sterilization-load-detail/sterilization-load-detail.component').then(
+            (m) => m.SterilizationLoadDetailComponent,
+          ),
+      },
+      {
+        path: 'planning',
+        loadComponent: () =>
+          import('./production/planning-board/planning-board.component').then(
+            (m) => m.PlanningBoardComponent,
+          ),
+      },
+      {
+        path: 'planning/timeline/:familyCode',
+        loadComponent: () =>
+          import('./production/planning-timeline/planning-timeline.component').then(
+            (m) => m.PlanningTimelineComponent,
+          ),
+      },
     ],
   },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },

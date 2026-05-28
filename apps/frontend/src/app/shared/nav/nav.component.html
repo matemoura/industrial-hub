@@ -43,6 +43,8 @@
     <a routerLink="/production/products" routerLinkActive="active">Produção</a>
     <a routerLink="/production/tracking" routerLinkActive="active">Acompanhamento</a>
     @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+      <a routerLink="/production/sterilization-loads" routerLinkActive="active">Cargas</a>
+      <a routerLink="/production/planning" routerLinkActive="active">Planejamento</a>
       <a routerLink="/analytics/oee" routerLinkActive="active">Analytics</a>
     }
     @if (role() === 'ADMIN') {

@@ -1,0 +1,318 @@
+<div class="loads-page">
+
+  <!-- Header -->
+  <div class="loads-header">
+    <div class="loads-header__title-group">
+      <h1 class="loads-header__title">Cargas de Esterilização</h1>
+    </div>
+    <div class="loads-header__actions">
+      @if (isSupervisor()) {
+        <button
+          class="btn-primary"
+          type="button"
+          data-testid="btn-new-load"
+          (click)="showCreateForm.set(true)"
+        >
+          + Nova Carga
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- Error Banner -->
+  @if (error()) {
+    <div class="error-banner" role="alert" data-testid="error-banner">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="#DC2626" stroke-width="1.4"/>
+        <path d="M8 5v4M8 11v1" stroke="#DC2626" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <span>{{ error() }}</span>
+      <button type="button" class="btn-retry" (click)="loadData()">Tentar novamente</button>
+    </div>
+  }
+
+  <!-- Create Form -->
+  @if (showCreateForm()) {
+    <div class="create-form-card" data-testid="create-form">
+      <h2 class="create-form-card__title">Nova Carga</h2>
+      <form (ngSubmit)="createLoad()" class="create-form">
+        <div class="form-field">
+          <label class="form-label" for="new-method">Método de esterilização <span aria-hidden="true">*</span></label>
+          <select
+            id="new-method"
+            class="form-select"
+            data-testid="select-method"
+            [value]="newMethod()"
+            (change)="newMethod.set($any($event.target).value)"
+            required
+          >
+            <option value="">Selecione...</option>
+            <option value="EO_GAS">Óxido de Etileno</option>
+            <option value="GAMMA">Radiação Gama</option>
+            <option value="STEAM">Vapor</option>
+            <option value="OTHER">Outro</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-notes">Observações</label>
+          <textarea
+            id="new-notes"
+            class="form-textarea"
+            data-testid="input-notes"
+            rows="2"
+            [value]="newNotes()"
+            (input)="newNotes.set($any($event.target).value)"
+          ></textarea>
+        </div>
+        <div class="create-form__actions">
+          <button
+            type="submit"
+            class="btn-primary"
+            data-testid="btn-submit-create"
+            [disabled]="creating() || !newMethod()"
+          >
+            @if (creating()) { Criando... } @else { Criar }
+          </button>
+          <button
+            type="button"
+            class="btn-secondary"
+            data-testid="btn-cancel-create"
+            (click)="showCreateForm.set(false)"
+            [disabled]="creating()"
+          >
+            Cancelar
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Status Filter Chips -->
+  @if (!loading()) {
+    <div class="filter-chips" role="group" aria-label="Filtro por status" data-testid="filter-chips">
+      <button
+        class="filter-chip"
+        [class.filter-chip--active]="filterStatus() === ''"
+        type="button"
+        data-testid="chip-all"
+        (click)="filterStatus.set('')"
+      >Todas</button>
+      @for (s of statusOrder; track s) {
+        <button
+          class="filter-chip"
+          [class.filter-chip--active]="filterStatus() === s"
+          [class]="'filter-chip filter-chip--' + s.toLowerCase() + (filterStatus() === s ? ' filter-chip--active' : '')"
+          type="button"
+          [attr.data-testid]="'chip-' + s"
+          (click)="filterStatus.set(s)"
+        >
+          {{ statusLabel(s) }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Loading Skeleton -->
+  @if (loading()) {
+    <div class="loads-grid loads-grid--skeleton" aria-hidden="true" data-testid="loading-skeleton">
+      @for (i of [1,2,3,4,5,6]; track i) {
+        <div class="load-card-skeleton"></div>
+      }
+    </div>
+  } @else {
+    <!-- Groups by status -->
+    @for (s of statusOrder; track s) {
+      @if (loadsByStatus()[s] && loadsByStatus()[s]!.length > 0) {
+        <section class="status-group" [attr.data-testid]="'group-' + s">
+          <div class="status-group__header">
+            <span class="status-badge" [class]="'status-badge--' + s.toLowerCase()">
+              {{ statusLabel(s) }}
+            </span>
+            <span class="status-group__count" aria-label="{{ loadsByStatus()[s]!.length }} cargas">
+              {{ loadsByStatus()[s]!.length }}
+            </span>
+          </div>
+          <div class="loads-grid">
+            @for (load of loadsByStatus()[s]!; track load.id) {
+              <a
+                class="load-card"
+                [class]="'load-card load-card--' + load.status.toLowerCase()"
+                [routerLink]="['/production/sterilization-loads', load.id]"
+                [attr.data-testid]="'load-card-' + load.loadNumber"
+                [attr.aria-label]="'Carga ' + load.loadNumber + ', status ' + statusLabel(load.status)"
+              >
+                <div class="load-card__header">
+                  <span class="load-card__number" data-testid="load-number">{{ load.loadNumber }}</span>
+                  <div class="load-card__header-right">
+                    <span
+                      class="load-card__orders-badge"
+                      [class.load-card__orders-badge--active]="load.totalOrders > 0"
+                      [attr.data-testid]="'orders-badge-' + load.loadNumber"
+                      aria-label="{{ load.totalOrders }} OPs alocadas"
+                    >{{ load.totalOrders }} OPs</span>
+                    <span class="load-card__status-chip" [class]="'load-card__status-chip--' + load.status.toLowerCase()">
+                      {{ statusLabel(load.status) }}
+                    </span>
+                  </div>
+                </div>
+
+                <div class="load-card__meta">
+                  @if (load.method) {
+                    <div class="load-card__meta-row">
+                      <span class="load-card__meta-label">Método</span>
+                      <span class="load-card__meta-value">{{ methodLabel(load.method) }}</span>
+                    </div>
+                  }
+                  @if (load.sterilizerName) {
+                    <div class="load-card__meta-row">
+                      <span class="load-card__meta-label">Esterilizador</span>
+                      <span class="load-card__meta-value">{{ load.sterilizerName }}</span>
+                    </div>
+                  }
+                  @if (load.sterilizationDate) {
+                    <div class="load-card__meta-row">
+                      <span class="load-card__meta-label">Data</span>
+                      <span class="load-card__meta-value">{{ load.sterilizationDate }}</span>
+                    </div>
+                  }
+                  @if (load.batchCode) {
+                    <div class="load-card__meta-row">
+                      <span class="load-card__meta-label">Lote</span>
+                      <span class="load-card__meta-value">{{ load.batchCode }}</span>
+                    </div>
+                  }
+                </div>
+
+                <div class="load-card__footer">
+                  <span class="load-card__created-by">{{ load.createdBy }}</span>
+                  <span class="load-card__date">{{ load.createdAt | slice:0:10 }}</span>
+                </div>
+
+                @if (load.notes) {
+                  <p class="load-card__notes" [title]="load.notes">{{ load.notes }}</p>
+                }
+
+                @if (isSupervisor() && load.status === 'OPEN') {
+                  <button
+                    class="load-card__alloc-btn"
+                    type="button"
+                    data-testid="btn-alloc"
+                    aria-label="Alocar OP na carga {{ load.loadNumber }}"
+                    (click)="$event.preventDefault(); openAllocationPanel(load.id)"
+                  >
+                    + Alocar OP
+                  </button>
+                }
+              </a>
+            }
+          </div>
+        </section>
+      }
+    }
+
+    @if (loads().length === 0 && !error()) {
+      <div class="empty-state" data-testid="empty-state">
+        <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+          <rect x="8" y="12" width="32" height="28" rx="3" stroke="#CBD5E1" stroke-width="1.5"/>
+          <path d="M16 22h16M16 29h10" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M24 8v6" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+        <p>Nenhuma carga encontrada.</p>
+      </div>
+    }
+  }
+
+</div>
+
+<!-- Allocation Panel -->
+@if (addingOrderToLoadId()) {
+  <div
+    class="drawer-backdrop"
+    role="presentation"
+    data-testid="alloc-backdrop"
+    (click)="closeAllocationPanel()"
+  ></div>
+  <aside
+    class="side-panel"
+    role="dialog"
+    aria-label="Alocar ordem de produção"
+    data-testid="alloc-panel"
+  >
+    <div class="side-panel__header">
+      <h2 class="side-panel__title">Alocar OP na Carga</h2>
+      <button
+        class="side-panel__close"
+        type="button"
+        aria-label="Fechar painel"
+        data-testid="btn-close-alloc"
+        (click)="closeAllocationPanel()"
+      >
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="side-panel__body">
+      @if (pendingOrders().length === 0) {
+        <div class="empty-state empty-state--sm" data-testid="no-pending-orders">
+          <p>Nenhuma OP pendente de esterilização.</p>
+        </div>
+      } @else {
+        <p class="panel-hint">Selecione uma OP para alocar nesta carga:</p>
+        <ul class="pending-orders-list" data-testid="pending-orders-list">
+          @for (order of pendingOrders(); track order.id) {
+            <li
+              class="pending-order-item"
+              [class.pending-order-item--confirming]="confirmingOrderId() === order.id"
+              [attr.data-testid]="'pending-order-' + order.dynamicsOrderNumber"
+            >
+              <div class="pending-order-item__info">
+                <span class="pending-order-item__op" [class.pending-order-item__op--overdue]="order.overdue">
+                  {{ order.dynamicsOrderNumber }}
+                  @if (order.overdue) {
+                    <span class="overdue-tag">Atrasada</span>
+                  }
+                </span>
+                <span class="pending-order-item__product">
+                  {{ order.productCode }} — {{ order.productName }}
+                </span>
+                @if (order.plannedQty !== null) {
+                  <span class="pending-order-item__qty">Qtd: {{ order.plannedQty }}</span>
+                }
+              </div>
+
+              @if (confirmingOrderId() === order.id) {
+                <div class="pending-order-item__confirm" data-testid="confirm-row">
+                  <span class="pending-order-item__confirm-text">Confirmar alocação?</span>
+                  <button
+                    class="btn-confirm"
+                    type="button"
+                    data-testid="btn-confirm-alloc"
+                    (click)="confirmAddOrder()"
+                  >Sim</button>
+                  <button
+                    class="btn-cancel-sm"
+                    type="button"
+                    data-testid="btn-cancel-confirm"
+                    (click)="cancelConfirm()"
+                  >Não</button>
+                </div>
+              } @else {
+                <button
+                  class="btn-add-sm"
+                  type="button"
+                  [attr.data-testid]="'btn-add-order-' + order.dynamicsOrderNumber"
+                  aria-label="Alocar OP {{ order.dynamicsOrderNumber }}"
+                  (click)="requestAddOrder(order.id)"
+                >
+                  Alocar
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  </aside>
+}

@@ -1,0 +1,316 @@
+<div class="detail-page">
+
+  <!-- Back link -->
+  <a
+    class="back-link"
+    routerLink="/production/sterilization-loads"
+    data-testid="back-link"
+    aria-label="Voltar para lista de cargas"
+  >
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <path d="M9 2L4 7l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    Cargas de Esterilização
+  </a>
+
+  <!-- Loading Skeleton -->
+  @if (loading()) {
+    <div class="detail-skeleton" aria-hidden="true" data-testid="loading-skeleton">
+      <div class="detail-skeleton__header"></div>
+      <div class="detail-skeleton__body"></div>
+    </div>
+  } @else if (error() && !load()) {
+    <!-- Critical error (load not found) -->
+    <div class="error-banner error-banner--full" role="alert" data-testid="error-banner-critical">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="#DC2626" stroke-width="1.4"/>
+        <path d="M8 5v4M8 11v1" stroke="#DC2626" stroke-width="1.4" stroke-linecap="round"/>
+      </svg>
+      <span>{{ error() }}</span>
+    </div>
+  } @else if (load()) {
+    <!-- Header -->
+    <div class="detail-header">
+      <div class="detail-header__title-group">
+        <h1 class="detail-header__number" data-testid="load-number">{{ load()!.loadNumber }}</h1>
+        <span
+          class="status-badge"
+          [class]="'status-badge--' + load()!.status.toLowerCase()"
+          data-testid="load-status"
+        >
+          {{ statusLabel(load()!.status) }}
+        </span>
+      </div>
+
+      @if (isSupervisor() && allowedTransitions().length > 0) {
+        <div class="detail-header__transitions" data-testid="transition-actions">
+          @for (target of allowedTransitions(); track target) {
+            <button
+              class="btn-transition"
+              [class]="'btn-transition--' + target.toLowerCase()"
+              type="button"
+              [attr.data-testid]="'btn-transition-' + target"
+              (click)="requestTransition(target)"
+              [disabled]="transitioning()"
+            >
+              {{ transitionLabel(target) }}
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Transition Error Banner -->
+    @if (transitionError()) {
+      <div class="error-banner" role="alert" data-testid="transition-error-banner">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="7" stroke="#DC2626" stroke-width="1.4"/>
+          <path d="M8 5v4M8 11v1" stroke="#DC2626" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span>{{ transitionError() }}</span>
+      </div>
+    }
+
+    <!-- Operation Error Banner -->
+    @if (error()) {
+      <div class="error-banner" role="alert" data-testid="error-banner">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <circle cx="8" cy="8" r="7" stroke="#DC2626" stroke-width="1.4"/>
+          <path d="M8 5v4M8 11v1" stroke="#DC2626" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span>{{ error() }}</span>
+      </div>
+    }
+
+    <!-- Transition Confirm Dialog -->
+    @if (confirmTransitionTo()) {
+      <div class="confirm-dialog" role="alertdialog" aria-modal="true" data-testid="confirm-dialog"
+           [attr.aria-label]="'Confirmar transição para ' + statusLabel(confirmTransitionTo()!)">
+        <div class="confirm-dialog__content">
+          <p class="confirm-dialog__text">
+            Confirmar mudança de status para
+            <strong>{{ statusLabel(confirmTransitionTo()!) }}</strong>?
+            @if (confirmTransitionTo() === 'REJECTED') {
+              <br><span class="confirm-dialog__warning">Atenção: todas as OPs alocadas serão removidas desta carga.</span>
+            }
+          </p>
+          <div class="confirm-dialog__actions">
+            <button
+              class="btn-confirm-yes"
+              type="button"
+              data-testid="btn-confirm-transition"
+              (click)="confirmTransition()"
+              [disabled]="transitioning()"
+            >
+              @if (transitioning()) { Aguarde... } @else { Confirmar }
+            </button>
+            <button
+              class="btn-cancel"
+              type="button"
+              data-testid="btn-cancel-transition"
+              (click)="cancelTransition()"
+              [disabled]="transitioning()"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- RELEASED Reminder Dialog (AC#15) -->
+    @if (showReleasedReminder()) {
+      <div
+        class="released-reminder"
+        role="alertdialog"
+        aria-modal="true"
+        aria-labelledby="released-reminder-title"
+        data-testid="released-reminder-dialog"
+      >
+        <div class="released-reminder__content">
+          <div class="released-reminder__icon" aria-hidden="true">
+            <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+              <circle cx="14" cy="14" r="12" stroke="#D97706" stroke-width="1.5"/>
+              <path d="M14 9v6M14 18v1" stroke="#D97706" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="released-reminder__body">
+            <p id="released-reminder-title" class="released-reminder__title">Carga liberada com sucesso</p>
+            <p class="released-reminder__msg" data-testid="released-reminder-msg">
+              Lembre-se de atualizar o estoque no Dynamics para as OPs desta carga.
+            </p>
+          </div>
+          <button
+            class="btn-dismiss"
+            type="button"
+            data-testid="btn-dismiss-reminder"
+            aria-label="Dispensar aviso"
+            (click)="dismissReleasedReminder()"
+          >
+            Entendido
+          </button>
+        </div>
+      </div>
+    }
+
+    <!-- Detail Layout -->
+    <div class="detail-layout">
+
+      <!-- Info Card -->
+      <section class="detail-card" data-testid="info-card">
+        <h2 class="detail-card__title">Informações da Carga</h2>
+        <dl class="info-list">
+          <div class="info-list__item">
+            <dt>Método</dt>
+            <dd data-testid="detail-method">{{ methodLabel(load()!.method) }}</dd>
+          </div>
+          @if (load()!.sterilizerName) {
+            <div class="info-list__item">
+              <dt>Esterilizador</dt>
+              <dd data-testid="detail-sterilizer">{{ load()!.sterilizerName }}</dd>
+            </div>
+          }
+          @if (load()!.sterilizationDate) {
+            <div class="info-list__item">
+              <dt>Data</dt>
+              <dd data-testid="detail-sterilization-date">{{ load()!.sterilizationDate }}</dd>
+            </div>
+          }
+          @if (load()!.batchCode) {
+            <div class="info-list__item">
+              <dt>Código de Lote</dt>
+              <dd data-testid="detail-batch-code">{{ load()!.batchCode }}</dd>
+            </div>
+          }
+          @if (load()!.notes) {
+            <div class="info-list__item">
+              <dt>Observações</dt>
+              <dd data-testid="detail-notes">{{ load()!.notes }}</dd>
+            </div>
+          }
+          <div class="info-list__item">
+            <dt>Criada por</dt>
+            <dd>{{ load()!.createdBy }}</dd>
+          </div>
+          <div class="info-list__item">
+            <dt>Criada em</dt>
+            <dd>{{ load()!.createdAt | slice:0:10 }}</dd>
+          </div>
+          @if (load()!.closedAt) {
+            <div class="info-list__item">
+              <dt>Fechada em</dt>
+              <dd>{{ load()!.closedAt! | slice:0:10 }}</dd>
+            </div>
+          }
+          @if (load()!.releasedAt) {
+            <div class="info-list__item">
+              <dt>Liberada em</dt>
+              <dd>{{ load()!.releasedAt! | slice:0:10 }}</dd>
+            </div>
+          }
+        </dl>
+
+        <!-- KPI Row -->
+        <div class="load-kpi-row" data-testid="kpi-row">
+          <div class="load-kpi">
+            <span class="load-kpi__value" data-testid="kpi-total-orders">{{ load()!.totalOrders }}</span>
+            <span class="load-kpi__label">OPs alocadas</span>
+          </div>
+          <div class="load-kpi">
+            <span class="load-kpi__value" data-testid="kpi-total-qty">{{ load()!.totalPlannedQty }}</span>
+            <span class="load-kpi__label">Qtd. total planejada</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Allocated Orders Card -->
+      <section class="detail-card" data-testid="orders-card">
+        <h2 class="detail-card__title">
+          Ordens Alocadas
+          <span class="orders-count">{{ load()!.orders.length }}</span>
+        </h2>
+
+        @if (load()!.orders.length === 0) {
+          <div class="empty-state" data-testid="no-orders">
+            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true">
+              <rect x="6" y="10" width="28" height="24" rx="3" stroke="#CBD5E1" stroke-width="1.5"/>
+              <path d="M13 18h14M13 24h9" stroke="#CBD5E1" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <p>Nenhuma OP alocada nesta carga.</p>
+          </div>
+        } @else {
+          <ul class="orders-list" data-testid="orders-list">
+            @for (order of load()!.orders; track order.id) {
+              <li
+                class="order-item"
+                [class.order-item--overdue]="order.overdue"
+                [attr.data-testid]="'order-item-' + order.dynamicsOrderNumber"
+              >
+                <div class="order-item__main">
+                  <span class="order-item__op" [class.order-item__op--overdue]="order.overdue">
+                    {{ order.dynamicsOrderNumber }}
+                    @if (order.overdue) {
+                      <span class="overdue-tag">Atrasada</span>
+                    }
+                  </span>
+                  <span class="order-item__product">
+                    <span class="order-item__code">{{ order.productCode }}</span>
+                    {{ order.productName }}
+                  </span>
+                  @if (order.familyName) {
+                    <span class="order-item__family">{{ order.familyName }}</span>
+                  }
+                </div>
+
+                <div class="order-item__meta">
+                  @if (order.plannedQty !== null) {
+                    <span class="order-item__qty">{{ order.plannedQty }}</span>
+                  }
+                  @if (order.dueDate) {
+                    <span class="order-item__due" [class.order-item__due--overdue]="order.overdue">
+                      {{ order.dueDate }}
+                    </span>
+                  }
+                </div>
+
+                @if (isSupervisor() && load()!.status === 'OPEN') {
+                  @if (removingOrderId() === order.id) {
+                    <div class="order-item__confirm" data-testid="remove-confirm-row">
+                      <span class="order-item__confirm-text">Remover?</span>
+                      <button
+                        class="btn-confirm-danger"
+                        type="button"
+                        data-testid="btn-confirm-remove"
+                        (click)="confirmRemoveOrder()"
+                      >Sim</button>
+                      <button
+                        class="btn-cancel-sm"
+                        type="button"
+                        data-testid="btn-cancel-remove"
+                        (click)="cancelRemoveOrder()"
+                      >Não</button>
+                    </div>
+                  } @else {
+                    <button
+                      class="btn-remove"
+                      type="button"
+                      [attr.data-testid]="'btn-remove-' + order.dynamicsOrderNumber"
+                      aria-label="Remover OP {{ order.dynamicsOrderNumber }} da carga"
+                      (click)="requestRemoveOrder(order.id)"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                        <path d="M2 2l10 10M12 2L2 12" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+                      </svg>
+                    </button>
+                  }
+                }
+              </li>
+            }
+          </ul>
+        }
+      </section>
+
+    </div>
+  }
+
+</div>

@@ -58,11 +58,11 @@ public class AlertThresholdController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
     public ResponseEntity<AlertThresholdResponse> create(
             @Valid @RequestBody CreateAlertThresholdRequest request,
             Principal principal) {
-        AlertThresholdResponse response = createUseCase.execute(request,
-                principal != null ? principal.getName() : "system");
+        AlertThresholdResponse response = createUseCase.execute(request, principal.getName()); // SEC-069: @PreAuthorize guarantees non-null
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -85,6 +85,7 @@ public class AlertThresholdController {
     }
 
     @PostMapping("/evaluate-now")
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
     public ResponseEntity<Map<String, Integer>> evaluateNow(Principal principal) {
         Instant now = Instant.now();
         Instant last = lastManualEvaluation.get();
@@ -104,7 +105,7 @@ public class AlertThresholdController {
 
         int evaluated = alertEvaluatorUseCase.execute();
         auditService.log(
-                principal != null ? principal.getName() : "system",
+                principal.getName(), // SEC-069: @PreAuthorize guarantees non-null
                 AuditAction.ALERT_EVALUATED_MANUAL,
                 "AlertThreshold",
                 "all",
