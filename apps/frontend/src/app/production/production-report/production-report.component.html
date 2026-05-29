@@ -1,0 +1,107 @@
+<div class="report-page">
+  <header class="report-header">
+    <h1 class="report-title">Relatório de Planejamento</h1>
+    <p class="report-subtitle">Planejado vs. Produzido por família e produto</p>
+  </header>
+
+  <!-- Filters -->
+  <section class="report-filters" aria-label="Filtros do relatório">
+    <div class="filter-row">
+      <div class="filter-group">
+        <label for="filter-family">Família</label>
+        <select id="filter-family"
+                [value]="familyCode()"
+                (change)="familyCode.set($any($event.target).value)">
+          <option value="">Todas as famílias</option>
+          @for (f of families(); track f.id) {
+            <option [value]="f.dynamicsCode">{{ f.name }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-from">De</label>
+        <input id="filter-from" type="date"
+               [value]="fromDate()"
+               (change)="fromDate.set($any($event.target).value)" />
+      </div>
+
+      <div class="filter-group">
+        <label for="filter-to">Até</label>
+        <input id="filter-to" type="date"
+               [value]="toDate()"
+               (change)="toDate.set($any($event.target).value)" />
+      </div>
+
+      <div class="filter-actions">
+        <button class="btn btn-primary"
+                [disabled]="!filtersValid() || loading()"
+                (click)="load()"
+                data-testid="btn-generate">
+          @if (loading()) { Gerando... } @else { Gerar Relatório }
+        </button>
+        <button class="btn btn-secondary"
+                [disabled]="!hasResults()"
+                (click)="exportCsv()"
+                data-testid="btn-export">
+          Exportar CSV
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Error -->
+  @if (error()) {
+    <div class="alert alert-error" role="alert">{{ error() }}</div>
+  }
+
+  <!-- Results -->
+  @if (hasResults()) {
+    <section class="report-results" aria-label="Resultado do relatório">
+      <div class="results-meta">
+        {{ rows().length }} produto(s) encontrado(s)
+      </div>
+      <div class="table-wrapper">
+        <table class="report-table" data-testid="report-table">
+          <thead>
+            <tr>
+              <th>Família</th>
+              <th>Código</th>
+              <th>Produto</th>
+              <th class="num">Qtd Planejada</th>
+              <th class="num">Qtd Produzida</th>
+              <th class="num">Eficiência</th>
+              <th class="num">Sugestões MRP</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.productCode) {
+              <tr>
+                <td>{{ row.familyName }}</td>
+                <td class="code">{{ row.productCode }}</td>
+                <td>{{ row.productName }}</td>
+                <td class="num">{{ row.plannedQty }}</td>
+                <td class="num">{{ row.producedQty }}</td>
+                <td class="num" [class.efficiency-ok]="row.efficiency !== null && row.efficiency >= 90"
+                                [class.efficiency-warn]="row.efficiency !== null && row.efficiency < 90">
+                  {{ formatEfficiency(row.efficiency) }}
+                </td>
+                <td class="num">
+                  @if (row.pendingMrpQty > 0) {
+                    <span class="badge badge-mrp">{{ row.pendingMrpQty }}</span>
+                  } @else {
+                    —
+                  }
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  } @else if (!loading() && !error()) {
+    <div class="empty-state" data-testid="empty-state">
+      <p>Configure os filtros e clique em "Gerar Relatório" para visualizar os dados.</p>
+    </div>
+  }
+</div>
