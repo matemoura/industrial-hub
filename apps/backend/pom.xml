@@ -64,6 +64,12 @@
 			<version>1.11.0</version>
 		</dependency>
 
+		<!-- Cache (US-107 — Spring Cache + Caffeine) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-cache</artifactId>
+		</dependency>
+
 		<!-- Security -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -194,4 +200,23 @@
 			</plugin>
 		</plugins>
 	</build>
+
+	<!-- US-106: perfil CI — exclui testes que requerem DNS externo -->
+	<profiles>
+		<profile>
+			<id>ci</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<excludedGroups>requires-network</excludedGroups>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
+
 </project>
