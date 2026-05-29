@@ -2,6 +2,7 @@ package com.industrialhub.backend.security;
 
 import com.industrialhub.backend.common.webhook.domain.WebhookInvalidUrlException;
 import com.industrialhub.backend.common.webhook.service.WebhookUrlValidator;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -11,7 +12,11 @@ import static org.assertj.core.api.Assertions.assertThatNoException;
  * SEC-106: WebhookUrlValidator blocks private/reserved IPs and handles malformed URLs.
  * DNS resolution with a 2-second timeout is tested structurally (actual DNS is not mocked
  * here — integration coverage is left to the service layer).
+ *
+ * US-106 SEC: @Tag("requires-network") — excluir em CI sem DNS externo via:
+ *   ./mvnw test -Pci   (profile surefire com excludedGroups=requires-network)
  */
+@Tag("requires-network")
 class WebhookUrlValidatorTest {
 
     private final WebhookUrlValidator validator = new WebhookUrlValidator();

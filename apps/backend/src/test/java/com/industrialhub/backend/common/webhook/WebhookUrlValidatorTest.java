@@ -3,11 +3,18 @@ package com.industrialhub.backend.common.webhook;
 import com.industrialhub.backend.common.webhook.domain.WebhookInvalidUrlException;
 import com.industrialhub.backend.common.webhook.service.WebhookUrlValidator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatNoException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+/**
+ * US-106 SEC: @Tag("requires-network") — excluir em CI sem DNS externo via:
+ *   ./mvnw test -Pci   (profile surefire com excludedGroups=requires-network)
+ * validate_publicUrl_doesNotThrow faz resolução DNS real para hooks.slack.com.
+ */
+@Tag("requires-network")
 class WebhookUrlValidatorTest {
 
     private WebhookUrlValidator validator;
