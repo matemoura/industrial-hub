@@ -1,0 +1,75 @@
+<section class="bom-section" aria-label="Estrutura BOM do produto">
+  <div class="bom-header">
+    <h3 class="bom-title">Estrutura BOM</h3>
+    @if (isAdmin()) {
+      <div class="bom-actions">
+        <a [href]="templateUrl" class="btn-link" download>⬇ Template</a>
+        <label class="btn btn-sm btn-secondary" [class.uploading]="uploading()">
+          @if (uploading()) { Importando... } @else { Importar BOM }
+          <input type="file" accept=".xlsx,.xls" (change)="onFileSelected($event)"
+                 [disabled]="uploading()" style="display:none" data-testid="bom-file-input" />
+        </label>
+        @if (selectedFile()) {
+          <button class="btn btn-sm btn-primary" (click)="uploadBom()" [disabled]="uploading()"
+                  data-testid="btn-upload-bom">
+            Confirmar
+          </button>
+        }
+      </div>
+    }
+  </div>
+
+  @if (uploadResult()) {
+    <div class="upload-result" data-testid="upload-result">
+      ✅ Importado: {{ uploadResult()!.created }} criados
+      @if ((uploadResult()!.errors ?? 0) > 0) {
+        — {{ uploadResult()!.errors }} erro(s)
+      }
+    </div>
+  }
+  @if (uploadError()) {
+    <div class="alert alert-error" role="alert">{{ uploadError() }}</div>
+  }
+
+  @if (loading()) {
+    <div class="bom-loading">Carregando estrutura BOM...</div>
+  } @else if (error()) {
+    <div class="alert alert-error" role="alert">{{ error() }}</div>
+  } @else if (components().length === 0) {
+    <div class="bom-empty" data-testid="bom-empty">
+      BOM não cadastrado para este produto.
+    </div>
+  } @else {
+    <table class="bom-table" data-testid="bom-table">
+      <thead>
+        <tr>
+          <th>Código</th>
+          <th>Componente</th>
+          <th class="num">Quantidade</th>
+          <th>Unidade</th>
+          <th>Tipo</th>
+          <th class="num">Nível</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of components(); track row.componentCode) {
+          <!-- US-105: nível 2 recebe indentação visual -->
+          <tr [class.level-2]="row.level > 1">
+            <td class="code" [style.padding-left.px]="row.level > 1 ? 28 : 8">{{ row.componentCode }}</td>
+            <td [style.padding-left.px]="row.level > 1 ? 28 : 8">{{ row.componentName }}</td>
+            <td class="num">{{ row.quantity }}</td>
+            <td>{{ row.unit }}</td>
+            <td>
+              <span class="type-chip"
+                    [class]="'type-' + row.productType.toLowerCase()"
+                    [class.type-chip--level2]="row.level > 1">
+                {{ typeLabel(row.productType) }}
+              </span>
+            </td>
+            <td class="num">{{ row.level }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  }
+</section>

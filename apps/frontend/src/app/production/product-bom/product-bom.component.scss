@@ -1,0 +1,120 @@
+.bom-section {
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.08);
+  margin-top: 20px;
+}
+
+.bom-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  .bom-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+  }
+}
+
+.bom-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.btn-link {
+  font-size: 0.8rem;
+  color: #0099B8;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+.btn {
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: background 0.15s;
+
+  &.btn-sm { padding: 5px 12px; font-size: 0.75rem; }
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+  &.uploading { opacity: 0.7; }
+
+  &.btn-primary { background: #0099B8; color: #fff; &:not(:disabled):hover { background: #006B82; } }
+  &.btn-secondary { background: #E5E7EB; color: #374151; &:not(:disabled):hover { background: #D1D5DB; } }
+}
+
+.upload-result {
+  background: #ECFDF5;
+  color: #065F46;
+  border: 1px solid #A7F3D0;
+  border-radius: 6px;
+  padding: 8px 12px;
+  font-size: 0.8rem;
+  margin-bottom: 12px;
+}
+
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  margin-bottom: 12px;
+  &.alert-error { background: #FEE2E2; color: #991B1B; border: 1px solid #FECACA; }
+}
+
+.bom-loading, .bom-empty {
+  padding: 24px 0;
+  text-align: center;
+  color: #6B7280;
+  font-size: 0.875rem;
+}
+
+.bom-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+
+  th {
+    background: #F9FAFB;
+    color: #374151;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .04em;
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #E5E7EB;
+    white-space: nowrap;
+
+    &.num { text-align: right; }
+  }
+
+  td {
+    padding: 8px 12px;
+    border-bottom: 1px solid #F3F4F6;
+    color: #111827;
+
+    &.num { text-align: right; }
+    &.code { font-family: monospace; font-size: 0.8rem; color: #6B7280; }
+  }
+
+  tbody tr:hover { background: #F9FAFB; }
+}
+
+.type-chip {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-size: 0.7rem;
+  font-weight: 600;
+
+  &.type-finished      { background: #DBEAFE; color: #1E40AF; }
+  &.type-intermediate  { background: #FEF3C7; color: #92400E; }
+  &.type-raw_material  { background: #FCE7F3; color: #9D174D; }
+}
