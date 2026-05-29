@@ -204,4 +204,29 @@ describe('PlanningBoardComponent', () => {
       expect(msg).toBeTruthy();
     });
   });
+
+  describe('SEC-118 — clearTimeout on destroy', () => {
+    it('should call clearTimeout when component is destroyed with active toast', () => {
+      const { fixture, component } = createComponent();
+      fixture.detectChanges();
+
+      const clearSpy = vi.spyOn(globalThis, 'clearTimeout');
+      // Trigger toast (which sets a timeout)
+      (component as any).showToast('Teste SEC-118');
+      expect((component as any).toastTimeoutId).not.toBeNull();
+
+      // Destroy the component
+      fixture.destroy();
+
+      expect(clearSpy).toHaveBeenCalled();
+      clearSpy.mockRestore();
+    });
+
+    it('should not throw when destroyed without active toast', () => {
+      const { fixture } = createComponent();
+      fixture.detectChanges();
+      // No toast triggered — toastTimeoutId should be null
+      expect(() => fixture.destroy()).not.toThrow();
+    });
+  });
 });

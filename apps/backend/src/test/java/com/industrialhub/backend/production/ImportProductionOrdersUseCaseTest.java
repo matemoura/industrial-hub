@@ -241,6 +241,41 @@ class ImportProductionOrdersUseCaseTest {
         verifyNoInteractions(cycleTimeRepository);            // no recalculation
     }
 
+    /**
+     * SEC-117 — StaffingConfig deve ser carregado UMA ÚNICA VEZ antes do loop,
+     * independente do número de OPs processadas.
+     */
+    @Test
+    void shouldLoadStaffingConfig_exactlyOnce_regardlessOfRowCount() throws Exception {
+        // Given: planilha com 3 OPs (todas com peopleOverridden=false nas existentes)
+        MockMultipartFile file = buildExcel(
+                "OP-S1|P-SEC|PLANNED|10|0|2024-05-01|2024-05-15",
+                "OP-S2|P-SEC|RELEASED|20|0|2024-05-01|2024-05-20",
+                "OP-S3|P-SEC|IN_PROGRESS|30|10|2024-05-01|2024-05-25"
+        );
+
+        Product product = Product.builder().id(UUID.randomUUID()).dynamicsCode("P-SEC")
+                .name("Produto SEC").type(ProductType.FINISHED).active(true).build();
+
+        StaffingConfig config = new StaffingConfig();
+        config.setShiftHours(8);
+        config.setShiftsPerDay(1);
+
+        when(productRepository.findByDynamicsCode("P-SEC")).thenReturn(Optional.of(product));
+        when(orderRepository.findByDynamicsOrderNumber(anyString())).thenReturn(Optional.empty());
+        when(orderRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(getStaffingConfig.getOrCreate()).thenReturn(config);
+        when(cycleTimeRepository.findTopByProductIdOrderByEffectiveDateDesc(any()))
+                .thenReturn(Optional.empty()); // sem CycleTime → plannedPeople = null
+        stubBatchSave();
+
+        // When
+        useCase.execute(file, "admin");
+
+        // Then: getOrCreate chamado exatamente 1 vez, independente das 3 OPs
+        verify(getStaffingConfig, times(1)).getOrCreate();
+    }
+
     @Test
     void shouldSkipRow_whenStatusIsInvalid() throws Exception {
         // Arrange

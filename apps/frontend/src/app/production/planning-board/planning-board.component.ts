@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   DestroyRef,
+  OnDestroy,
   OnInit,
   inject,
   signal,
@@ -26,7 +27,7 @@ import {
   styleUrl: './planning-board.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class PlanningBoardComponent implements OnInit {
+export class PlanningBoardComponent implements OnInit, OnDestroy {
   private readonly service = inject(PlanningService);
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
@@ -53,6 +54,8 @@ export class PlanningBoardComponent implements OnInit {
 
   // Toast after run
   readonly toast = signal<string | null>(null);
+  // SEC-118: guard timeout ID for cleanup on destroy
+  private toastTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   readonly isSupervisor = computed(() => {
     const r = this.auth.role();
@@ -163,7 +166,17 @@ export class PlanningBoardComponent implements OnInit {
 
   private showToast(msg: string): void {
     this.toast.set(msg);
-    setTimeout(() => this.toast.set(null), 4000);
+    // SEC-118: cancel any previous timeout before scheduling a new one
+    if (this.toastTimeoutId !== null) clearTimeout(this.toastTimeoutId);
+    this.toastTimeoutId = setTimeout(() => {
+      this.toast.set(null);
+      this.toastTimeoutId = null;
+    }, 4000);
+  }
+
+  ngOnDestroy(): void {
+    // SEC-118: prevent callback firing after component is destroyed
+    if (this.toastTimeoutId !== null) clearTimeout(this.toastTimeoutId);
   }
 
   planningStatusLabel(status: string): string {

@@ -80,6 +80,9 @@ public class ImportProductionOrdersUseCase {
 
             Map<String, Integer> colIndex = ExcelParsingHelper.buildColumnIndex(header);
 
+            // SEC-117: cache StaffingConfig once before the loop — avoids N queries for each OP row
+            StaffingConfig staffingConfig = getStaffingConfig.getOrCreate();
+
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
@@ -134,14 +137,14 @@ public class ImportProductionOrdersUseCase {
                         order.setUpdatedAt(LocalDateTime.now());
                         // US-086 AC#2 — recalculate staffing on import if not manually overridden
                         if (!order.isPeopleOverridden()) {
-                            order.setPlannedPeople(calculateStaffing(product, plannedQty, dueDate));
+                            order.setPlannedPeople(calculateStaffing(product, plannedQty, dueDate, staffingConfig));
                         }
                         // Do NOT touch: peopleOverridden, sterilizationLoad (Hub-managed)
                         orderRepository.save(order);
                         updated++;
                     } else {
                         // US-086 AC#2 — calculate staffing for new OPs on import
-                        Integer staffing = calculateStaffing(product, plannedQty, dueDate);
+                        Integer staffing = calculateStaffing(product, plannedQty, dueDate, staffingConfig);
                         ProductionOrder order = ProductionOrder.builder()
                                 .dynamicsOrderNumber(orderNumber.trim())
                                 .product(product)
@@ -160,12 +163,12 @@ public class ImportProductionOrdersUseCase {
                     }
                 } catch (Exception e) {
                     // SEC-108: sanitize unexpected exceptions — never expose stack trace or DB messages
-                    log.warn("Erro linha {}: {}", i + 1, e.getMessage());
+                    log.warn("Erro linha {}: {}", i + 1, e.getMessage(), e);
                     errors.add(new ImportErrorDto(i + 1, "Erro ao processar linha %d".formatted(i + 1)));
                 }
             }
         } catch (IOException e) {
-            log.warn("Erro ao processar arquivo Excel na importação de ordens de produção: {}", e.getMessage());
+            log.warn("Erro ao processar arquivo Excel na importação de ordens de produção: {}", e.getMessage(), e);
             errors.add(new ImportErrorDto(0, "Erro ao processar o arquivo Excel. Verifique o formato e tente novamente."));
         }
 
@@ -176,14 +179,15 @@ public class ImportProductionOrdersUseCase {
      * US-086 AC#2 — cálculo automático de staffing na importação.
      * Reutiliza a mesma lógica de ResetOrderStaffingUseCase.
      * Retorna null se não há CycleTime ou plannedQty.
+     * SEC-117: recebe StaffingConfig como parâmetro (pré-carregado antes do loop).
      */
-    private Integer calculateStaffing(Product product, BigDecimal plannedQty, LocalDate dueDate) {
+    private Integer calculateStaffing(Product product, BigDecimal plannedQty, LocalDate dueDate,
+                                      StaffingConfig config) {
         if (plannedQty == null) return null;
         var cycleTimeOpt = cycleTimeRepository.findTopByProductIdOrderByEffectiveDateDesc(product.getId());
         if (cycleTimeOpt.isEmpty()) return null;
 
         double secondsPerUnit = cycleTimeOpt.get().getSecondsPerUnit();
-        StaffingConfig config = getStaffingConfig.getOrCreate();
         int workdaySeconds = config.getShiftHours() * config.getShiftsPerDay() * 3600;
         int workdays = dueDate != null
                 ? BusinessDaysCalculator.workdaysUntil(LocalDate.now(), dueDate)
