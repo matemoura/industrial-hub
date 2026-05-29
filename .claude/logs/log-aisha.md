@@ -1,5 +1,51 @@
 # Log Aisha
 
+## [2026-06-01] Sincronização pós-Sprint 34
+Fontes lidas: CLAUDE.md, sprint-atual.md, log-mateus.md, log-tadeu.md, log-maiana.md, log-maite.md, log-beatriz.md, log-athos.md, log-atlas.md
+Mudanças feitas:
+  - `.claude/sprint-atual.md` — roadmap: Sprint 34 `⬜` → `✅`
+  - `.claude/sprint-atual.md` — header Sprint 34: `⬜` → `✅`, Status: `pendente` → `concluída`
+  - `.claude/sprint-atual.md` — US-104, US-105, US-106: `⬜ pendente` → `✅ concluído`
+  - `.claude/sprint-atual.md` — adicionado bloco "Tech Debt Sprint 34" com 2 itens diferidos (Caffeine cache + NgxCharts) para Sprint 35
+  - `CLAUDE.md` — Domain Modules: adicionada linha `Production Overview + BOM Level 2 MRP | production/ | 34 | ✅ done`
+
+---
+
+## [2026-06-01] Sincronização pós-Sprint 33
+Fontes lidas: CLAUDE.md, sprint-atual.md, log-mateus.md, log-tadeu.md, log-maiana.md, log-maite.md, log-beatriz.md
+Mudanças feitas:
+  - sprint-atual.md: roadmap linha Sprint 33 `⬜` → `✅`
+  - sprint-atual.md: header "## Sprint 33 ⬜" → "## Sprint 33 ✅"
+  - sprint-atual.md: status `pendente` → `concluída`
+  - sprint-atual.md: US-101, US-102, US-103 → `⬜ pendente` → `✅ concluído`
+  - sprint-atual.md: seção "Tech Debt diferido do Sprint 33" adicionada — SEC-119 (LOW, CSV formula injection, Sprint 34) + 2 ⚠️ aceitáveis (INTERMEDIATE BOM + CSV content test)
+  - CLAUDE.md: tabela Domain Modules — nova linha: "BOM Import + Planning Report | production/ | 33 | ✅ done"
+Observações:
+  - Sprint 33 passou por 2 ciclos de review: blocker inicial (MrpCalculationServiceTest + RejectMrpSuggestionRequestTest ausentes) → Mateus corrigiu → Maiana re-aprovou
+  - Tadeu corrigiu window.open sem noopener,noreferrer em exportCsv() (alinhamento com padrão SEC-074)
+  - Suite final: 479 testes backend, 653 testes frontend — 0 falhas; BUILD SUCCESS em ambos
+  - WebhookUrlValidatorTest (DNS timeout, Sprint 27) passou nesta execução — flaky por ambiente, documentado
+  - Beatriz: SEC-119 (LOW) diferido Sprint 34; SEC-116/117/118 todos corrigidos e fechados
+  - Maitê: ready-to-deploy; 2 moderate audit frontend (qs + ws via jsdom/vitest devDeps) pré-existentes
+  - ADR-044 criado por Atlas: ProductComponent entity, BOM import strategy, BOM×MRP integration, Excel template, Planning report endpoint, CSV export, SEC-116/117/118 fixes
+
+## [2026-05-30] Sincronização pós-Sprint 32
+Fontes lidas: CLAUDE.md, sprint-atual.md, log-mateus.md, log-tadeu.md, log-maiana.md, log-maite.md, log-beatriz.md, log-atlas.md, log-athos.md
+Mudanças feitas:
+  - sprint-atual.md: roadmap linha Sprint 32 `⬜` → `✅`
+  - sprint-atual.md: header "## Sprint 32 ⬜" → "## Sprint 32 ✅"; status `pendente` → `concluída`
+  - sprint-atual.md: US-085, US-086, US-087, US-100 → `⬜ pendente` substituído por `✅ concluído`
+  - sprint-atual.md: seção "Tech Debt diferido do Sprint 32" adicionada ao final — SEC-116 (LOW) + INFO SEC-117/SEC-118
+  - CLAUDE.md: tabela Domain Modules — nova linha adicionada: "MRP Engine + Staffing + Planning Board | production/ | 32 | ✅ done"
+Observações:
+  - BUG-1 (ImportProductionOrdersUseCase sem cálculo de staffing para novas OPs) e BUG-2 (findSuggestionFromEntry usando UUID truncado) eram blockers — corrigidos por Mateus e Tadeu antes da aprovação final de Maiana
+  - BUG-3 (NoMrpRunException com mensagem confusa de UUID zerado) era não-blocker — corrigido por Mateus com exception específica
+  - Suite final: 466 testes backend, 642 testes frontend — 0 falhas
+  - Maitê: ready-to-deploy; Beatriz: aprovado sem CRITICAL/HIGH; Maiana: re-revisão aprovada pós-fix
+  - ADR-043 criado por Atlas cobrindo: StaffingConfig singleton lazy, MrpCalculationService stateless, SUPERSEDED como 5º status, BusinessDaysCalculator em application/util/, @Formula para totalOrders, Timeline CSS Grid puro, /convert endpoint, estrutura de pacotes
+  - SEC-116 (LOW — @Size em reason) diferido para Sprint 33; SEC-117/SEC-118 são INFO sem ação urgente
+  - Inconsistência ADR-030 (endpoint /convert ausente) resolvida pelo ADR-043 Decisão 7 — sem necessidade de correção no sprint-atual.md (ADR-043 prevalece como complemento de implementação)
+
 ## [2026-05-29] Sincronização pós-Sprint 31
 Fontes lidas: CLAUDE.md, sprint-atual.md, log-mateus.md, log-tadeu.md, log-maiana.md, log-maite.md
 Mudanças feitas:

@@ -2227,7 +2227,10 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) + tech debt S28 | US-079, US-080, US-081, US-097 | ADR-028 |
 | ✅ Sprint 30 | Acompanhamento visual de produção e tracking de OPs por família + tech debt S29 | US-082, US-083, US-098 | ADR-029, ADR-041 |
 | ✅ Sprint 31 | Gestão de cargas de esterilização (Hub-managed) + tech debt S30 | US-084, US-099 | ADR-029, ADR-042 |
-| ⬜ Sprint 32 | Motor MRP, planejamento por família e staffing por OP + tech debt S31 | US-085, US-086, US-087, US-100 | ADR-030, ADR-043 |
+| ✅ Sprint 32 | Motor MRP, planejamento por família e staffing por OP + tech debt S31 | US-085, US-086, US-087, US-100 | ADR-030, ADR-043 |
+| ✅ Sprint 33 | BOM import do Dynamics + relatório de planejamento + tech debt MRP | US-101, US-102, US-103 | ADR-044 |
+| ✅ Sprint 34 | Painel executivo de produção + BOM nível 2 no MRP + tech debt S33 | US-104, US-105, US-106 | ADR-045 |
+| ⬜ Sprint 35 | Cache Caffeine no painel executivo + gráfico NgxCharts + liquidação tech debt security | US-107, US-108, US-109 | ADR-046 |
 
 ---
 
@@ -2564,19 +2567,19 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 32 ⬜
+## Sprint 32 ✅
 **Objetivo**: Motor MRP, staffing por OP (tempo de ciclo → pessoas), board de planejamento por família + tech debt S31
 **ADR**: ADR-030, ADR-043
-**Status**: pendente
+**Status**: concluída
 **Pontos totais**: 16 pts (US-085: 5 + US-086: 3 + US-087: 5 + US-100: 3)
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-085 | Motor MRP — dry-run, run e gerenciamento de sugestões | 5 | ⬜ pendente |
-| US-086 | Cálculo de staffing por OP (ciclo → pessoas) + edição por SUPERVISOR | 3 | ⬜ pendente |
-| US-087 | Board de planejamento por família + timeline (Gantt simplificado) | 5 | ⬜ pendente |
-| US-100 | Tech debt Sprint 31 — badge totalOrders nas cargas + refinamentos de UX | 3 | ⬜ pendente |
+| US-085 | Motor MRP — dry-run, run e gerenciamento de sugestões | 5 | ✅ concluído |
+| US-086 | Cálculo de staffing por OP (ciclo → pessoas) + edição por SUPERVISOR | 3 | ✅ concluído |
+| US-087 | Board de planejamento por família + timeline (Gantt simplificado) | 5 | ✅ concluído |
+| US-100 | Tech debt Sprint 31 — badge totalOrders nas cargas + refinamentos de UX | 3 | ✅ concluído |
 
 ### Dependências
 - US-085 e US-086 são independentes entre si — podem ser desenvolvidas em paralelo
@@ -2658,3 +2661,249 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 3. Interface `SterilizationLoadSummary` em `sterilization-loads.service.ts`: adicionar campo `totalOrders: number`
 4. Template `sterilization-loads.component.html`: exibir badge com `totalOrders` no card de cada carga (ex: "3 OPs"), visível para todos os roles; badge com cor neutra (cinza) quando `totalOrders = 0`, teal quando `> 0`
 5. Testes Vitest: badge exibido com valor correto; badge cinza quando `totalOrders = 0`; badge teal quando `totalOrders > 0`
+
+---
+
+### Tech Debt diferido do Sprint 32 (Beatriz — SEC-116)
+
+| ID | Severidade | Descrição | Fix proposto | Sprint alvo |
+|----|-----------|-----------|-------------|-------------|
+| SEC-116 | LOW | `RejectMrpSuggestionRequest.reason` sem `@Size(max=500)` — campo tem `@NotBlank` mas sem limite máximo; `MrpPlannedOrder.rejectionReason` tem `@Column(length=500)`, portanto PostgreSQL lançaria ISE genérico em payloads >500 chars em vez de 400 | Adicionar `@Size(max=500, message="Motivo deve ter no máximo 500 caracteres")` ao DTO `RejectMrpSuggestionRequest` | Sprint 33 |
+
+> **Itens INFO (não blockers, sem ação obrigatória):**
+> - SEC-117: `getStaffingConfig.getOrCreate()` e `cycleTimeRepository` chamados dentro do loop de importação de OPs — risco de performance em importações grandes; candidato a refatoração (cache da StaffingConfig antes do loop)
+> - SEC-118: `setTimeout(() => toast.set(null), 4000)` sem `clearTimeout` no `PlanningBoardComponent` — Angular ignora silenciosamente no OnPush; boas práticas sugerem cancelar o timeout no `ngOnDestroy`
+
+---
+
+## Sprint 33 ✅
+**Objetivo**: BOM import do Dynamics (habilita explosão MRP de 2 níveis completa) + relatório de planejamento planned vs actual + tech debt MRP
+**ADR**: ADR-044
+**Status**: concluída
+**Pontos totais**: 10 pts (US-101: 5 + US-102: 3 + US-103: 2)
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-101 | BOM import do Dynamics — estrutura de componentes por produto | 5 | ✅ concluído |
+| US-102 | Relatório de planejamento: planned vs actual + exportação CSV | 3 | ✅ concluído |
+| US-103 | Tech debt Sprint 32 — SEC-116 @Size + SEC-117 cache + SEC-118 clearTimeout | 2 | ✅ concluído |
+
+### Dependências
+- US-101 é pré-requisito de US-102 para o campo `pendingMrpQty` estar correto (o relatório consolida dados do MRP atualizado)
+- US-101 é parcialmente independente de US-102 — o relatório pode ser desenvolvido em paralelo a partir do endpoint existente de OPs/famílias
+- US-103 é totalmente independente — pode ser iniciado antes de qualquer US
+
+### Sequência de entrega sugerida
+1. US-103 backend (SEC-116 @Size — fix de 1 linha + 1 teste; SEC-117 cache StaffingConfig — refatoração cirúrgica)
+2. US-101 backend (entidade `ProductComponent`, `ImportBomUseCase`, endpoint import, atualização do `MrpCalculationService`)
+3. US-103 frontend (SEC-118 clearTimeout no `PlanningBoardComponent`)
+4. US-102 backend (aggregation query, endpoint de relatório, exportação CSV)
+5. US-101 frontend (aba BOM no import, seção BOM no detalhe do produto)
+6. US-102 frontend (tela de relatório, filtros, tabela, exportação)
+
+---
+
+#### US-101 — BOM import do Dynamics (5 pts)
+
+**Contexto**: O ADR-030 (Decisão 3) previa explosão de BOM de 2 níveis no MRP, mas o BOM ainda não existe no domínio — `MrpCalculationService` gera apenas `purchaseNeeds` placeholder para RAW_MATERIAL sem quantidade real. Esta US implementa a estrutura de BOM (importação via Excel do Dynamics) e integra ao motor MRP.
+
+**Backend**
+1. Entidade `ProductComponent` com campos: `id` (UUID), `parentProduct` (FK → Product, not null), `componentProduct` (FK → Product, not null), `quantity` (Double, not null — unidades do componente por unidade do produto pai), `unit` (VARCHAR 10 — ex: "UN", "KG"), `level` (Integer — 1 para componentes diretos, 2 para sub-componentes), `active` (Boolean, default true); índice em `(parent_product_id)` e unique constraint em `(parent_product_id, component_product_id)`
+2. `ProductComponentRepository` com queries: `findByParentProductCode(String code)` retornando `List<ProductComponent>`; `deleteByParentProductCode(String code)` para upsert full (reimportação substitui BOM do produto)
+3. `ImportBomUseCase` — upload Excel multipart (`POST /api/v1/production/import/bom`, ADMIN); colunas esperadas: `parent_code`, `component_code`, `quantity`, `unit`; upsert por `(parentProduct, componentProduct)` — atualiza `quantity` e `unit` se já existir; erros por linha sem abortar importação; retorna `BomImportResponse { totalRecords, created, updated, errors, importedBy, importedAt }`
+4. `GetProductBomUseCase` + endpoint `GET /api/v1/production/products/{code}/bom` (SUPERVISOR+): retorna `List<BomComponentRow { componentCode, componentName, quantity, unit, level, productType }>`; lista vazia se produto não tem BOM cadastrado
+5. `MrpCalculationService` atualizado: para cada produto FINISHED com `netNeed > 0`, explodir nível 1 do BOM — componentes INTERMEDIATE geram `MrpPlannedOrder`; componentes RAW_MATERIAL entram em `purchaseNeeds` com quantidade real (`suggestedQty * bomItem.quantity`); se BOM vazio, comportamento atual mantido (purchaseNeeds com `qty = null` e nota "BOM não cadastrado")
+6. Testes unitários: (a) `ImportBomUseCase`: 3 linhas → 2 criadas + 1 atualizada; linha com código de produto inexistente → erro sem abortar; (b) `MrpCalculationService` com BOM: produto FINISHED com 2 RAW_MATERIAL no BOM → purchaseNeeds com quantidades reais calculadas; produto sem BOM → purchaseNeeds com qty = null (comportamento legado)
+
+**Frontend**
+7. Aba "BOM" na tela `/production/import`: formulário de upload Excel com link de download de template (colunas `parent_code`, `component_code`, `quantity`, `unit`); exibe `BomImportResponse` após import com contadores de criação/atualização/erro
+8. Seção "Estrutura BOM" no detalhe do produto (`/production/products/:code`): tabela com componentes, quantidade, unidade e tipo (chip `INTERMEDIATE` / `RAW_MATERIAL`); mensagem "BOM não cadastrado para este produto" se lista vazia; ADMIN vê botão "Importar BOM" que navega para `/production/import` aba BOM
+
+---
+
+#### US-102 — Relatório de planejamento: planned vs actual (3 pts)
+
+**Contexto**: Com MRP, staffing e BOM implementados, o planejador precisa de uma visão consolidada de eficiência de produção — o quanto foi planejado vs. o quanto foi efetivamente produzido por produto/família em um período.
+
+**Backend**
+1. `GET /api/v1/production/reports/planning-summary` (SUPERVISOR+) com params: `familyCode` (opcional), `from` (LocalDate), `to` (LocalDate); agrega por produto: `plannedQty` (soma de `plannedQty` das OPs com `status IN [PLANNED, RELEASED, IN_PROGRESS, DONE]` com `dueDate` no período), `producedQty` (soma de `producedQty` das OPs `DONE` com `dueDate` no período), `efficiency` (producedQty * 100.0 / plannedQty; null se plannedQty = 0), `pendingMrpQty` (soma de `suggestedQty` das `MrpPlannedOrders` SUGGESTED+ACCEPTED para o produto)
+2. `GET /api/v1/production/reports/planning-summary/export` (SUPERVISOR+) com os mesmos params: retorna CSV com `Content-Disposition: attachment; filename="planejamento-YYYY-MM-DD.csv"`; charset UTF-8 BOM (`﻿`) para compatibilidade com Excel pt-BR; cabeçalho: `Família;Produto;Código;Qtd Planejada;Qtd Produzida;Eficiência (%);Sugestões MRP Pendentes`
+3. Testes: (a) response sem filtro de família retorna todos os produtos com OPs no período; (b) `efficiency = null` quando `plannedQty = 0`; (c) CSV contém BOM UTF-8 e separador ponto-e-vírgula
+
+**Frontend**
+4. Nova rota `/production/reports` lazy-loaded; `ProductionReportComponent` standalone `OnPush`; serviço `ProductionReportService` com métodos `getSummary(params)` e `exportCsv(params)` (download via `window.open` ou blob URL)
+5. Filtros: seletor de família (todas ou específica via `signal<string | null>`), date range (from/to via `signal<{from: LocalDate, to: LocalDate}>`); padrão: últimos 30 dias; botão "Gerar Relatório" desabilitado enquanto datas inválidas; botão "Exportar CSV" habilitado apenas quando há resultados
+6. Tabela de resultado: colunas — família, código do produto, nome do produto, planejado, produzido, eficiência (— quando null), sugestões MRP pendentes; ordenação por família e produto; sem paginação (volume esperado < 200 produtos ativos)
+7. Link "Relatórios" adicionado ao nav (SUPERVISOR+)
+8. Testes Vitest: componente renderiza tabela com dados; exibe "—" para eficiência nula; botão exportar habilitado após resultado carregado; botão exportar desabilitado sem resultados
+
+---
+
+#### US-103 — Tech debt Sprint 32 (2 pts)
+
+**Backend**
+1. **SEC-116** — adicionar `@Size(max=500, message="Motivo deve ter no máximo 500 caracteres")` ao campo `reason` de `RejectMrpSuggestionRequest`; controller classe já tem `@Validated`; `ConstraintViolationException` → 400 via `GlobalExceptionHandler` (ADR-031); teste: request com motivo de 501 chars → 400 com mensagem "Motivo deve ter no máximo 500 caracteres"
+2. **SEC-117** — em `ImportProductionOrdersUseCase.execute()`, carregar `StaffingConfig` uma única vez antes do loop de OPs (`StaffingConfig config = staffingConfigUseCase.getOrCreate()`) em vez de chamar `getOrCreate()` a cada iteração; teste: mock de `StaffingConfigRepository.findFirst()` verificado com `verify(repo, times(1))` independente do número de OPs na planilha
+
+**Frontend**
+3. **SEC-118** — em `PlanningBoardComponent`: capturar `private toastTimeoutId: ReturnType<typeof setTimeout> | null = null`; no `setTimeout`, atribuir: `this.toastTimeoutId = setTimeout(() => this.toast.set(null), 4000)`; implementar `ngOnDestroy()` com `if (this.toastTimeoutId !== null) clearTimeout(this.toastTimeoutId)`; spec: verificar que `clearTimeout` é chamado ao destruir o componente com toast ativo
+
+### Tech Debt diferido do Sprint 33 (Beatriz — SEC-119)
+
+| ID | Severidade | Descrição | Fix proposto | Sprint alvo |
+|----|-----------|-----------|-------------|-------------|
+| SEC-119 | LOW | `GetPlanningSummaryUseCase.exportCsv()` — `escapeCsv()` sanitiza `;`, `"` e `\n` mas não neutraliza prefixos `=`, `+`, `-`, `@` que o Excel interpreta como fórmulas (CSV formula injection). Risco baixo: endpoint restrito a SUPERVISOR/ADMIN; dados internos do sistema, sem inserção livre por usuário anônimo. | Adicionar sanitização de prefixos de fórmula em `escapeCsv()`: se o valor começar com `=`, `+`, `-` ou `@`, prefixar com `'` antes de retornar (inerte para o Excel) | Sprint 34 |
+
+> **Itens diferidos sem classificação de blocker (⚠️ aceitáveis — Maiana):**
+> - INTERMEDIATE BOM components gerando MrpPlannedOrder próprio — diferido ADR-044 MVP; Sprint 34
+> - Exportação CSV com teste de conteúdo (UTF-8 BOM + separador `;`) — E2E scope; Sprint 34
+
+---
+
+## Sprint 34 ✅
+**Objetivo**: Painel executivo de produção com KPIs consolidados + explosão BOM nível 2 no MRP (INTERMEDIATE → sub-orders) + liquidação do tech debt de segurança diferido do Sprint 33
+**ADR**: ADR-045
+**Status**: concluída
+**Pontos totais**: 10 pts (US-104: 5 + US-105: 3 + US-106: 2)
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-104 | Painel executivo de produção — KPIs consolidados (BOM coverage, MRP fulfillment, eficiência) | 5 | ✅ concluído |
+| US-105 | BOM explosão nível 2 no MRP — INTERMEDIATE gera MrpPlannedOrder de sub-componente | 3 | ✅ concluído |
+| US-106 | Tech debt Sprint 33 — SEC-119 CSV injection + WebhookUrlValidatorTest @Tag + npm audit fix | 2 | ✅ concluído |
+
+### Dependências
+- US-104 é independente de US-105 e US-106 — pode ser desenvolvida em paralelo
+- US-105 depende de US-101 (Sprint 33) — BOM já importado; apenas expande a lógica do MrpCalculationService
+- US-106 é totalmente independente — pode ser iniciado a qualquer momento
+
+### Sequência de entrega sugerida
+1. US-106 (tech debt — fixes cirúrgicos, baixo risco, desbloqueia pipeline limpo)
+2. US-105 backend (extensão de explodePurchaseNeeds para nível 2)
+3. US-104 backend (aggregation endpoint de visão geral)
+4. US-105 frontend (BOM table com indentação de nível 2)
+5. US-104 frontend (painel com cards de KPI e gráfico de tendência)
+
+---
+
+#### US-104 — Painel executivo de produção (5 pts)
+
+**Contexto**: Com MRP, BOM e relatório de planejamento implementados, os gestores precisam de uma visão executiva consolidada — uma única tela que responda "como está a produção hoje?" sem precisar navegar entre telas. O painel agrega BOM coverage, fulfillment MRP e tendência de eficiência.
+
+**Backend**
+1. `ProductionOverviewDto` (record): `bomCoverage { totalFinishedProducts, withBom, withoutBom, coveragePct }`, `mrpFulfillment { totalSuggestions, accepted, rejected, pending, fulfillmentPct }`, `efficiencyTrend List<DailyEfficiencyDto { date, avgEfficiency }>` (últimos 30 dias), `opsByStatus Map<String, Integer>`
+2. `GetProductionOverviewUseCase` — agrega dados de `ProductRepository`, `ProductComponentRepository`, `MrpPlannedOrderRepository`, `ProductionOrderRepository`; `efficiencyTrend`: agrupa OPs por data de conclusão, calcula `avg(producedQty/plannedQty)*100` por dia (ignora OPs com `plannedQty=0`); `opsByStatus`: conta OPs ativas por `status` enum
+3. `GET /api/v1/production/overview` (SUPERVISOR+): sem parâmetros; cache de 5 min via `@Cacheable("production-overview")` (Spring Cache) — evita recalcular a cada refresh
+4. Testes: (a) `coveragePct = 0` quando nenhum produto tem BOM; (b) `fulfillmentPct` ignora sugestões REJECTED; (c) `efficiencyTrend` exclui dias sem OPs concluídas
+
+**Frontend**
+5. Nova rota `/production/overview` lazy-loaded (SUPERVISOR+); `ProductionOverviewComponent` standalone OnPush
+6. Cards de KPI no topo (2×2 grid): **BOM Coverage** `XX% (N/M produtos)`, **MRP Fulfillment** `XX% (N sugestões aceitas)`, **Eficiência Média** `XX%` (últimos 30 dias), **OPs Abertas** `N`
+7. Gráfico de tendência de eficiência: `NgxChartsLineChartComponent` com dados dos últimos 30 dias; eixo Y 0–100%; linha de referência em 80% (meta); sem animação em OnPush
+8. Tabela "OPs por Status": colunas Status, Quantidade; ordenada por quantidade desc
+9. Link "Visão Geral" adicionado ao nav (SUPERVISOR+), antes de "Relatórios"
+10. Testes Vitest: cards renderizados com dados mockados; "—" para eficiência nula; tabela de OPs ordenada; loading state exibido durante fetch
+
+---
+
+#### US-105 — BOM explosão nível 2 no MRP (3 pts)
+
+**Contexto**: O Sprint 33 (ADR-044) implementou explosão BOM nível 1 apenas para RAW_MATERIAL → purchaseNeeds. Componentes INTERMEDIATE foram ignorados (MVP). Esta US completa 1 nível adicional: INTERMEDIATE → busca BOM do próprio componente no mapa pré-carregado e adiciona RAW_MATERIAL desse segundo nível como purchaseNeeds adicionais. Não é explosão recursiva completa — apenas 2 níveis totais.
+
+**Backend**
+1. `MrpCalculationService.explodePurchaseNeeds()` estendido: após processar componentes nível 1, para cada componente INTERMEDIATE, busca `bomByParent.getOrDefault(component.getDynamicsCode(), List.of())` e processa RAW_MATERIAL de nível 2 com quantidade ajustada (`nivel1.quantity × nivel2.quantity × suggestedQty`); usa o mesmo `bomByParent` pré-carregado (sem queries adicionais — ADR-045 Decisão 2)
+2. INTERMEDIATE de nível 2 são ignorados (no MVP apenas 2 níveis — log de warning adicionado: `"BOM com profundidade > 2 detectado para PROD-{code} — nível 3+ ignorado"`)
+3. Testes unitários: (a) FINISHED → [INTERMEDIATE(1.0×) → [RAW-A(2.0×)]] → purchaseNeeds RAW-A com `suggestedQty * 1.0 * 2.0`; (b) FINISHED → [RAW-B(0.5×), INTERMEDIATE(1.0×) → [RAW-C(3.0×)]] → 2 purchaseNeeds: RAW-B e RAW-C; (c) INTERMEDIATE sem BOM cadastrado → nenhuma purchaseNeed adicional (sem NPE)
+
+**Frontend**
+4. `ProductBomComponent` atualizado: tabela BOM exibe componentes de nível 2 com indentação visual (`padding-left: 24px` para `level === 2`); chip de tipo diferenciado para nível 2 (cor secundária); coluna "Nível" adicionada
+5. Teste: componente renderiza nível 2 com indentação; nível 1 sem indentação
+
+---
+
+#### US-106 — Tech debt Sprint 33 (2 pts)
+
+**Backend**
+1. **SEC-119** — em `GetPlanningSummaryUseCase.escapeCsv()`: adicionar sanitização de formula injection — se `value` começa com `=`, `+`, `-` ou `@`, prefixar com `\t` (tab) antes do conteúdo; `\t` é inerte visualmente no Excel mas quebra o parse de fórmula; teste: valor `"=SUM(A1)"` → CSV cell `"\t=SUM(A1)"` (não interpretado como fórmula)
+2. **WebhookUrlValidatorTest** — adicionar `@Tag("requires-network")` à classe; documentar no `pom.xml` o perfil de exclusão recomendado para CI: `<excludedGroups>requires-network</excludedGroups>` no plugin surefire; teste: verificar que a tag está presente e que o teste `validate_publicUrl_doesNotThrow` é o único na classe (isolado)
+
+**Frontend**
+3. **npm audit fix** — executar `npm audit fix` no diretório `apps/frontend/` para corrigir qs (GHSA-q8mj-m7cp-5q26) e ws (GHSA-58qx-3vcg-4xpx); verificar que nenhum componente de produção foi afetado (ambos são devDependencies via jsdom/vitest); registrar versões corrigidas no log
+
+---
+
+### 📋 Tech Debt Sprint 34
+
+> Itens identificados durante implementação/revisão — diferidos para Sprint 35:
+
+- **⚠️ @Cacheable production-overview** — `GetProductionOverviewUseCase.getOverview()` computa a cada request; ADR-045 Decisão 3 prevê TTL 5 min via Spring Cache Caffeine; diferido pois `CaffeineCacheManager` não está configurado no projeto. Sprint 35.
+- **⚠️ NgxCharts line chart** — US-104 AC-7 especificou `NgxChartsLineChartComponent` para tendência de eficiência; `@swimlane/ngx-charts` não é dependência do projeto; tabela HTML funcional entregue. Instalar + implementar gráfico interativo em Sprint 35.
+
+---
+
+## Sprint 35 ⬜
+**Objetivo**: Performance e UX do painel executivo — Spring Cache Caffeine (TTL 5 min) no `GetProductionOverviewUseCase` + gráfico de tendência NgxCharts + liquidação de tech debt de segurança pendente (SEC-112, SEC-113, SEC-069)
+**ADR**: ADR-046
+**Status**: pendente
+**Pontos totais**: 7 pts (US-107: 2 + US-108: 3 + US-109: 2)
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-107 | Spring Cache Caffeine — TTL 5 min no painel executivo de produção | 2 | ⬜ pendente |
+| US-108 | NgxCharts gráfico de tendência de eficiência no painel executivo | 3 | ⬜ pendente |
+| US-109 | Tech debt security — SEC-112 (IOException), SEC-113 (importedBy exposto), SEC-069 (null check morto) | 2 | ⬜ pendente |
+
+### Dependências
+- US-107 depende de Sprint 34 (GetProductionOverviewUseCase já implementado)
+- US-108 depende de Sprint 34 (ProductionOverviewComponent já implementado com tabela; substitui apenas a seção de tendência)
+- US-109 é independente — pode ser iniciado a qualquer momento
+
+### Sequência de entrega sugerida
+1. US-109 (tech debt security — cirúrgico, sem risco de regressão)
+2. US-107 backend (configuração Caffeine + @Cacheable)
+3. US-108 frontend (NgxCharts installation + component update)
+
+---
+
+#### US-107 — Spring Cache Caffeine no painel executivo (2 pts)
+
+**Contexto**: `GetProductionOverviewUseCase.getOverview()` agrega 4 repositórios a cada request. Com múltiplos gestores abrindo o painel simultaneamente, o custo é multiplicado. ADR-045 Decisão 3 previu TTL de 5 min via `@Cacheable`, diferido por falta de `CaffeineCacheManager`. Esta US instala e configura o cache.
+
+**Backend**
+1. Adicionar dependência `spring-boot-starter-cache` + `com.github.ben-manes.caffeine:caffeine` ao `pom.xml` (se ainda não presente)
+2. Criar `CacheConfig` (`@Configuration @EnableCaching`) em `common/` com bean `CaffeineCacheManager`: cache `"production-overview"` com TTL de 5 minutos e máximo de 100 entradas
+3. Anotar `GetProductionOverviewUseCase.getOverview()` com `@Cacheable(value = "production-overview", key = "'overview'")`
+4. Testes: (a) segunda chamada a `getOverview()` não invoca repositórios novamente (verificar com `verify(repo, times(1))`); (b) bean `CacheManager` existe no contexto Spring com cache `"production-overview"` configurado
+
+---
+
+#### US-108 — NgxCharts gráfico de tendência de eficiência (3 pts)
+
+**Contexto**: US-104 entregou tabela HTML como equivalente funcional à falta do `@swimlane/ngx-charts`. Esta US substitui a tabela por um `LineChartComponent` interativo com eixo Y 0–100% e linha de referência em 80% (meta de eficiência da fábrica).
+
+**Frontend**
+1. Instalar `@swimlane/ngx-charts@latest` compatível com Angular 21 (`npm install @swimlane/ngx-charts --legacy-peer-deps` se necessário); registrar versão instalada no log
+2. Atualizar `ProductionOverviewComponent`: substituir tabela de tendência por `<ngx-charts-line-chart>` com propriedades: `[results]="chartData()"`, `[xAxis]="true"`, `[yAxis]="true"`, `[yScaleMin]="0"`, `[yScaleMax]="100"`, `[animations]="false"` (obrigatório em OnPush)
+3. Adicionar `computed()` `chartData` que transforma `trendRows()` no formato `[{ name: 'Eficiência', series: [{ name: date, value: avgEfficiency }] }]` esperado pelo NgxCharts
+4. Linha de referência em 80%: usar `[referenceLines]="[{ value: 80, name: 'Meta 80%' }]"` e `[showRefLines]="true"`
+5. Manter tabela HTML como fallback acessível com `aria-label="Dados de eficiência (tabela)"` — visível somente para leitores de tela (`class="sr-only"`)
+6. Testes Vitest: (a) `chartData()` transforma `trendRows` corretamente (série com N entradas); (b) `<ngx-charts-line-chart>` é renderizado quando há dados; (c) tabela sr-only presente mesmo com gráfico ativo
+
+---
+
+#### US-109 — Tech debt security (2 pts)
+
+**Contexto**: Itens diferidos das revisões de Beatriz em Sprints anteriores, todos classificados como MEDIUM/LOW sem sprint definida. Esta US os liquida de forma cirúrgica.
+
+**Backend**
+1. **SEC-112** — 5 use cases com `catch (Exception e) { log.warn(..., e.getMessage()) }` — substituir `e.getMessage()` por mensagem genérica no log público e mover detalhe da exceção para `log.warn("...", e)` (passa a exceção completa, não só a mensagem); garante que stack trace aparece apenas no log do servidor, nunca exposto via response; identificar os 5 use cases no log de Beatriz e corrigir todos
+2. **SEC-113** — `CycleTimeResponse` (ou DTO equivalente) expõe campo `importedBy` (username de quem importou) no response público; remover campo ou mover para endpoint ADMIN-only; teste: `GET /api/v1/production/cycle-times` retorna DTO sem campo `importedBy` para role OPERATOR
+
+**Backend + Frontend**
+3. **SEC-069** — `Principal null check` morto identificado por Beatriz: localizar o check e remover ou converter em `@PreAuthorize` adequado; se o endpoint deveria ser público, documentar; teste: verificar comportamento correto (autenticado vs anônimo)
+
+**Testes**
+4. Cada fix deve ter teste unitário ou de integração verificando o comportamento corrigido; nenhum teste existente deve quebrar

@@ -108,6 +108,9 @@ Font: Inter (sans-serif), professional industrial look
 | Production (Dynamics import) | `production/` | 29 | ✅ done |
 | Production Tracking (kanban por família) | `production/` | 30 | ✅ done |
 | Sterilization Loads (Hub-managed) | `production/` | 31 | ✅ done |
+| MRP Engine + Staffing + Planning Board | `production/` | 32 | ✅ done |
+| BOM Import + Planning Report | `production/` | 33 | ✅ done |
+| Production Overview + BOM Level 2 MRP | `production/` | 34 | ✅ done |
 
 ## Key Conventions
 
