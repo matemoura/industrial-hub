@@ -1,0 +1,108 @@
+<section class="overview-page" aria-label="Painel executivo de produção">
+  <h2 class="page-title">Visão Geral de Produção</h2>
+
+  @if (loading()) {
+    <div class="loading-state" data-testid="loading">Carregando painel...</div>
+  } @else if (error()) {
+    <div class="alert alert-error" role="alert" data-testid="error-msg">{{ error() }}</div>
+  } @else if (overview()) {
+    <!-- KPI Cards -->
+    <div class="kpi-grid" data-testid="kpi-grid">
+
+      <div class="kpi-card" data-testid="card-bom-coverage">
+        <div class="kpi-label">BOM Coverage</div>
+        <div class="kpi-value">{{ formatPct(overview()!.bomCoverage.coveragePct) }}</div>
+        <div class="kpi-sub">
+          {{ overview()!.bomCoverage.withBom }}/{{ overview()!.bomCoverage.totalFinishedProducts }} produtos
+        </div>
+      </div>
+
+      <div class="kpi-card" data-testid="card-mrp-fulfillment">
+        <div class="kpi-label">MRP Fulfillment</div>
+        <div class="kpi-value">{{ formatPct(overview()!.mrpFulfillment.fulfillmentPct) }}</div>
+        <div class="kpi-sub">
+          {{ overview()!.mrpFulfillment.accepted }} aceitas /
+          {{ overview()!.mrpFulfillment.pending }} pendentes
+        </div>
+      </div>
+
+      <div class="kpi-card" data-testid="card-avg-efficiency">
+        <div class="kpi-label">Eficiência Média (30d)</div>
+        @if (trendRows().length > 0) {
+          <div class="kpi-value">
+            {{ formatPct(trendRows()[trendRows().length - 1]?.avgEfficiency) }}
+          </div>
+          <div class="kpi-sub">último dia com dados</div>
+        } @else {
+          <div class="kpi-value">—</div>
+          <div class="kpi-sub">sem dados no período</div>
+        }
+      </div>
+
+      <div class="kpi-card" data-testid="card-ops-open">
+        <div class="kpi-label">OPs Abertas</div>
+        <div class="kpi-value">
+          {{ (overview()!.opsByStatus['PLANNED'] ?? 0)
+           + (overview()!.opsByStatus['RELEASED'] ?? 0)
+           + (overview()!.opsByStatus['IN_PROGRESS'] ?? 0) }}
+        </div>
+        <div class="kpi-sub">PLANNED + RELEASED + IN_PROGRESS</div>
+      </div>
+    </div>
+
+    <!-- Tendência de eficiência -->
+    <div class="section-card">
+      <h3 class="section-title">Tendência de Eficiência (últimos 30 dias)</h3>
+      @if (trendRows().length === 0) {
+        <div class="empty-state" data-testid="trend-empty">
+          Nenhuma OP concluída nos últimos 30 dias.
+        </div>
+      } @else {
+        <!-- US-108: wrapper standalone encapsula NgxCharts (ADR-046 Decisão 2) -->
+        <div class="chart-container" data-testid="trend-chart">
+          <app-efficiency-chart [data]="chartData()" />
+        </div>
+
+        <!-- Fallback acessível: tabela sr-only para leitores de tela (WCAG AA) -->
+        <table class="sr-only" aria-label="Dados de eficiência por dia" data-testid="trend-table-sr">
+          <thead>
+            <tr><th>Data</th><th>Eficiência Média</th></tr>
+          </thead>
+          <tbody>
+            @for (row of trendRows(); track row.date) {
+              <tr>
+                <td>{{ row.date }}</td>
+                <td>{{ formatPct(row.avgEfficiency) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+
+    <!-- OPs por status -->
+    <div class="section-card">
+      <h3 class="section-title">OPs por Status</h3>
+      @if (opStatusEntries().length === 0) {
+        <div class="empty-state" data-testid="ops-empty">Nenhuma OP encontrada.</div>
+      } @else {
+        <table class="data-table" data-testid="ops-table">
+          <thead>
+            <tr>
+              <th>Status</th>
+              <th class="num">Quantidade</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of opStatusEntries(); track entry[0]) {
+              <tr>
+                <td>{{ formatStatus(entry[0]) }}</td>
+                <td class="num">{{ entry[1] }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
+    </div>
+  }
+</section>
