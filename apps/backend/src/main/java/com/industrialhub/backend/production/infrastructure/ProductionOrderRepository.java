@@ -1,5 +1,6 @@
 package com.industrialhub.backend.production.infrastructure;
 
+import com.industrialhub.backend.production.application.dto.PlanningSummaryRow;
 import com.industrialhub.backend.production.domain.ProductionOrder;
 import com.industrialhub.backend.production.domain.ProductionOrderStatus;
 import com.industrialhub.backend.production.domain.ProductType;
@@ -180,4 +181,45 @@ public interface ProductionOrderRepository extends JpaRepository<ProductionOrder
         ORDER BY po.dueDate ASC NULLS LAST
         """)
     java.util.List<ProductionOrder> findPendingForSterilization();
+
+    /**
+     * US-102 / ADR-044 Decisão 5 — aggregation query para relatório planned vs actual.
+     * efficiency calculada em Java (não em JPQL) para evitar divisão por zero.
+     * pendingMrpQty via subconsulta correlacionada sobre MrpPlannedOrder.
+     */
+    @Query("""
+        SELECT new com.industrialhub.backend.production.application.dto.PlanningSummaryRow(
+            f.code,
+            f.name,
+            p.dynamicsCode,
+            p.name,
+            CAST(COALESCE(SUM(CAST(po.plannedQty AS int)), 0) AS int),
+            CAST(COALESCE(SUM(CASE WHEN po.status = 'DONE' THEN CAST(po.producedQty AS int) ELSE 0 END), 0) AS int),
+            CAST(NULL AS java.lang.Double),
+            CAST(0 AS int)
+        )
+        FROM ProductionOrder po
+        JOIN po.product p
+        JOIN p.family f
+        WHERE (:familyCode IS NULL OR f.code = :familyCode)
+          AND po.dueDate BETWEEN :from AND :to
+          AND po.status <> com.industrialhub.backend.production.domain.ProductionOrderStatus.CANCELLED
+        GROUP BY f.code, f.name, p.dynamicsCode, p.name
+        ORDER BY f.code, p.dynamicsCode
+        """)
+    java.util.List<PlanningSummaryRow> findPlanningSummaryRaw(
+            @Param("familyCode") String familyCode,
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
+
+    /**
+     * US-104 / ADR-045 Decisão 1 — OPs com status DONE no período (por dueDate).
+     * Usada para calcular tendência de eficiência dos últimos 30 dias no painel executivo.
+     */
+    @Query("SELECT o FROM ProductionOrder o " +
+           "WHERE o.status = com.industrialhub.backend.production.domain.ProductionOrderStatus.DONE " +
+           "AND o.dueDate >= :from AND o.dueDate <= :to")
+    java.util.List<ProductionOrder> findDoneOrdersInPeriod(
+            @Param("from") LocalDate from,
+            @Param("to") LocalDate to);
 }

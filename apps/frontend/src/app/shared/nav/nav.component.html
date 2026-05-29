@@ -45,6 +45,8 @@
     @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
       <a routerLink="/production/sterilization-loads" routerLinkActive="active">Cargas</a>
       <a routerLink="/production/planning" routerLinkActive="active">Planejamento</a>
+      <a routerLink="/production/overview" routerLinkActive="active">Visão Geral</a>
+      <a routerLink="/production/reports" routerLinkActive="active">Relatórios</a>
       <a routerLink="/analytics/oee" routerLinkActive="active">Analytics</a>
     }
     @if (role() === 'ADMIN') {

@@ -2,6 +2,9 @@ package com.industrialhub.backend.production.presentation;
 
 import com.industrialhub.backend.production.application.dto.*;
 import com.industrialhub.backend.production.application.usecase.*;
+import com.industrialhub.backend.production.application.dto.BomImportResponse;
+import com.industrialhub.backend.production.application.dto.BomComponentRow;
+import com.industrialhub.backend.production.application.dto.PlanningSummaryRow;
 import com.industrialhub.backend.production.domain.LoadStatus;
 import com.industrialhub.backend.production.domain.ProductionImportType;
 import com.industrialhub.backend.production.domain.ProductionOrderStatus;
@@ -50,6 +53,15 @@ public class ProductionController {
     private final AddOrderToLoadUseCase addOrderToLoad;
     private final RemoveOrderFromLoadUseCase removeOrderFromLoad;
     private final TransitionLoadStatusUseCase transitionLoadStatus;
+
+    // ===== Sprint 34 — Production Overview =====
+    private final GetProductionOverviewUseCase getProductionOverview;
+
+    // ===== Sprint 33 — BOM, Planning Report =====
+    private final ImportBomUseCase importBom;
+    private final GetBomTemplateUseCase getBomTemplate;
+    private final GetProductBomUseCase getProductBom;
+    private final GetPlanningSummaryUseCase getPlanningSummary;
 
     // ===== Sprint 32 — MRP, Staffing, Planning =====
     private final DryRunMrpUseCase dryRunMrp;
@@ -102,7 +114,12 @@ public class ProductionController {
             ResetOrderStaffingUseCase resetOrderStaffing,
             GetPlanningBoardUseCase getPlanningBoard,
             GetPlanningTimelineUseCase getPlanningTimeline,
-            GetPurchaseNeedsUseCase getPurchaseNeeds) {
+            GetPurchaseNeedsUseCase getPurchaseNeeds,
+            ImportBomUseCase importBom,
+            GetBomTemplateUseCase getBomTemplate,
+            GetProductBomUseCase getProductBom,
+            GetPlanningSummaryUseCase getPlanningSummary,
+            GetProductionOverviewUseCase getProductionOverview) {
         this.importProductCatalog = importProductCatalog;
         this.importStockSnapshot = importStockSnapshot;
         this.importProductionOrders = importProductionOrders;
@@ -138,6 +155,11 @@ public class ProductionController {
         this.getPlanningBoard = getPlanningBoard;
         this.getPlanningTimeline = getPlanningTimeline;
         this.getPurchaseNeeds = getPurchaseNeeds;
+        this.importBom = importBom;
+        this.getBomTemplate = getBomTemplate;
+        this.getProductBom = getProductBom;
+        this.getPlanningSummary = getPlanningSummary;
+        this.getProductionOverview = getProductionOverview;
     }
 
     // ===== Import endpoints =====
@@ -457,5 +479,61 @@ public class ProductionController {
     @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
     public List<com.industrialhub.backend.production.application.dto.PurchaseNeedResponse> getPurchaseNeeds() {
         return getPurchaseNeeds.execute();
+    }
+
+    // ===== BOM endpoints (US-101 / ADR-044) =====
+
+    @PostMapping("/import/bom")
+    @PreAuthorize("hasRole('ADMIN')")
+    public BomImportResponse importBom(
+            @RequestParam("file") MultipartFile file,
+            Authentication authentication) {
+        return importBom.execute(file, authentication.getName());
+    }
+
+    @GetMapping("/import/bom/template")
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    public org.springframework.http.ResponseEntity<byte[]> bomTemplate() {
+        byte[] bytes = getBomTemplate.execute();
+        return org.springframework.http.ResponseEntity.ok()
+                .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"template-bom.xlsx\"")
+                .contentType(org.springframework.http.MediaType.parseMediaType(
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"))
+                .body(bytes);
+    }
+
+    @GetMapping("/products/{code}/bom")
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    public List<BomComponentRow> getProductBom(@PathVariable String code) {
+        return getProductBom.execute(code);
+    }
+
+    // ===== Planning Report endpoints (US-102 / ADR-044) =====
+
+    @GetMapping("/reports/planning-summary")
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    public List<PlanningSummaryRow> getPlanningSummary(
+            @RequestParam(required = false) String familyCode,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return getPlanningSummary.getSummary(familyCode, from, to);
+    }
+
+    @GetMapping("/reports/planning-summary/export")
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    public org.springframework.http.ResponseEntity<byte[]> exportPlanningSummary(
+            @RequestParam(required = false) String familyCode,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        return getPlanningSummary.exportCsv(familyCode, from, to);
+    }
+
+    // ===== Sprint 34 — Production Overview =====
+
+    @GetMapping("/overview")
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    public ProductionOverviewDto getProductionOverview() {
+        return getProductionOverview.getOverview();
     }
 }

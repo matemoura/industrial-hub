@@ -210,6 +210,27 @@ export const routes: Routes = [
             (m) => m.PlanningTimelineComponent,
           ),
       },
+      {
+        path: 'overview',
+        loadComponent: () =>
+          import('./production/production-overview/production-overview.component').then(
+            (m) => m.ProductionOverviewComponent,
+          ),
+      },
+      {
+        path: 'reports',
+        loadComponent: () =>
+          import('./production/production-report/production-report.component').then(
+            (m) => m.ProductionReportComponent,
+          ),
+      },
+      {
+        path: 'products/:code/bom',
+        loadComponent: () =>
+          import('./production/product-bom/product-bom.component').then(
+            (m) => m.ProductBomComponent,
+          ),
+      },
     ],
   },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },

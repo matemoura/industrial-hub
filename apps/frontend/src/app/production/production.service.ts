@@ -2,6 +2,34 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 
+// US-104 — Production Overview
+export interface BomCoverageDto {
+  totalFinishedProducts: number;
+  withBom: number;
+  withoutBom: number;
+  coveragePct: number | null;
+}
+
+export interface MrpFulfillmentDto {
+  totalSuggestions: number;
+  accepted: number;
+  rejected: number;
+  pending: number;
+  fulfillmentPct: number | null;
+}
+
+export interface DailyEfficiencyDto {
+  date: string;          // LocalDate as ISO string
+  avgEfficiency: number;
+}
+
+export interface ProductionOverviewDto {
+  bomCoverage: BomCoverageDto;
+  mrpFulfillment: MrpFulfillmentDto;
+  efficiencyTrend: DailyEfficiencyDto[];
+  opsByStatus: Record<string, number>;
+}
+
 export interface ProductFamily {
   id: string;
   dynamicsCode: string;
@@ -92,6 +120,38 @@ export interface CycleTimeListParams {
   productId?: string;
 }
 
+// US-101 — BOM types
+export interface BomImportResponse {
+  totalRecords: number;
+  created: number;
+  updated: number;
+  errors: number;
+  importedBy: string;
+  importedAt: string;
+  errorDetails: Array<{ line: number; message: string }>;
+}
+
+export interface BomComponentRow {
+  componentCode: string;
+  componentName: string;
+  quantity: number;
+  unit: string;
+  level: number;
+  productType: 'FINISHED' | 'INTERMEDIATE' | 'RAW_MATERIAL';
+}
+
+// US-102 — Planning report types
+export interface PlanningSummaryRow {
+  familyCode: string;
+  familyName: string;
+  productCode: string;
+  productName: string;
+  plannedQty: number;
+  producedQty: number;
+  efficiency: number | null;
+  pendingMrpQty: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class ProductionService {
   private readonly http = inject(HttpClient);
@@ -163,5 +223,25 @@ export class ProductionService {
 
   resetStaffing(orderId: string): Observable<StaffingResponse> {
     return this.http.delete<StaffingResponse>(`${this.BASE}/production-orders/${orderId}/staffing`);
+  }
+
+  // US-101 — BOM endpoints
+  importBom(file: File): Observable<BomImportResponse> {
+    const form = new FormData();
+    form.append('file', file);
+    return this.http.post<BomImportResponse>(`${this.BASE}/import/bom`, form);
+  }
+
+  getBomTemplateUrl(): string {
+    return `${this.BASE}/import/bom/template`;
+  }
+
+  getProductBom(productCode: string): Observable<BomComponentRow[]> {
+    return this.http.get<BomComponentRow[]>(`${this.BASE}/products/${productCode}/bom`);
+  }
+
+  // US-104 — Production Overview
+  getProductionOverview(): Observable<ProductionOverviewDto> {
+    return this.http.get<ProductionOverviewDto>(`${this.BASE}/overview`);
   }
 }
