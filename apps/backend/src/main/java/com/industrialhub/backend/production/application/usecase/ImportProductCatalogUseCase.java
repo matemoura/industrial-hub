@@ -139,12 +139,12 @@ public class ImportProductCatalogUseCase {
                     }
                 } catch (Exception e) {
                     // SEC-108: sanitize unexpected exceptions — never expose stack trace or DB messages
-                    log.warn("Erro ao processar linha {} da importação de produtos: {}", i + 1, e.getMessage());
+                    log.warn("Erro ao processar linha {} da importação de produtos: {}", i + 1, e.getMessage(), e);
                     errors.add(new ImportErrorDto(i + 1, "Erro ao processar linha %d".formatted(i + 1)));
                 }
             }
         } catch (IOException e) {
-            log.warn("Erro ao processar arquivo Excel na importação de produtos: {}", e.getMessage());
+            log.warn("Erro ao processar arquivo Excel na importação de produtos: {}", e.getMessage(), e);
             errors.add(new ImportErrorDto(0, "Erro ao processar o arquivo Excel. Verifique o formato e tente novamente."));
         }
 

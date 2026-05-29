@@ -122,12 +122,12 @@ public class ImportCycleTimesUseCase {
                     }
                 } catch (Exception e) {
                     // SEC-108: sanitize unexpected exceptions — never expose stack trace or DB messages
-                    log.warn("Erro linha {}: {}", i + 1, e.getMessage());
+                    log.warn("Erro linha {}: {}", i + 1, e.getMessage(), e);
                     errors.add(new ImportErrorDto(i + 1, "Erro ao processar linha %d".formatted(i + 1)));
                 }
             }
         } catch (IOException e) {
-            log.warn("Erro ao processar arquivo Excel na importação de cycle times: {}", e.getMessage());
+            log.warn("Erro ao processar arquivo Excel na importação de cycle times: {}", e.getMessage(), e);
             errors.add(new ImportErrorDto(0, "Erro ao processar o arquivo Excel. Verifique o formato e tente novamente."));
         }
 

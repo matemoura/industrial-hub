@@ -66,7 +66,7 @@ public class OeeController {
                     .body(Map.of("message", "Formato inválido. Envie um arquivo .xlsx exportado do Dynamics"));
         }
         ImportResultDto result = importUseCase.execute(file, overwrite,
-                principal != null ? principal.getName() : "system");
+                principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(result);
     }
 

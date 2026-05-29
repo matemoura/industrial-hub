@@ -225,7 +225,7 @@ public class MaintenanceController {
                                                    @Valid @RequestBody AddWorkOrderPartRequest request,
                                                    Principal principal) {
         return addWorkOrderPart.execute(id, request,
-                principal != null ? principal.getName() : "system");
+                principal.getName());
     }
 
     @DeleteMapping("/work-orders/{workOrderId}/parts/{partId}")
@@ -235,7 +235,7 @@ public class MaintenanceController {
                                      @PathVariable UUID partId,
                                      Principal principal) {
         removeWorkOrderPart.execute(workOrderId, partId,
-                principal != null ? principal.getName() : "system");
+                principal.getName());
     }
 
     // --- Schedule endpoints ---
@@ -283,7 +283,7 @@ public class MaintenanceController {
     public SparePartResponse createSparePart(@Valid @RequestBody CreateSparePartRequest request,
                                               Principal principal) {
         return createSparePart.execute(request,
-                principal != null ? principal.getName() : "system");
+                principal.getName());
     }
 
     @GetMapping("/spare-parts")
@@ -313,6 +313,6 @@ public class MaintenanceController {
                                                    @Valid @RequestBody UpdateSparePartStockRequest request,
                                                    Principal principal) {
         return updateSparePartStock.execute(id, request,
-                principal != null ? principal.getName() : "system");
+                principal.getName());
     }
 }

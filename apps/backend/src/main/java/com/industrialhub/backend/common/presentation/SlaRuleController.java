@@ -93,7 +93,7 @@ public class SlaRuleController {
             }
         }
 
-        String username = principal != null ? principal.getName() : "system";
+        String username = principal.getName(); // SEC-069: @PreAuthorize guarantees non-null
         EscalationRunResponse result = escalationUseCase.execute(username);
 
         auditService.log(

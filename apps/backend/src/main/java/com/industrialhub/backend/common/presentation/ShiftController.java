@@ -43,7 +43,7 @@ public class ShiftController {
     public ResponseEntity<ShiftResponse> create(@Valid @RequestBody CreateShiftRequest request,
                                                  Principal principal) {
         ShiftResponse response = createShift.execute(request,
-                principal != null ? principal.getName() : "system");
+                principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -59,13 +59,13 @@ public class ShiftController {
                                                  @Valid @RequestBody UpdateShiftRequest request,
                                                  Principal principal) {
         return ResponseEntity.ok(updateShift.execute(id, request,
-                principal != null ? principal.getName() : "system"));
+                principal.getName()));
     }
 
     @PutMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @PreAuthorize("hasRole('ADMIN')")
     public void deactivate(@PathVariable UUID id, Principal principal) {
-        deactivateShift.execute(id, principal != null ? principal.getName() : "system");
+        deactivateShift.execute(id, principal.getName());
     }
 }

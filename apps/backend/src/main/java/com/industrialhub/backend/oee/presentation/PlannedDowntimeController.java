@@ -44,7 +44,7 @@ public class PlannedDowntimeController {
             @Valid @RequestBody CreatePlannedDowntimeRequest request,
             Principal principal) {
         PlannedDowntimeResponse response = createUseCase.execute(request,
-                principal != null ? principal.getName() : "system");
+                principal.getName());
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -63,13 +63,13 @@ public class PlannedDowntimeController {
             @Valid @RequestBody UpdatePlannedDowntimeRequest request,
             Principal principal) {
         return ResponseEntity.ok(updateUseCase.execute(id, request,
-                principal != null ? principal.getName() : "system"));
+                principal.getName()));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
     public ResponseEntity<Void> delete(@PathVariable UUID id, Principal principal) {
-        deleteUseCase.execute(id, principal != null ? principal.getName() : "system");
+        deleteUseCase.execute(id, principal.getName());
         return ResponseEntity.noContent().build();
     }
 }
