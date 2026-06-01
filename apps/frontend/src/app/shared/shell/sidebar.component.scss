@@ -1,0 +1,272 @@
+:host {
+  display: flex;          /* torna o elemento host parte do layout flex */
+  height: 100%;           /* CRÍTICO — preenche a altura do shell-body */
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.sidebar {
+  width: 260px;
+  flex: 1;                /* ocupa todo o host */
+  background: linear-gradient(180deg, #1F3A4A 0%, #0E2230 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;   /* sidebar em si não rola — só o nav interno */
+  position: relative;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 220px;
+    background: radial-gradient(ellipse at 50% 100%, rgba(156, 229, 238, 0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  @media (max-width: 900px) {
+    position: fixed;
+    top: 60px;
+    left: 0;
+    bottom: 0;
+    z-index: 300;
+    transform: translateX(-100%);
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 4px 0 24px rgba(14, 34, 48, 0.3);
+
+    &.sidebar--open {
+      transform: translateX(0);
+    }
+  }
+}
+
+// ── Usuário ─────────────────────────────────────────────────────────────────
+.sidebar-user {
+  padding: 14px 16px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.user-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #56A4BB, #5F88A1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+}
+
+.user-info { min-width: 0; }
+
+.user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.user-role {
+  font-size: 10.5px;
+  color: #9CE5EE;
+  margin: 2px 0 0;
+  letter-spacing: 0.04em;
+}
+
+// ── PULSO ────────────────────────────────────────────────────────────────────
+.pulso-block {
+  margin: 10px 14px 0;
+  padding: 9px 13px;
+  background: rgba(156, 229, 238, 0.07);
+  border: 1px solid rgba(156, 229, 238, 0.15);
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+
+.pulso-header {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 10px;
+}
+
+.pulso-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3FA66A;
+  box-shadow: 0 0 0 2px rgba(63, 166, 106, 0.3);
+  animation: msb-pulse 1.8s ease-out infinite;
+}
+
+.pulso-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pulso-metric { display: flex; flex-direction: column; gap: 2px; }
+
+.pulso-metric__label {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.pulso-metric__value {
+  font-size: 22px;
+  font-weight: 700;
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+
+  &--warn { color: #E8A93C; }
+}
+
+// ── Navegação ────────────────────────────────────────────────────────────────
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 10px 0 40px; /* 40px bottom = espaço para o fade-out */
+
+  /* scrollbar sutil mas visível */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 229, 238, 0.25) transparent;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+  &::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+    background: rgba(156, 229, 238, 0.25);
+    border-radius: 2px;
+    &:hover { background: rgba(156, 229, 238, 0.45); }
+  }
+}
+
+.nav-section { margin-bottom: 10px; }
+
+.nav-section__title {
+  display: block;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.22em;
+  color: rgba(255, 255, 255, 0.36);
+  padding: 0 18px;
+  margin-bottom: 3px;
+}
+
+.nav-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 16px 7px 16px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  border-left: 2px solid transparent;
+  transition: all 0.15s;
+
+  &:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.06);
+  }
+
+  &.active {
+    color: #fff;
+    font-weight: 600;
+    background: rgba(156, 229, 238, 0.1);
+    border-left-color: #9CE5EE;
+  }
+}
+
+.nav-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 10px;
+  min-width: 20px;
+  text-align: center;
+
+  &--danger { background: #D24A4A; color: #fff; }
+  &--warn   { background: #E8A93C; color: #1F3A4A; }
+}
+
+// ── Fade scroll indicator ─────────────────────────────────────────────────────
+.sidebar-nav-wrap {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+
+  &::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 32px;
+    background: linear-gradient(to top, rgba(14, 34, 48, 0.85), transparent);
+    pointer-events: none;
+    z-index: 2;
+  }
+}
+
+// ── Footer ───────────────────────────────────────────────────────────────────
+.sidebar-footer {
+  padding: 8px 16px 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  z-index: 1;
+  flex-shrink: 0;
+}
+
+.sidebar-footer__name {
+  font-size: 8.5px;
+  letter-spacing: 0.2em;
+  color: rgba(255, 255, 255, 0.32);
+  margin: 0 0 8px;
+}
+
+.brand-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.brand-chip {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(156, 229, 238, 0.1);
+  color: #9CE5EE;
+  border: 1px solid rgba(156, 229, 238, 0.2);
+}

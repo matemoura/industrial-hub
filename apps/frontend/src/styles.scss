@@ -9,18 +9,41 @@
 }
 
 :root {
-  --msb-primary: #0099b8;
-  --msb-primary-dark: #006b82;
-  --msb-accent: #00c4e8;
-  --msb-bg: #f4f6f9;
-  --msb-surface: #ffffff;
-  --msb-text: #1a2332;
-  --msb-text-muted: #64748b;
+  --msb-primary: #56A4BB;
+  --msb-primary-dark: #5F88A1;
+  --msb-accent: #9CE5EE;
+  --msb-bg: #F4F7F9;
+  --msb-surface: #FFFFFF;
+  --msb-neutral: #818286;
+  --msb-bg-tint: #D9E4E8;
+  --msb-text: #1F3A4A;
+  --msb-text-muted: #818286;
+  --msb-text-deep: #0E2230;
+  --msb-status-ok: #3FA66A;
+  --msb-status-warn: #E8A93C;
+  --msb-status-danger: #D24A4A;
+}
+
+@keyframes msb-pulse {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  70%  { transform: scale(2.4); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+@keyframes msb-fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes msb-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
 }
 
 html,
 body {
   height: 100%;
+  overflow-x: hidden; /* impede scroll horizontal global */
 }
 
 body {
@@ -30,4 +53,20 @@ body {
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+// ── Responsividade global — padrão SP (compartilhado por todas as páginas) ────
+
+@media (max-width: 900px) {
+  .sp-page         { padding: 20px !important; }
+  .sp-page-header  { flex-wrap: wrap !important; gap: 10px !important; }
+  .sp-title        { font-size: 24px !important; }
+}
+
+@media (max-width: 640px) {
+  .sp-page         { padding: 14px 16px !important; }
+  .sp-title        { font-size: 20px !important; }
+  .sp-kicker       { font-size: 9px !important; letter-spacing: .14em !important; }
+  .sp-page-actions { width: 100%; }
+  .sp-btn          { font-size: 11px !important; padding: 7px 12px !important; }
 }

@@ -7,10 +7,10 @@ import {
   signal,
   computed,
 } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { interval, timer } from 'rxjs';
-import { filter, startWith, switchMap } from 'rxjs/operators';
+import { filter, map, startWith, switchMap } from 'rxjs/operators';
 import { AuthService } from '../../auth/auth.service';
 import {
   Notification,
@@ -24,32 +24,49 @@ import {
   severityColor,
   formatNotificationDate,
 } from '../../notifications/notification.utils';
-import { MaintenanceService } from '../../maintenance/maintenance.service';
 import { PlantService, PlantResponse } from '../../admin/plants/plant.service';
 import { PlantSelectorComponent, PlantOption } from '../plant-selector/plant-selector.component';
 import { PlantContextService } from '../plant-selector/plant-context.service';
+import { ShellStateService } from '../shell/shell-state.service';
 
 @Component({
   selector: 'app-nav',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive, PlantSelectorComponent],
+  imports: [RouterLink, PlantSelectorComponent],
   templateUrl: './nav.component.html',
   styleUrl: './nav.component.scss',
 })
 export class NavComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly notificationService = inject(NotificationService);
-  private readonly maintenanceService = inject(MaintenanceService);
   private readonly plantService = inject(PlantService);
   private readonly plantContextService = inject(PlantContextService);
   private readonly destroyRef = inject(DestroyRef);
+  readonly shellState = inject(ShellStateService);
+  private readonly router = inject(Router);
   readonly pwaUpdate = inject(PwaUpdateService);
   readonly pwaInstall = inject(PwaInstallService);
   readonly offlineQueue = inject(OfflineQueueService);
   private readonly offlineSync = inject(OfflineSyncService);
 
   readonly role = this.authService.role;
+
+  readonly userInitials = computed(() => {
+    const u = this.authService.username() ?? '';
+    const parts = u.split(/[.\-_\s]/);
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+    return u.slice(0, 2).toUpperCase();
+  });
+
+  readonly pageTitle = toSignal(
+    this.router.events.pipe(
+      filter((e): e is NavigationEnd => e instanceof NavigationEnd),
+      map((e) => this.routeToTitle(e.urlAfterRedirects)),
+      startWith(this.routeToTitle(this.router.url)),
+    ),
+    { initialValue: '' },
+  );
 
   readonly severityColor = severityColor;
   readonly formatDate = formatNotificationDate;
@@ -59,7 +76,6 @@ export class NavComponent implements OnInit {
   readonly panelOpen = signal(false);
   readonly panelLoading = signal(false);
 
-  readonly belowMinCount = signal<number>(0);
   readonly syncMsg = signal<string | null>(null);
 
   readonly userPlants = signal<PlantResponse[]>([]);
@@ -93,18 +109,6 @@ export class NavComponent implements OnInit {
       )
       .subscribe({
         next: (res) => this.unreadCount.set(res.count),
-        error: () => { /* polling falha silenciosamente */ },
-      });
-
-    interval(300_000)
-      .pipe(
-        startWith(0),
-        filter(() => this.authService.isAuthenticated()),
-        switchMap(() => this.maintenanceService.countBelowMin()),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe({
-        next: (count) => this.belowMinCount.set(count),
         error: () => { /* polling falha silenciosamente */ },
       });
 
@@ -194,5 +198,40 @@ export class NavComponent implements OnInit {
         this.panelLoading.set(false);
       },
     });
+  }
+
+  private routeToTitle(url: string): string {
+    const map: Record<string, string> = {
+      '/dashboard': 'Dashboard',
+      '/oee/efficiency': 'Eficiência OEE',
+      '/oee/planned-downtimes': 'Paradas Planejadas',
+      '/indirect-activities': 'Atividades Indiretas',
+      '/processes': 'Processos',
+      '/summary': 'Resumo',
+      '/qms/non-conformances': 'Não-Conformidades',
+      '/maintenance/equipment': 'Manutenção',
+      '/production/products': 'Produção',
+      '/production/tracking': 'Acompanhamento',
+      '/production/sterilization-loads': 'Cargas',
+      '/production/planning': 'Planejamento',
+      '/production/overview': 'Visão Geral',
+      '/production/reports': 'Relatórios',
+      '/analytics/oee': 'Analytics OEE',
+      '/admin/users': 'Usuários',
+      '/admin/alert-thresholds': 'Alertas',
+      '/admin/shifts': 'Turnos',
+      '/admin/sla-rules': 'SLA',
+      '/admin/plants': 'Plantas',
+      '/admin/lgpd': 'LGPD',
+      '/admin/webhooks': 'Webhooks',
+      '/change-password': 'Alterar Senha',
+      '/privacy/export': 'Exportar meus dados',
+      '/notifications': 'Notificações',
+    };
+    const normalized = url.split('?')[0];
+    const match = Object.keys(map)
+      .sort((a, b) => b.length - a.length)
+      .find((k) => normalized.startsWith(k));
+    return match ? map[match] : '';
   }
 }

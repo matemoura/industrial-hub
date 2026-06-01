@@ -11,71 +11,49 @@
   </div>
 }
 
-<nav class="main-nav" role="navigation" aria-label="Navegação principal">
-  <div class="nav-brand">
-    <span class="brand-mark" aria-hidden="true">MSB</span>
-    <span class="brand-name">Industrial Hub</span>
+<header class="topbar" role="banner">
+
+  <!-- Hamburger (mobile) -->
+  <button class="topbar-hamburger" type="button"
+          (click)="shellState.toggle()"
+          [attr.aria-expanded]="shellState.sidebarOpen()"
+          aria-label="Abrir menu lateral">
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+    <span class="hamburger-line"></span>
+  </button>
+
+  <!-- Marca -->
+  <div class="topbar-brand">
+    <img src="msb-logo-white.png"
+         alt="MSB Medical System do Brasil"
+         class="brand-logo"
+         width="148" height="38" />
   </div>
 
-  <div class="nav-links">
-    <a routerLink="/dashboard" routerLinkActive="active">Dashboard</a>
-    <a routerLink="/oee/efficiency" routerLinkActive="active">Eficiência OEE</a>
-    <a routerLink="/oee/planned-downtimes" routerLinkActive="active">Paradas Planejadas</a>
-    <a routerLink="/indirect-activities" routerLinkActive="active">Atividades Indiretas</a>
-    <a routerLink="/processes" routerLinkActive="active">Processos</a>
-    <a routerLink="/summary" routerLinkActive="active">Resumo</a>
-    <a routerLink="/qms/non-conformances" routerLinkActive="active" class="nav-link-badge-wrapper">
-      Não-Conformidades
-      @if (offlineQueue.pendingCount() > 0) {
-        <span class="nav-offline-badge" data-testid="nc-offline-badge" aria-label="{{ offlineQueue.pendingCount() }} NCs aguardando sincronização">
-          {{ offlineQueue.pendingCount() }}
-        </span>
-      }
-    </a>
-    <a routerLink="/maintenance/equipment" routerLinkActive="active" class="nav-link-badge-wrapper">
-      Manutenção
-      @if (belowMinCount() > 0) {
-        <span class="nav-stock-badge" data-testid="below-min-badge" aria-label="{{ belowMinCount() }} peças abaixo do mínimo">
-          {{ belowMinCount() }}
-        </span>
-      }
-    </a>
-    <a routerLink="/production/products" routerLinkActive="active">Produção</a>
-    <a routerLink="/production/tracking" routerLinkActive="active">Acompanhamento</a>
-    @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
-      <a routerLink="/production/sterilization-loads" routerLinkActive="active">Cargas</a>
-      <a routerLink="/production/planning" routerLinkActive="active">Planejamento</a>
-      <a routerLink="/production/overview" routerLinkActive="active">Visão Geral</a>
-      <a routerLink="/production/reports" routerLinkActive="active">Relatórios</a>
-      <a routerLink="/analytics/oee" routerLinkActive="active">Analytics</a>
+  <!-- Breadcrumb -->
+  <div class="topbar-breadcrumb" aria-label="Localização atual">
+    @if (pageTitle()) {
+      <span class="bc-page">{{ pageTitle() }}</span>
     }
-    @if (role() === 'ADMIN') {
-      <a routerLink="/admin/users" routerLinkActive="active">Usuários</a>
-      <a routerLink="/admin/alert-thresholds" routerLinkActive="active">Alertas</a>
-      <a routerLink="/admin/shifts" routerLinkActive="active">Turnos</a>
-      <a routerLink="/admin/sla-rules" routerLinkActive="active">SLA</a>
-      <a routerLink="/admin/plants" routerLinkActive="active">Plantas</a>
-      <a routerLink="/admin/lgpd" routerLinkActive="active">LGPD</a>
-      <a routerLink="/admin/webhooks" routerLinkActive="active">Webhooks</a>
-    }
-    <a routerLink="/privacy/export" routerLinkActive="active" aria-label="Exportar meus dados pessoais">Exportar meus dados</a>
   </div>
 
   @if (plantOptions().length > 1) {
-    <div class="nav-plant-selector" data-testid="nav-plant-selector">
+    <div class="topbar-plant" data-testid="nav-plant-selector">
       <app-plant-selector [plants]="plantOptions()" />
     </div>
   }
 
-  <div class="nav-user">
+  <!-- Cluster direito -->
+  <div class="topbar-right">
     @if (role()) {
       <span class="role-badge" aria-label="Perfil: {{ role() }}">{{ role() }}</span>
     }
 
-    <!-- Notification Bell -->
+    <!-- Sino de notificações -->
     <div class="notification-wrapper">
       <button
-        class="notification-btn"
+        class="topbar-icon-btn notification-btn"
         type="button"
         data-testid="notification-bell"
         aria-label="Notificações"
@@ -87,32 +65,20 @@
           <path d="M7 14.5a2 2 0 0 0 4 0" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
         </svg>
         @if (unreadCount() > 0) {
-          <span
-            class="notification-badge"
-            data-testid="notification-badge"
-            aria-label="{{ unreadCount() }} notificações não lidas"
-          >
+          <span class="notification-badge" data-testid="notification-badge"
+                aria-label="{{ unreadCount() }} notificações não lidas">
             {{ unreadCount() > 99 ? '99+' : unreadCount() }}
           </span>
         }
       </button>
 
       @if (panelOpen()) {
-        <div
-          class="notification-panel"
-          role="dialog"
-          aria-label="Notificações recentes"
-          data-testid="notification-panel"
-        >
+        <div class="notification-panel" role="dialog" aria-label="Notificações recentes" data-testid="notification-panel">
           <div class="notification-panel__header">
             <span class="notification-panel__title">Notificações</span>
             @if (unreadCount() > 0) {
-              <button
-                class="notification-panel__mark-all"
-                type="button"
-                data-testid="btn-mark-all-read"
-                (click)="markAllRead()"
-              >
+              <button class="notification-panel__mark-all" type="button"
+                      data-testid="btn-mark-all-read" (click)="markAllRead()">
                 Marcar todas como lidas
               </button>
             }
@@ -135,17 +101,10 @@
               </div>
             } @else {
               @for (notification of notifications(); track notification.id) {
-                <button
-                  class="notification-item"
-                  [class.notification-item--unread]="!notification.readAt"
-                  type="button"
-                  (click)="markRead(notification)"
-                >
-                  <span
-                    class="notification-item__severity-dot"
-                    [style.background]="severityColor(notification.severity)"
-                    aria-hidden="true"
-                  ></span>
+                <button class="notification-item" [class.notification-item--unread]="!notification.readAt"
+                        type="button" (click)="markRead(notification)">
+                  <span class="notification-item__severity-dot"
+                        [style.background]="severityColor(notification.severity)" aria-hidden="true"></span>
                   <div class="notification-item__content">
                     <p class="notification-item__title" [class.notification-item__title--bold]="!notification.readAt">
                       {{ notification.title }}
@@ -162,29 +121,28 @@
             <a routerLink="/notifications" (click)="closePanel()">Ver histórico completo</a>
           </div>
         </div>
-
-        <!-- Backdrop to close panel -->
         <div class="notification-backdrop" role="presentation" (click)="closePanel()"></div>
       }
     </div>
 
     @if (pwaInstall.canInstall()) {
-      <button type="button" class="pwa-install-btn" data-testid="pwa-install-btn" (click)="pwaInstall.install()" aria-label="Instalar App">
+      <button type="button" class="pwa-install-btn" data-testid="pwa-install-btn"
+              (click)="pwaInstall.install()" aria-label="Instalar App">
         Instalar App
       </button>
     }
 
-    <a routerLink="/change-password" class="change-password-link" aria-label="Alterar senha">
+    <a routerLink="/change-password" class="topbar-icon-btn change-password-link" aria-label="Alterar senha">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
         <rect x="2" y="6" width="10" height="7" rx="1.5" stroke="currentColor" stroke-width="1.4"/>
         <path d="M4.5 6V4.5a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
       </svg>
     </a>
-    <button class="logout-btn" (click)="logout()" type="button" aria-label="Sair do sistema">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-        <path d="M5 2H2a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h3M9 10l3-3-3-3M13 7H5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <span>Sair</span>
+
+    <button class="topbar-logout" (click)="logout()" type="button" aria-label="Sair do sistema">
+      SAIR
     </button>
+
+    <div class="topbar-avatar" aria-hidden="true">{{ userInitials() }}</div>
   </div>
-</nav>
+</header>

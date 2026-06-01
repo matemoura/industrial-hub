@@ -37,6 +37,7 @@ function makeAuthService(role: string) {
   const roleSignal = signal(role);
   return {
     role: roleSignal,
+    username: signal('test.user'),
     isAuthenticated: computed(() => true),
     logout: vi.fn(),
   };
@@ -281,32 +282,39 @@ describe('NavComponent', () => {
     });
   });
 
-  describe('AC-7 — visibilidade de links por role', () => {
-    function getLinkTexts(f: ComponentFixture<NavComponent>): string[] {
-      return Array.from(f.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>)
-        .map((l) => l.textContent?.trim() ?? '');
-    }
-
-    it('OPERATOR não deve ver link Usuários', () => {
+  describe('AC-7 — topbar exibe role-badge e avatar', () => {
+    it('deve exibir role-badge para OPERATOR', () => {
       setup('OPERATOR');
-      expect(getLinkTexts(fixture)).not.toContain('Usuários');
+      fixture.detectChanges();
+      const badge = fixture.nativeElement.querySelector('.role-badge');
+      expect(badge).toBeTruthy();
+      expect(badge.textContent?.trim()).toBe('OPERATOR');
     });
 
-    it('ADMIN deve ver link Usuários', () => {
+    it('deve exibir role-badge para ADMIN', () => {
       setup('ADMIN');
       fixture.detectChanges();
-      expect(getLinkTexts(fixture)).toContain('Usuários');
+      const badge = fixture.nativeElement.querySelector('.role-badge');
+      expect(badge).toBeTruthy();
+      expect(badge.textContent?.trim()).toBe('ADMIN');
     });
 
-    it('ADMIN deve ver link Alertas', () => {
-      setup('ADMIN');
-      fixture.detectChanges();
-      expect(getLinkTexts(fixture)).toContain('Alertas');
-    });
-
-    it('OPERATOR não deve ver link Alertas', () => {
+    it('deve exibir avatar com iniciais do usuário', () => {
       setup('OPERATOR');
-      expect(getLinkTexts(fixture)).not.toContain('Alertas');
+      fixture.detectChanges();
+      const avatar = fixture.nativeElement.querySelector('.topbar-avatar');
+      expect(avatar).toBeTruthy();
+      expect(avatar.textContent?.trim()).toBe('TU');
+    });
+
+    it('links de navegação por role ficam no sidebar, não no topbar', () => {
+      setup('OPERATOR');
+      fixture.detectChanges();
+      const linkTexts = Array.from(
+        fixture.nativeElement.querySelectorAll('a') as NodeListOf<HTMLAnchorElement>,
+      ).map((l) => l.textContent?.trim() ?? '');
+      expect(linkTexts).not.toContain('Usuários');
+      expect(linkTexts).not.toContain('Alertas');
     });
   });
 });

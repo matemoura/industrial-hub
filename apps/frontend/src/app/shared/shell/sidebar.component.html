@@ -1,0 +1,115 @@
+<aside class="sidebar" [class.sidebar--open]="shellState.sidebarOpen()" role="navigation" aria-label="Menu lateral">
+
+  <!-- ── Usuário ── -->
+  <div class="sidebar-user">
+    <div class="user-avatar" aria-hidden="true">{{ initials() }}</div>
+    <div class="user-info">
+      <p class="user-name">{{ username() ?? 'Usuário' }}</p>
+      <p class="user-role">{{ role() ?? '' }}</p>
+    </div>
+  </div>
+
+  <!-- ── PULSO ── -->
+  <div class="pulso-block">
+    <div class="pulso-header">
+      <span class="pulso-dot" aria-hidden="true"></span>
+      PULSO · AGORA
+    </div>
+    <div class="pulso-grid">
+      <div class="pulso-metric">
+        <span class="pulso-metric__label">ALERTAS</span>
+        <span class="pulso-metric__value" [class.pulso-metric__value--warn]="belowMinCount() > 0">
+          {{ belowMinCount() }}
+        </span>
+      </div>
+      <div class="pulso-metric">
+        <span class="pulso-metric__label">OFFLINE</span>
+        <span class="pulso-metric__value" [class.pulso-metric__value--warn]="offlineQueue.pendingCount() > 0">
+          {{ offlineQueue.pendingCount() }}
+        </span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Navegação ── -->
+  <div class="sidebar-nav-wrap">
+  <nav class="sidebar-nav">
+
+    <div class="nav-section">
+      <span class="nav-section__title">OPERAÇÃO</span>
+      <ul class="nav-list">
+        <li><a routerLink="/dashboard"              routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-item">Dashboard</a></li>
+        <li><a routerLink="/oee/efficiency"         routerLinkActive="active" class="nav-item">Eficiência OEE</a></li>
+        <li><a routerLink="/oee/planned-downtimes"  routerLinkActive="active" class="nav-item">Paradas Planejadas</a></li>
+        <li><a routerLink="/indirect-activities"    routerLinkActive="active" class="nav-item">Atividades Indiretas</a></li>
+        <li><a routerLink="/processes"              routerLinkActive="active" class="nav-item">Processos</a></li>
+        <li><a routerLink="/oee/summary"             routerLinkActive="active" class="nav-item">Resumo</a></li>
+        <li>
+          <a routerLink="/qms/non-conformances" routerLinkActive="active" class="nav-item">
+            Não-Conformidades
+          </a>
+        </li>
+        <li>
+          <a routerLink="/maintenance/equipment" routerLinkActive="active" class="nav-item">
+            Manutenção
+            @if (belowMinCount() > 0) {
+              <span class="nav-badge nav-badge--warn"
+                    aria-label="{{ belowMinCount() }} alertas de estoque">{{ belowMinCount() }}</span>
+            }
+          </a>
+        </li>
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-section__title">PRODUÇÃO</span>
+      <ul class="nav-list">
+        <li><a routerLink="/production/products"  routerLinkActive="active" class="nav-item">Produtos</a></li>
+        <li><a routerLink="/production/tracking"  routerLinkActive="active" class="nav-item">Acompanhamento</a></li>
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/production/sterilization-loads" routerLinkActive="active" class="nav-item">Cargas</a></li>
+          <li><a routerLink="/production/planning"            routerLinkActive="active" class="nav-item">Planejamento</a></li>
+          <li><a routerLink="/production/overview"            routerLinkActive="active" class="nav-item">Visão Geral</a></li>
+          <li><a routerLink="/production/reports"             routerLinkActive="active" class="nav-item">Relatórios</a></li>
+          <li><a routerLink="/analytics/oee"                  routerLinkActive="active" class="nav-item">Analytics OEE</a></li>
+        }
+      </ul>
+    </div>
+
+    @if (role() === 'ADMIN') {
+      <div class="nav-section">
+        <span class="nav-section__title">ADMIN</span>
+        <ul class="nav-list">
+          <li><a routerLink="/admin/users"             routerLinkActive="active" class="nav-item">Usuários</a></li>
+          <li><a routerLink="/admin/alert-thresholds"  routerLinkActive="active" class="nav-item">Alertas</a></li>
+          <li><a routerLink="/admin/shifts"            routerLinkActive="active" class="nav-item">Turnos</a></li>
+          <li><a routerLink="/admin/sla-rules"         routerLinkActive="active" class="nav-item">SLA</a></li>
+          <li><a routerLink="/admin/plants"            routerLinkActive="active" class="nav-item">Plantas</a></li>
+          <li><a routerLink="/admin/lgpd"              routerLinkActive="active" class="nav-item">LGPD</a></li>
+          <li><a routerLink="/admin/webhooks"          routerLinkActive="active" class="nav-item">Webhooks</a></li>
+        </ul>
+      </div>
+    }
+
+    <div class="nav-section">
+      <span class="nav-section__title">CONTA</span>
+      <ul class="nav-list">
+        <li><a routerLink="/change-password" routerLinkActive="active" class="nav-item">Alterar Senha</a></li>
+        <li><a routerLink="/privacy/export"  routerLinkActive="active" class="nav-item">Exportar meus dados</a></li>
+      </ul>
+    </div>
+
+  </nav>
+  </div>
+
+  <!-- ── Footer brand ── -->
+  <div class="sidebar-footer">
+    <p class="sidebar-footer__name">MSB · MEDICAL SYSTEM DO BRASIL</p>
+    <div class="brand-chips">
+      <span class="brand-chip">Inovação</span>
+      <span class="brand-chip">Humanização</span>
+      <span class="brand-chip">Qualidade</span>
+    </div>
+  </div>
+
+</aside>

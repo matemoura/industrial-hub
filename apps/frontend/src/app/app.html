@@ -1,4 +1,16 @@
 @if (showNav()) {
-  <app-nav />
+  <div class="app-shell">
+    <app-nav />
+    <div class="shell-body">
+      <app-sidebar />
+      @if (shellState.sidebarOpen()) {
+        <div class="sidebar-backdrop" (click)="shellState.close()" aria-hidden="true"></div>
+      }
+      <main class="shell-main">
+        <router-outlet />
+      </main>
+    </div>
+  </div>
+} @else {
+  <router-outlet />
 }
-<router-outlet />

@@ -1,0 +1,37 @@
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.shell-body {
+  flex: 1;
+  min-height: 0;   /* CRÍTICO — permite shrink em flex-direction: column */
+  display: flex;
+  overflow: hidden;
+  position: relative;
+}
+
+.shell-main {
+  flex: 1;
+  min-width: 0;        /* CRÍTICO — impede overflow em flexbox */
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: #F4F7F9;
+}
+
+// ── Backdrop sidebar mobile ───────────────────────────────────────────────────
+.sidebar-backdrop {
+  position: fixed;
+  inset: 60px 0 0;
+  background: rgba(14, 34, 48, 0.55);
+  backdrop-filter: blur(2px);
+  z-index: 299;
+  animation: msb-fade-in 0.2s ease;
+}
+
+@keyframes msb-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
