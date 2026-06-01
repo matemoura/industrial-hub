@@ -1,0 +1,155 @@
+<div class="sp-page">
+
+  <!-- ── Header ── -->
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">DYNAMICS · SINCRONIZAÇÃO</p>
+      <h1 class="sp-title">Importação de Dados</h1>
+    </div>
+  </div>
+
+  <!-- ── Tabs ── -->
+  <div class="import-tabs">
+    @for (tab of visibleTabs; track tab.key) {
+      <button
+        type="button"
+        class="import-tab"
+        [class.import-tab--active]="activeTab() === tab.key"
+        (click)="selectTab(tab.key)">
+        {{ tab.label }}
+        @if (tab.minRole === 'ADMIN') {
+          <span class="import-tab__badge">ADMIN</span>
+        }
+      </button>
+    }
+  </div>
+
+  <!-- ── Upload card ── -->
+  <div class="import-card">
+
+    <div
+      class="drop-zone"
+      [class.drop-zone--over]="currentState.dragOver"
+      [class.drop-zone--has-file]="currentState.file !== null"
+      (dragover)="onDragOver($event)"
+      (dragleave)="onDragLeave()"
+      (drop)="onDrop($event)">
+
+      @if (currentState.file === null) {
+        <div class="drop-zone__empty">
+          <span class="drop-zone__icon" aria-hidden="true">📄</span>
+          <p class="drop-zone__title">Arraste o arquivo Excel aqui</p>
+          <p class="drop-zone__sub">ou</p>
+          <label class="drop-zone__btn">
+            Selecionar arquivo
+            <input type="file" accept=".xlsx,.xls" (change)="onFileChange($event)" hidden>
+          </label>
+          <p class="drop-zone__hint">.xlsx / .xls</p>
+        </div>
+      } @else {
+        <div class="drop-zone__file">
+          <span class="drop-zone__file-icon" aria-hidden="true">📊</span>
+          <span class="drop-zone__file-name">{{ currentState.file.name }}</span>
+          <button type="button" class="drop-zone__clear" (click)="clearFile()" aria-label="Remover arquivo">✕</button>
+        </div>
+      }
+    </div>
+
+    <!-- ── Importar button ── -->
+    <div class="import-actions">
+      <button
+        type="button"
+        class="sp-btn sp-btn--primary"
+        [disabled]="currentState.file === null || currentState.uploading"
+        (click)="import()">
+        @if (currentState.uploading) {
+          <span class="import-spinner" aria-hidden="true"></span>
+          Importando…
+        } @else {
+          Importar
+        }
+      </button>
+    </div>
+
+    <!-- ── Progress bar ── -->
+    @if (currentState.uploading) {
+      <div class="import-progress" role="progressbar" aria-label="Importando">
+        <div class="import-progress__bar"></div>
+      </div>
+    }
+
+    <!-- ── Error ── -->
+    @if (currentState.error !== null) {
+      <div class="import-error" role="alert">
+        <span aria-hidden="true">⚠️</span> {{ currentState.error }}
+      </div>
+    }
+
+    <!-- ── Result ── -->
+    @if (currentState.result !== null) {
+      <div class="import-result">
+        <div class="result-counters">
+          <div class="result-counter">
+            <span class="result-counter__value">{{ currentState.result.imported }}</span>
+            <span class="result-counter__label">Criados</span>
+          </div>
+          <div class="result-counter">
+            <span class="result-counter__value result-counter__value--update">{{ currentState.result.updated }}</span>
+            <span class="result-counter__label">Atualizados</span>
+          </div>
+          <div class="result-counter">
+            <span class="result-counter__value" [class.result-counter__value--error]="currentState.result.skipped > 0">{{ currentState.result.skipped }}</span>
+            <span class="result-counter__label">Ignorados</span>
+          </div>
+          @if (currentState.result.errors.length > 0) {
+            <div class="result-counter">
+              <span class="result-counter__value result-counter__value--error">{{ currentState.result.errors.length }}</span>
+              <span class="result-counter__label">Erros</span>
+            </div>
+          }
+        </div>
+
+        @if (activeTab() === 'orders' && currentState.result.updated > 0) {
+          <div class="result-info">
+            ℹ️ {{ currentState.result.updated }} OPs preservaram dados de esterilização Hub
+          </div>
+        }
+
+        @if (currentState.result.errors.length > 0) {
+          <details class="result-errors">
+            <summary class="result-errors__summary">
+              Ver {{ currentState.result.errors.length }} erro(s)
+            </summary>
+            <ul class="result-errors__list">
+              @for (err of currentState.result.errors; track $index) {
+                <li class="result-errors__item">{{ err }}</li>
+              }
+            </ul>
+          </details>
+        }
+      </div>
+    }
+
+  </div>
+
+  <!-- ── Info panel ── -->
+  <div class="import-info">
+    <h2 class="import-info__title">Colunas esperadas no arquivo</h2>
+    @switch (activeTab()) {
+      @case ('products') {
+        <code class="import-info__cols">dynamics_code · name · type · family_code · family_name · unit · requires_sterilization</code>
+      }
+      @case ('stock') {
+        <code class="import-info__cols">dynamics_code · qty · snapshot_date</code>
+      }
+      @case ('orders') {
+        <code class="import-info__cols">op_number · dynamics_code · status · planned_qty · produced_qty · start_date · due_date</code>
+      }
+      @case ('cycle-times') {
+        <code class="import-info__cols">dynamics_code · seconds_per_unit · effective_date</code>
+      }
+    }
+    <p class="import-info__note">Linhas com erros são ignoradas; as demais são processadas normalmente.</p>
+  </div>
+
+</div>

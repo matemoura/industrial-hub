@@ -155,6 +155,13 @@ export const routes: Routes = [
     canActivate: [authGuard, mustChangePasswordGuard],
     children: [
       {
+        path: 'import',
+        loadComponent: () =>
+          import('./production/production-import/production-import.component').then(
+            (m) => m.ProductionImportComponent,
+          ),
+      },
+      {
         path: 'products',
         loadComponent: () =>
           import('./production/product-catalog/product-catalog.component').then(

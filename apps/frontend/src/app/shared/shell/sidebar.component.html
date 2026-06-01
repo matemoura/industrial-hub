@@ -58,6 +58,9 @@
             }
           </a>
         </li>
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/maintenance/dashboard" routerLinkActive="active" class="nav-item">Dashboard Manutenção</a></li>
+        }
       </ul>
     </div>
 
@@ -72,6 +75,11 @@
           <li><a routerLink="/production/overview"            routerLinkActive="active" class="nav-item">Visão Geral</a></li>
           <li><a routerLink="/production/reports"             routerLinkActive="active" class="nav-item">Relatórios</a></li>
           <li><a routerLink="/analytics/oee"                  routerLinkActive="active" class="nav-item">Analytics OEE</a></li>
+          <li><a routerLink="/analytics/qms"                  routerLinkActive="active" class="nav-item">Analytics QMS</a></li>
+          <li><a routerLink="/analytics/maintenance"          routerLinkActive="active" class="nav-item">Analytics Manutenção</a></li>
+        }
+        @if (role() === 'ADMIN') {
+          <li><a routerLink="/production/import"              routerLinkActive="active" class="nav-item">Importação Dynamics</a></li>
         }
       </ul>
     </div>
