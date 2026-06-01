@@ -1,86 +1,110 @@
 <div class="login-wrapper">
-  <div class="login-card">
-    <div class="login-brand">
-      <div class="brand-logo">
-        <div class="brand-mark">
-          <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
-            <rect width="28" height="28" rx="7" fill="white" fill-opacity="0.2" />
-            <path d="M7 9h4l3 6 3-6h4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <circle cx="14" cy="18" r="2.5" fill="white"/>
-          </svg>
-        </div>
-        <div class="brand-text">
-          <span class="brand-name">Industrial Hub</span>
-          <span class="brand-sub">Medical System do Brasil</span>
-        </div>
+  <!-- Painel esquerdo: brand -->
+  <div class="login-brand-panel" aria-hidden="true">
+    <div class="wave-bg" aria-hidden="true"></div>
+    <div class="brand-panel-content">
+      <div class="brand-panel-logo">
+        <img src="msb-logo-white.png"
+             alt="MSB Medical System do Brasil"
+             class="brand-panel-logo-img" width="220" height="56"/>
       </div>
-      <div class="brand-divider"></div>
-    </div>
-
-    <form class="login-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-      @if (blockMessage()) {
-        <div class="block-alert" data-testid="block-message" role="alert" aria-live="polite">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="7" stroke="#b45309" stroke-width="1.5"/>
-            <path d="M8 5v3.5M8 11h.01" stroke="#b45309" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <span>{{ blockMessage() }}</span>
-        </div>
-      }
-
-      @if (error()) {
-        <div class="error-alert" data-testid="login-error" role="alert" aria-live="polite">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <circle cx="8" cy="8" r="7" stroke="#dc2626" stroke-width="1.5"/>
-            <path d="M8 5v3.5M8 11h.01" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/>
-          </svg>
-          <span>{{ error() }}</span>
-        </div>
-      }
-
-      <div class="field">
-        <label for="username">Usuário</label>
-        <input
-          id="username"
-          type="text"
-          formControlName="username"
-          placeholder="seu.usuario"
-          autocomplete="username"
-          data-testid="username"
-          [class.invalid]="form.controls.username.invalid && form.controls.username.touched"
-          aria-required="true"
-        />
+      <div class="brand-panel-tagline">
+        <p class="brand-panel-kicker">CUIDADO NOS PROCESSOS.</p>
+        <h1 class="brand-panel-headline">
+          Cada decisão industrial<br>
+          <em>começa aqui.</em>
+        </h1>
+        <p class="brand-panel-sub">
+          Plataforma interna de operações da MSB Medical System do Brasil.
+        </p>
       </div>
-
-      <div class="field">
-        <label for="password">Senha</label>
-        <input
-          id="password"
-          type="password"
-          formControlName="password"
-          placeholder="••••••••"
-          autocomplete="current-password"
-          data-testid="password"
-          [class.invalid]="form.controls.password.invalid && form.controls.password.touched"
-          aria-required="true"
-        />
-      </div>
-
-      <button type="submit" class="submit-btn" data-testid="login-btn" [disabled]="loading() || blockSeconds() > 0" aria-label="Entrar no sistema">
-        @if (loading()) {
-          <span class="spinner" aria-hidden="true"></span>
-          <span>Entrando…</span>
-        } @else {
-          <span>Entrar</span>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M3 8h10M9 4l4 4-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
+      <div class="brand-panel-badges">
+        @for (badge of ['ISO 13485', 'ANVISA RDC 665', 'MDR EU', 'FDA QSR']; track badge) {
+          <span class="compliance-badge">{{ badge }}</span>
         }
-      </button>
-    </form>
+      </div>
+    </div>
+  </div>
 
-    <footer class="login-footer">
-      © {{ currentYear }} Medical System do Brasil — Todos os direitos reservados.
-    </footer>
+  <!-- Painel direito: form -->
+  <div class="login-form-panel">
+    <div class="login-card">
+      <div class="login-card-header">
+        <p class="login-card-kicker">ACESSO RESTRITO</p>
+        <h2 class="login-card-title">Bem-vindo de volta.</h2>
+        <p class="login-card-sub">Use suas credenciais corporativas MSB.</p>
+      </div>
+
+      <form class="login-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        @if (blockMessage()) {
+          <div class="block-alert" data-testid="block-message" role="alert" aria-live="polite">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="7" stroke="#b45309" stroke-width="1.5"/>
+              <path d="M8 5v3.5M8 11h.01" stroke="#b45309" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>{{ blockMessage() }}</span>
+          </div>
+        }
+
+        @if (error()) {
+          <div class="error-alert" data-testid="login-error" role="alert" aria-live="polite">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <circle cx="8" cy="8" r="7" stroke="#dc2626" stroke-width="1.5"/>
+              <path d="M8 5v3.5M8 11h.01" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+            <span>{{ error() }}</span>
+          </div>
+        }
+
+        <div class="field">
+          <label for="username">Usuário</label>
+          <input
+            id="username"
+            type="text"
+            formControlName="username"
+            placeholder="seu.usuario"
+            autocomplete="username"
+            data-testid="username"
+            [class.invalid]="form.controls.username.invalid && form.controls.username.touched"
+            aria-required="true"
+          />
+        </div>
+
+        <div class="field">
+          <label for="password">Senha</label>
+          <input
+            id="password"
+            type="password"
+            formControlName="password"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            data-testid="password"
+            [class.invalid]="form.controls.password.invalid && form.controls.password.touched"
+            aria-required="true"
+          />
+        </div>
+
+        <button type="submit" class="submit-btn" data-testid="login-btn"
+                [disabled]="loading() || blockSeconds() > 0"
+                aria-label="Entrar no sistema">
+          @if (loading()) {
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Entrando…</span>
+          } @else {
+            <span>Entrar no Industrial Hub</span>
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M3 8h10M9 4l4 4-4 4" stroke="white" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          }
+        </button>
+      </form>
+
+      <footer class="login-footer">
+        <div class="login-footer-audit">
+          <strong>Auditoria ativa.</strong> Todo acesso é registrado conforme ISO 13485 §4.2.5.
+        </div>
+        <div class="login-footer-copy">© {{ currentYear }} Medical System do Brasil</div>
+      </footer>
+    </div>
   </div>
 </div>
