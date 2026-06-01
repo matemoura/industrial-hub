@@ -2230,7 +2230,7 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 32 | Motor MRP, planejamento por família e staffing por OP + tech debt S31 | US-085, US-086, US-087, US-100 | ADR-030, ADR-043 |
 | ✅ Sprint 33 | BOM import do Dynamics + relatório de planejamento + tech debt MRP | US-101, US-102, US-103 | ADR-044 |
 | ✅ Sprint 34 | Painel executivo de produção + BOM nível 2 no MRP + tech debt S33 | US-104, US-105, US-106 | ADR-045 |
-| ⬜ Sprint 35 | Cache Caffeine no painel executivo + gráfico NgxCharts + liquidação tech debt security | US-107, US-108, US-109 | ADR-046 |
+| ✅ Sprint 35 | Cache Caffeine no painel executivo + gráfico NgxCharts + liquidação tech debt security | US-107, US-108, US-109 | ADR-046 |
 
 ---
 
@@ -2843,18 +2843,24 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 35 ⬜
+## Sprint 35 ✅
 **Objetivo**: Performance e UX do painel executivo — Spring Cache Caffeine (TTL 5 min) no `GetProductionOverviewUseCase` + gráfico de tendência NgxCharts + liquidação de tech debt de segurança pendente (SEC-112, SEC-113, SEC-069)
 **ADR**: ADR-046
-**Status**: pendente
+**Status**: concluída
 **Pontos totais**: 7 pts (US-107: 2 + US-108: 3 + US-109: 2)
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-107 | Spring Cache Caffeine — TTL 5 min no painel executivo de produção | 2 | ⬜ pendente |
-| US-108 | NgxCharts gráfico de tendência de eficiência no painel executivo | 3 | ⬜ pendente |
-| US-109 | Tech debt security — SEC-112 (IOException), SEC-113 (importedBy exposto), SEC-069 (null check morto) | 2 | ⬜ pendente |
+| US-107 | Spring Cache Caffeine — TTL 5 min no painel executivo de produção | 2 | ✅ concluído |
+| US-108 | NgxCharts gráfico de tendência de eficiência no painel executivo | 3 | ✅ concluído |
+| US-109 | Tech debt security — SEC-112 (IOException), SEC-113 (importedBy exposto), SEC-069 (null check morto) | 2 | ✅ concluído |
+
+### Tech Debt diferido do Sprint 35
+
+| ID | Severidade | Descrição | Sprint prevista |
+|----|-----------|-----------|----------------|
+| SEC-123 | INFO | `@swimlane/ngx-charts@24.0.0-alpha.0` é versão alpha — monitorar release estável para upgrade | A definir |
 
 ### Dependências
 - US-107 depende de Sprint 34 (GetProductionOverviewUseCase já implementado)

@@ -1,5 +1,23 @@
 # Log Aisha
 
+## [2026-06-01] Sincronização pós-Sprint 35 + Design System MSB
+Fontes lidas: CLAUDE.md, sprint-atual.md, log-mateus.md, log-tadeu.md, log-maiana.md, log-maite.md, log-beatriz.md, log-athos.md
+Mudanças feitas:
+  - `sprint-atual.md` — roadmap: Sprint 35 `⬜` → `✅`
+  - `sprint-atual.md` — header "## Sprint 35 ⬜" → "## Sprint 35 ✅"; Status: `pendente` → `concluída`
+  - `sprint-atual.md` — US-107, US-108, US-109: `⬜ pendente` → `✅ concluído`
+  - `sprint-atual.md` — adicionada seção "Tech Debt diferido do Sprint 35": SEC-123 INFO (@swimlane/ngx-charts alpha, monitorar upgrade para release estável)
+  - `CLAUDE.md` — Domain Modules: adicionada linha Sprint 35 (Cache Caffeine + NgxCharts + SEC-112/113/069)
+  - `CLAUDE.md` — Visual Identity: caminhos dos logos corrigidos SVG → PNG (public/), adicionada nota sobre shell layout (topbar/sidebar)
+Observações extras (entregas fora do ciclo de sprints):
+  - Design System MSB implementado: logos PNG substituídos em nav e login; tokens de cor do Brand Manual aplicados globalmente
+  - Shell SPShell: topbar com gradiente + sidebar dark com seções OPERAÇÃO/PRODUÇÃO/ADMIN/CONTA; hamburger drawer mobile (≤900px)
+  - Responsividade adicionada em kpi-dashboard, qms/nc-list, oee/dashboard; sidebar vira overlay no mobile
+  - Breadcrumb simplificado: "Planta SP-01 / PageTitle" → apenas "PageTitle"
+  - Limpeza de código: DashboardService removido (órfão), polling duplicado de MaintenanceService removido do NavComponent, kpi-dashboard.spec.ts reescrito para KpiService atual, ShellStateService criado para coordenar estado do sidebar
+
+---
+
 ## [2026-06-01] Sincronização pós-Sprint 34
 Fontes lidas: CLAUDE.md, sprint-atual.md, log-mateus.md, log-tadeu.md, log-maiana.md, log-maite.md, log-beatriz.md, log-athos.md, log-atlas.md
 Mudanças feitas:

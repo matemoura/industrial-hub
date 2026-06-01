@@ -82,10 +82,15 @@ shared/
 
 ## Visual Identity (MSB)
 
-Brand color: **`#0099B8`** (teal, from MSB logo)
-Secondary: **`#006B82`** (dark teal), Accent: **`#00C4E8`** (light teal)
-Background: **`#F4F6F9`**, Surface: **`#FFFFFF`**
+Brand color: **`#56A4BB`** (azulFiltrado — sobriedade + dinamicidade, Manual de Marca p.21)
+Secondary: **`#5F88A1`** (azulSafira), Accent: **`#9CE5EE`** (azulTecno)
+Neutral: **`#818286`** (cinzaCirurgico), Background tint: **`#D9E4E8`** (cinzaSeguro)
+Background: **`#F4F7F9`**, Surface: **`#FFFFFF`**
+Text: **`#1F3A4A`** (azulProfundo), Deep text: **`#0E2230`** (azulNoturno)
+Status: ok `#3FA66A`, warn `#E8A93C`, danger `#D24A4A`
 Font: Inter (sans-serif), professional industrial look
+Logo: `apps/frontend/public/msb-logo.png` (wordmark color), `msb-logo-white.png` (nav/login), `msb-mark.png` (icon)
+Shell: topbar gradient `#1F3A4A → #5F88A1 → #56A4BB` (60px) + dark sidebar `#1F3A4A → #0E2230` (260px, drawer on mobile ≤900px)
 
 ## Domain Modules
 
@@ -111,6 +116,7 @@ Font: Inter (sans-serif), professional industrial look
 | MRP Engine + Staffing + Planning Board | `production/` | 32 | ✅ done |
 | BOM Import + Planning Report | `production/` | 33 | ✅ done |
 | Production Overview + BOM Level 2 MRP | `production/` | 34 | ✅ done |
+| Cache Caffeine (TTL 5 min) + NgxCharts trend chart + Security debt (SEC-112/113/069) | `production/`, `common/config/` | 35 | ✅ done |
 
 ## Key Conventions
 
