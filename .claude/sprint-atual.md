@@ -2231,6 +2231,8 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 33 | BOM import do Dynamics + relatório de planejamento + tech debt MRP | US-101, US-102, US-103 | ADR-044 |
 | ✅ Sprint 34 | Painel executivo de produção + BOM nível 2 no MRP + tech debt S33 | US-104, US-105, US-106 | ADR-045 |
 | ✅ Sprint 35 | Cache Caffeine no painel executivo + gráfico NgxCharts + liquidação tech debt security | US-107, US-108, US-109 | ADR-046 |
+| ⬜ Sprint 36 | Gestão de Documentos (GED) — catálogo controlado com revisões imutáveis + MinIO | US-110, US-111 | ADR-047 |
+| ⬜ Sprint 37 | CAPAS Formal — extensão da CorrectiveAction com PENDING_EFFECTIVENESS + lista dedicada | US-112 | ADR-048 |
 
 ---
 
@@ -2913,3 +2915,116 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 **Testes**
 4. Cada fix deve ter teste unitário ou de integração verificando o comportamento corrigido; nenhum teste existente deve quebrar
+
+---
+
+## Sprint 36 ⬜
+**Objetivo**: Gestão de Documentos (GED) — módulo de controle documental no package `qms/ged/` com entidades `Document` + `DocumentRevision` imutáveis, integrado ao `StorageService` MinIO/S3 do Sprint 21. Documentos publicados não podem ser alterados — novas versões criam revisões.
+**ADR**: ADR-047
+**Status**: pendente
+**Pontos totais**: 8 pts (US-110: 5 + US-111: 3)
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-110 | GED — backend: entidades, API e integração MinIO | 5 | ⬜ pendente |
+| US-111 | GED — frontend: catálogo, detalhe, upload e download | 3 | ⬜ pendente |
+
+### Dependências
+- US-110 depende de Sprint 21 (`StorageService` já implementado em `common/storage/`)
+- US-111 depende de US-110 (API deve existir antes da tela)
+
+### Sequência de entrega sugerida
+1. US-110 backend (entidades + migration + endpoints + testes)
+2. US-111 frontend (lista + detalhe + upload + sidebar)
+
+---
+
+#### US-110 — GED backend: entidades, API e integração MinIO (5 pts)
+
+**Contexto**: ISO 13485 §4.2 exige controle documental formal. O sistema já tem `StorageService` (MinIO/S3, Sprint 21) para upload de arquivos e `FileAttachment` para anexos genéricos. Esta US cria um módulo dedicado para documentos controlados com versionamento imutável.
+
+**Backend — Entidades e migration**
+1. Package `qms/ged/domain/`: entidade `Document` com campos: `id` (UUID), `code` (String, único, ex: `SOP-001`), `title` (String), `category` (`DocumentCategory` enum: `SOP`, `FORM`, `POLICY`, `WORK_INSTRUCTION`, `RECORD`), `status` (`DocumentStatus` enum: `DRAFT`, `PUBLISHED`, `OBSOLETE`), `currentRevision` (`@OneToOne LAZY` para `DocumentRevision`), `createdBy` (String), `createdAt` (LocalDateTime)
+2. Entidade `DocumentRevision` com campos: `id` (UUID), `document` (`@ManyToOne LAZY`), `revisionNumber` (String, ex: `"1.0"`, `"2.0"` — auto-gerado sequencialmente), `storagePath` (String — chave MinIO), `originalFileName` (String), `fileSizeBytes` (Long), `uploadedBy` (String), `uploadedAt` (LocalDateTime), `changeReason` (String)
+3. `DocumentRevision` é **imutável** — nenhum endpoint de update; apenas criação e leitura
+4. Migrations: `V{N}__ged_document.sql` e `V{N+1}__ged_document_revision.sql` com índice único em `document.code` e índice em `document_revision.document_id`
+
+**Backend — API**
+5. `POST /api/v1/qms/ged/documents` (SUPERVISOR+, multipart/form-data): cria `Document` em `DRAFT` + primeira `DocumentRevision` (`revisionNumber="1.0"`); faz upload do arquivo via `StorageService` para bucket `ged/` + path `{documentCode}/{uuid}_{originalFileName}`; retorna `201 DocumentResponse`
+6. `POST /api/v1/qms/ged/documents/{id}/revisions` (SUPERVISOR+, multipart/form-data): cria nova `DocumentRevision` com `revisionNumber` incrementado (ex: `"1.0"` → `"2.0"`); atualiza `document.currentRevision`; documento deve estar em `DRAFT` ou `PUBLISHED`; retorna `201 DocumentRevisionResponse`
+7. `PUT /api/v1/qms/ged/documents/{id}/status` (ADMIN, body `{ "status": "PUBLISHED" }`): transições válidas: `DRAFT → PUBLISHED`, `PUBLISHED → OBSOLETE`; transição inválida retorna `422` com `{ "message": "Transição de status inválida: OBSOLETE → PUBLISHED" }`
+8. `GET /api/v1/qms/ged/documents` (OPERATOR+): lista paginada (`@PageableDefault(size=20)`) com filtros `?category=SOP&status=PUBLISHED`; retorna projeção `DocumentSummaryResponse` (sem lista de revisões)
+9. `GET /api/v1/qms/ged/documents/{id}` (OPERATOR+): detalhe completo com lista de todas as revisões ordenadas por `uploadedAt DESC`
+10. `GET /api/v1/qms/ged/documents/{id}/revisions/{revId}/download` (OPERATOR+): gera URL pré-assinada via `StorageService.generatePresignedUrl(storagePath, Duration.ofMinutes(15))`; retorna `{ "url": "...", "expiresIn": 900 }`
+
+**Testes**
+11. `UploadDocumentUseCaseTest`: (a) cria Document+Revision com revisionNumber=1.0; (b) StorageService chamado com path correto; (c) body multipart sem arquivo retorna 400
+12. `AddRevisionUseCaseTest`: (a) segunda revisão tem revisionNumber=2.0; (b) documento OBSOLETE não aceita nova revisão (422)
+13. `StatusTransitionUseCaseTest`: (a) DRAFT→PUBLISHED ok; (b) PUBLISHED→OBSOLETE ok; (c) OBSOLETE→DRAFT lança exceção → 422
+14. `GedControllerTest`: download endpoint retorna URL com TTL 15 min; OPERATOR não consegue criar documento (403)
+
+---
+
+#### US-111 — GED frontend: catálogo, detalhe, upload e download (3 pts)
+
+**Contexto**: Tela para que supervisores gerenciem documentos controlados e operadores consultem e baixem versões publicadas.
+
+**Frontend**
+1. Rota `/qms/ged` (OPERATOR+, lazy-loaded) adicionada em `app.routes.ts`; link "Documentos" adicionado na sidebar seção OPERAÇÃO (visível para OPERATOR+)
+2. Serviço `GedService` em `qms/ged.service.ts` com métodos: `listDocuments(params): Observable<Page<DocumentSummary>>`, `getDocument(id): Observable<DocumentDetail>`, `createDocument(form: FormData): Observable<DocumentResponse>`, `addRevision(id, form: FormData): Observable<DocumentRevisionResponse>`, `updateStatus(id, status): Observable<DocumentResponse>`, `getDownloadUrl(id, revId): Observable<{url: string}>`
+3. Página `/qms/ged`: tabela com colunas `Código`, `Título`, `Categoria` (chip colorido: SOP=azul, FORM=cinza, POLICY=roxo, WORK_INSTRUCTION=laranja, RECORD=verde-escuro), `Status` (chip: DRAFT=warn, PUBLISHED=ok, OBSOLETE=neutral), `Revisão atual`, `Atualizado em`; filtros: select de categoria + select de status; botão "Novo Documento" visível para SUPERVISOR/ADMIN
+4. Modal "Novo Documento" (SUPERVISOR+): campos `Código`, `Título`, `Categoria` (select), `Motivo da primeira revisão`, `Arquivo` (file input, .pdf/.docx/.xlsx); botão "Criar" desabilitado sem arquivo selecionado; após criação fecha modal e recarrega lista
+5. Página `/qms/ged/:id` (detalhe): header com código, título, status badge + botão "Publicar" (ADMIN, aparece quando DRAFT) + botão "Tornar Obsoleto" (ADMIN, aparece quando PUBLISHED); seção "Revisões" com tabela: Nº Revisão, Arquivo original, Tamanho, Enviado por, Data, botão "⬇ Baixar"; botão "⬇ Baixar" chama `getDownloadUrl()` e abre URL em nova aba; botão "Nova Revisão" (SUPERVISOR+) — modal com arquivo + motivo
+6. `ChangeDetectionStrategy.OnPush`, standalone, signals em todos os componentes
+7. Spec `ged-list.component.spec.ts`: (a) tabela renderiza skeleton durante carregamento; (b) "Novo Documento" oculto para OPERATOR; (c) chip PUBLISHED exibe cor correta; (d) filtro de status dispara nova requisição
+
+---
+
+## Sprint 37 ⬜
+**Objetivo**: CAPAS Formal — elevação das ações corretivas ao padrão ISO 13485 §8.5.2/8.5.3 com status `PENDING_EFFECTIVENESS`, campos de tipo (CORRECTIVE/PREVENTIVE), verificação de eficácia e lista dedicada `/qms/capas` acessível para supervisores.
+**ADR**: ADR-048
+**Status**: pendente
+**Pontos totais**: 6 pts (US-112: 6)
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-112 | CAPAS Formal — extensão do CorrectiveAction + status PENDING_EFFECTIVENESS + lista CAPA | 6 | ⬜ pendente |
+
+### Dependências
+- US-112 depende de Sprints 5/6/13 (entidade `CorrectiveAction` e `ActionStatus` existentes no package `qms/`)
+- US-112 depende de Sprint 15 (RCA já linkado à NC — fluxo relacionado)
+
+### Sequência de entrega sugerida
+1. Backend: migration + extensão de enum + novos endpoints
+2. Frontend: extensão do card de ação corretiva na NC + nova rota `/qms/capas`
+
+---
+
+#### US-112 — CAPAS Formal: extensão da CorrectiveAction + lista dedicada (6 pts)
+
+**Contexto**: ISO 13485 §8.5.2 (ação corretiva) e §8.5.3 (ação preventiva) exigem que ações tenham tipo explícito (corretiva vs preventiva), verificação formal de eficácia antes do fechamento, e rastreabilidade da causa raiz confirmada. A entidade `CorrectiveAction` existente tem apenas `PENDING` e `DONE` — insuficiente para o fluxo regulatório.
+
+**Backend — Extensão de entidade e enum**
+1. `ActionStatus` enum ganha valor `PENDING_EFFECTIVENESS` (entre `PENDING` e `DONE`); máquina de estados: `PENDING → PENDING_EFFECTIVENESS → DONE` (não é possível ir direto de `PENDING → DONE` quando tipo = CORRECTIVE ou PREVENTIVE)
+2. `CorrectiveAction` ganha campos nullable (backward-compatible): `type` (`ActionType` enum: `CORRECTIVE`, `PREVENTIVE`; default `CORRECTIVE` via `@Column(columnDefinition="varchar(20) default 'CORRECTIVE'")` na migration), `rootCauseConfirmed` (TEXT nullable), `preventiveMeasure` (TEXT nullable), `effectivenessCheckDate` (LocalDate nullable — data planejada para verificação), `effectivenessCheckedBy` (String nullable), `effectivenessResult` (TEXT nullable)
+3. Migration `V{N}__corrective_action_capa_extension.sql`: `ALTER TABLE corrective_action ADD COLUMN type VARCHAR(20) DEFAULT 'CORRECTIVE', ADD COLUMN root_cause_confirmed TEXT, ADD COLUMN preventive_measure TEXT, ADD COLUMN effectiveness_check_date DATE, ADD COLUMN effectiveness_checked_by VARCHAR(255), ADD COLUMN effectiveness_result TEXT`; atualizar também o enum se PostgreSQL; não quebra registros existentes (todos nullable com default)
+
+**Backend — Novos endpoints**
+4. `PUT /api/v1/qms/non-conformances/{ncId}/corrective-actions/{actionId}` (SUPERVISOR+, body `CAPAUpdateRequest`): atualiza campos `type`, `rootCauseConfirmed`, `preventiveMeasure`, `effectivenessCheckDate`; apenas quando `status = PENDING`; retorna `200 ActionResponse` atualizado
+5. `POST /api/v1/qms/non-conformances/{ncId}/corrective-actions/{actionId}/submit-for-effectiveness` (SUPERVISOR+): transição `PENDING → PENDING_EFFECTIVENESS`; requer que `rootCauseConfirmed` não seja nulo; retorna `200 ActionResponse`
+6. `POST /api/v1/qms/non-conformances/{ncId}/corrective-actions/{actionId}/verify-effectiveness` (SUPERVISOR+, body `{ "effectivenessResult": "...", "effectivenessCheckedBy": "..." }`): transição `PENDING_EFFECTIVENESS → DONE`; registra `effectivenessResult` e `effectivenessCheckedBy`; após transição, verifica se **todas** as ações da NC estão `DONE` — se sim, atualiza `NC.status` para `CLOSED` automaticamente
+7. `GET /api/v1/qms/capas` (SUPERVISOR+): lista paginada de **todas** as `CorrectiveAction` de todas as NCs, ordenadas por `dueDate ASC`; filtros: `?type=PREVENTIVE`, `?status=PENDING_EFFECTIVENESS`, `?ncId={uuid}`; retorna `CAPASummaryResponse` com campos: `actionId`, `ncCode`, `ncTitle`, `description`, `type`, `status`, `responsible`, `dueDate`, `effectivenessCheckDate`
+
+**Testes**
+8. `SubmitForEffectivenessUseCaseTest`: (a) transição PENDING→PENDING_EFFECTIVENESS ok com rootCauseConfirmed preenchido; (b) transição falha se rootCauseConfirmed nulo → 422
+9. `VerifyEffectivenessUseCaseTest`: (a) última ação da NC verificada → NC.status=CLOSED; (b) ainda há ações PENDING → NC não fecha
+10. `CAPAListUseCaseTest`: filtro `?type=PREVENTIVE` retorna apenas ações preventivas; paginação funcional
+11. `ActionResponseTest`: campos novos `type`, `effectivenessCheckDate` presentes no response; `ActionStatus.PENDING_EFFECTIVENESS` serializado corretamente
+
+**Frontend**
+12. No detalhe de NC (`/qms/non-conformances/:id`), o card de cada ação corretiva ganha: badge de tipo (CORRECTIVE=azul, PREVENTIVE=roxo), campo "Causa raiz confirmada" (textarea, editável quando PENDING), campo "Medida preventiva" (textarea, editável quando PENDING), campo "Data de verificação de eficácia" (date input); botão "Enviar para Verificação" (aparece quando status=PENDING, SUPERVISOR+) — chama `submit-for-effectiveness`; botão "Confirmar Eficácia" (aparece quando status=PENDING_EFFECTIVENESS, SUPERVISOR+) — abre modal com campo `effectivenessResult`
+13. Rota `/qms/capas` (SUPERVISOR+, lazy-loaded): lista de todas as CAPAs com colunas `NC`, `Descrição`, `Tipo` (chip), `Status` (chip), `Responsável`, `Prazo`, `Data verif. eficácia`; filtros: tipo e status; link na sidebar seção OPERAÇÃO (SUPERVISOR+)
+14. Sidebar: adicionar link "CAPAs" (SUPERVISOR+) sob "Não-Conformidades" na seção OPERAÇÃO
+15. Spec `capa-list.component.spec.ts`: (a) filtro por tipo dispara nova requisição; (b) chip PENDING_EFFECTIVENESS exibido corretamente; (c) "CAPAs" não aparece na sidebar para OPERATOR

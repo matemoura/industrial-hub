@@ -117,6 +117,8 @@ Shell: topbar gradient `#1F3A4A → #5F88A1 → #56A4BB` (60px) + dark sidebar `
 | BOM Import + Planning Report | `production/` | 33 | ✅ done |
 | Production Overview + BOM Level 2 MRP | `production/` | 34 | ✅ done |
 | Cache Caffeine (TTL 5 min) + NgxCharts trend chart + Security debt (SEC-112/113/069) | `production/`, `common/config/` | 35 | ✅ done |
+| GED — Gestão de Documentos controlados (Document + DocumentRevision imutável + MinIO) | `qms/ged/` | 36 | ⬜ planned |
+| CAPAS Formal — CorrectiveAction + PENDING_EFFECTIVENESS + lista cross-NC | `qms/` | 37 | ⬜ planned |
 
 ## Key Conventions
 

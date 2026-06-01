@@ -1,5 +1,12 @@
 # Log Aisha
 
+## [2026-06-01] Sincronização Sprints 36 e 37 — GED e CAPAS Formal
+Fontes lidas: CLAUDE.md, sprint-atual.md, log-athos.md, log-atlas.md, ADR-047, ADR-048
+Mudanças feitas:
+  - `CLAUDE.md` — Domain Modules: adicionadas linhas Sprint 36 (GED, `qms/ged/`, ⬜ planned) e Sprint 37 (CAPAS Formal, `qms/`, ⬜ planned)
+  - `sprint-atual.md` — roadmap: adicionadas linhas ⬜ Sprint 36 e ⬜ Sprint 37 (já feito pelo Athos)
+  - Consistência verificada: ADR-047 referencia US-110/US-111 ✓; ADR-048 referencia US-112 ✓; sprint-atual.md referencia ADR-047/ADR-048 ✓
+
 ## [2026-06-01] Sincronização pós-Sprint 35 + Design System MSB
 Fontes lidas: CLAUDE.md, sprint-atual.md, log-mateus.md, log-tadeu.md, log-maiana.md, log-maite.md, log-beatriz.md, log-athos.md
 Mudanças feitas:
