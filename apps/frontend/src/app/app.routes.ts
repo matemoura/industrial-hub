@@ -97,7 +97,7 @@ export const routes: Routes = [
       ),
   },
   {
-    path: 'summary',
+    path: 'oee/summary',
     canActivate: [authGuard, mustChangePasswordGuard],
     loadComponent: () =>
       import('./oee/summary/summary.component').then((m) => m.SummaryComponent),
