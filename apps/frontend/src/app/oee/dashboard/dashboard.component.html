@@ -1,123 +1,140 @@
-<div class="dashboard" data-testid="oee-dashboard">
-  <div class="dashboard-header">
-    <h2>Worker Efficiency Dashboard</h2>
-    <a routerLink="/oee/planned-downtimes" class="nav-link-downtimes">
-      Calendário de Paradas Planejadas
-    </a>
+<div class="sp-page oee-dash" data-testid="oee-dashboard">
+
+  <!-- Cabeçalho -->
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">EFICIÊNCIA · DETALHAMENTO POR OPERADOR</p>
+      <h1 class="sp-title">OEE <span class="sp-title-accent">/ Análise de Disponibilidade</span></h1>
+    </div>
+    @if (rows().length > 0) {
+      <div class="sp-page-actions">
+        <button type="button" class="sp-btn sp-btn--secondary" (click)="exportCsv()">↓ Exportar CSV</button>
+      </div>
+    }
   </div>
 
-  <form class="filters" (ngSubmit)="search()">
-    <label>
-      Start date
-      <input
-        type="date"
-        [ngModel]="startDate()"
-        (ngModelChange)="startDate.set($event)"
-        name="startDate"
-        data-testid="filter-start-date"
-        required
-      />
-    </label>
-    <label>
-      End date
-      <input
-        type="date"
-        [ngModel]="endDate()"
-        (ngModelChange)="endDate.set($event)"
-        name="endDate"
-        data-testid="filter-end-date"
-        required
-      />
-    </label>
-    <label>
-      Worker
-      <select
-        [ngModel]="searchWorkerId()"
-        (ngModelChange)="searchWorkerId.set($event ? +$event : null)"
-        name="workerId"
-      >
-        <option [value]="null">All workers</option>
-        @for (w of allWorkers(); track w.workerId) {
-          <option [value]="w.workerId">{{ w.workerName }} ({{ w.workerId }})</option>
-        }
-      </select>
-    </label>
-    <button type="submit" data-testid="filter-apply" [disabled]="loading()">
-      {{ loading() ? 'Loading…' : 'Search' }}
-    </button>
-  </form>
-
-  <div class="toggle-exclude-downtime">
-    <label class="toggle-label">
-      <input
-        type="checkbox"
-        [ngModel]="excludePlannedDowntime()"
-        (ngModelChange)="excludePlannedDowntime.set($event)"
-        name="excludePlannedDowntime"
-        data-testid="toggle-exclude-downtime"
-      />
-      Excluir paradas planejadas do cálculo de OEE
-    </label>
+  <!-- Filtros -->
+  <div class="oee-filters">
+    <form class="filters-form" (ngSubmit)="search()">
+      <div class="filter-group">
+        <label class="filter-label" for="start-date">Data inicial</label>
+        <input id="start-date" class="filter-input" type="date"
+               [ngModel]="startDate()" (ngModelChange)="startDate.set($event)"
+               name="startDate" data-testid="filter-start-date" required />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="end-date">Data final</label>
+        <input id="end-date" class="filter-input" type="date"
+               [ngModel]="endDate()" (ngModelChange)="endDate.set($event)"
+               name="endDate" data-testid="filter-end-date" required />
+      </div>
+      <div class="filter-group">
+        <label class="filter-label" for="worker-filter">Operador</label>
+        <select id="worker-filter" class="filter-input"
+                [ngModel]="searchWorkerId()" (ngModelChange)="searchWorkerId.set($event ? +$event : null)"
+                name="workerId">
+          <option [value]="null">Todos os operadores</option>
+          @for (w of allWorkers(); track w.workerId) {
+            <option [value]="w.workerId">{{ w.workerName }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group filter-group--toggle">
+        <label class="toggle-label">
+          <input type="checkbox"
+                 [ngModel]="excludePlannedDowntime()"
+                 (ngModelChange)="excludePlannedDowntime.set($event)"
+                 name="excludePlannedDowntime"
+                 data-testid="toggle-exclude-downtime" />
+          <span>Excluir paradas planejadas</span>
+        </label>
+      </div>
+      <button type="submit" class="sp-btn sp-btn--primary" data-testid="filter-apply"
+              [disabled]="loading()">
+        {{ loading() ? 'Buscando…' : 'Buscar' }}
+      </button>
+    </form>
   </div>
 
   @if (error()) {
-    <p class="error">{{ error() }}</p>
+    <div class="sp-error" role="alert">{{ error() }}</div>
   }
 
   @if (rows().length > 0) {
-    <div class="table-actions">
-      <button type="button" class="btn-export" (click)="exportCsv()">Export CSV</button>
-    </div>
-
-    <div class="worker-filter">
-      <label>
-        Filter by worker:
-        <select
-          [ngModel]="selectedWorkerId()?.toString() ?? ''"
-          (ngModelChange)="selectedWorkerId.set($event ? +$event : null)"
-          name="workerFilter"
-        >
-          <option value="">All</option>
+    <!-- Seletor de operador dos resultados -->
+    @if (workers().length > 1) {
+      <div class="result-filter">
+        <span class="result-filter__label">Filtrar resultado:</span>
+        <select class="filter-input filter-input--sm"
+                [ngModel]="selectedWorkerId()?.toString() ?? ''"
+                (ngModelChange)="selectedWorkerId.set($event ? +$event : null)"
+                name="workerFilter">
+          <option value="">Todos</option>
           @for (w of workers(); track w.id) {
-            <option [value]="w.id">{{ w.name }} ({{ w.id }})</option>
+            <option [value]="w.id">{{ w.name }}</option>
           }
         </select>
-      </label>
+        <span class="result-filter__count">{{ filteredRows().length }} registro(s)</span>
+      </div>
+    }
+
+    <!-- Cards de resultados -->
+    <div class="oee-results">
+      @for (row of filteredRows(); track row.workerId + row.date) {
+        <div class="oee-result-card">
+          <div class="oee-result-card__header">
+            <div>
+              <p class="oee-result-card__name">{{ row.workerName }}</p>
+              <p class="oee-result-card__date">{{ row.date }}</p>
+            </div>
+            <div class="oee-result-card__avail"
+                 [class.oee-result-card__avail--ok]="(row.availability ?? 0) >= 0.65"
+                 [class.oee-result-card__avail--warn]="row.availability !== null && (row.availability ?? 0) < 0.65"
+                 [class.oee-result-card__avail--null]="row.availability === null">
+              {{ formatAvailability(row.availability) }}
+            </div>
+          </div>
+          <div class="oee-result-card__bars">
+            @if (row.availability !== null) {
+              <div class="oee-bar">
+                <span class="oee-bar__label">Disponibilidade</span>
+                <div class="oee-bar__track">
+                  <div class="oee-bar__fill" [style.width.%]="(row.availability ?? 0) * 100"></div>
+                </div>
+                <span class="oee-bar__val">{{ formatAvailability(row.availability) }}</span>
+              </div>
+            }
+            @if (row.productiveHours != null) {
+              <div class="oee-bar">
+                <span class="oee-bar__label">Horas produtivas</span>
+                <div class="oee-bar__track">
+                  <div class="oee-bar__fill oee-bar__fill--secondary"
+                       [style.width.%]="(row.productiveHours / (row.shiftDuration ?? row.productiveHours + 0.001)) * 100"></div>
+                </div>
+                <span class="oee-bar__val">{{ row.productiveHours.toFixed(1) }}h</span>
+              </div>
+            }
+            @if (row.indirectHours != null) {
+              <div class="oee-bar">
+                <span class="oee-bar__label">Horas indiretas</span>
+                <div class="oee-bar__track">
+                  <div class="oee-bar__fill oee-bar__fill--indirect"
+                       [style.width.%]="(row.indirectHours / (row.shiftDuration ?? row.indirectHours + 0.001)) * 100"></div>
+                </div>
+                <span class="oee-bar__val">{{ row.indirectHours.toFixed(1) }}h</span>
+              </div>
+            }
+          </div>
+          @if (row.availability === null) {
+            <p class="oee-result-card__no-punch">Sem dados de ponto</p>
+          }
+        </div>
+      }
     </div>
-
-    <table class="results-table">
-      <thead>
-        <tr>
-          <th>Worker</th>
-          <th>Date</th>
-          <th>Productive (h)</th>
-          <th>Indirect (h)</th>
-          <th>Shift (h)</th>
-          <th>Availability</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (row of filteredRows(); track row.workerId + row.date) {
-          <tr [class.no-punch]="row.availability === null">
-            <td>{{ row.workerName }}</td>
-            <td>{{ row.date }}</td>
-            <td>{{ row.productiveHours ?? '—' }}</td>
-            <td>{{ row.indirectHours ?? '—' }}</td>
-            <td>{{ row.shiftDuration ?? '—' }}</td>
-            <td [class.null-availability]="row.availability === null">
-              @if (row.availability !== null) {
-                {{ formatAvailability(row.availability) }}
-              } @else {
-                <span class="no-punch-label">No punch data</span>
-              }
-            </td>
-          </tr>
-        }
-      </tbody>
-    </table>
+  } @else if (!loading() && !error() && startDate() && endDate()) {
+    <div class="oee-empty">
+      <p>Nenhum dado encontrado para o período selecionado.</p>
+    </div>
   }
 
-  @if (!loading() && rows().length === 0 && startDate() && endDate()) {
-    <p class="empty">No data found for the selected period.</p>
-  }
 </div>

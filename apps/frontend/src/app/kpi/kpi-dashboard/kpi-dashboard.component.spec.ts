@@ -1,31 +1,26 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { KpiDashboardComponent } from './kpi-dashboard.component';
-import { DashboardService, WidgetConfig } from '../dashboard.service';
-import { AuthService } from '../../auth/auth.service';
+import { provideRouter } from '@angular/router';
 import { signal } from '@angular/core';
 import { of, throwError } from 'rxjs';
+import { KpiDashboardComponent } from './kpi-dashboard.component';
+import { KpiService, KpiSummaryResponse } from '../kpi.service';
+import { AuthService } from '../../auth/auth.service';
 
-const DEFAULT_WIDGETS: WidgetConfig[] = [
-  { id: 'w1', type: 'oee-avg',          column: 1, row: 1 },
-  { id: 'w2', type: 'nc-open',          column: 2, row: 1 },
-  { id: 'w3', type: 'nc-critical',      column: 3, row: 1 },
-  { id: 'w4', type: 'wo-open',          column: 1, row: 2 },
-  { id: 'w5', type: 'mttr',             column: 2, row: 2 },
-  { id: 'w6', type: 'equipment-count',  column: 3, row: 2 },
-];
+const MOCK_KPI: KpiSummaryResponse = {
+  oeeAvgLast30Days:    0.78,
+  totalNcOpen:         12,
+  totalNcCritical:     3,
+  totalWorkOrdersOpen: 7,
+  mttrGlobalHours:     2.4,
+  activeEquipmentCount: 18,
+};
 
-function makeDashboardService(widgets = DEFAULT_WIDGETS): Partial<DashboardService> {
-  return {
-    getLayout: vi.fn().mockReturnValue(of({ widgetsJson: JSON.stringify(widgets) })),
-    saveLayout: vi.fn().mockReturnValue(of({ widgetsJson: JSON.stringify(widgets) })),
-    deleteLayout: vi.fn().mockReturnValue(of(undefined)),
-  };
+function makeKpiService(data: Partial<KpiSummaryResponse> = {}): Partial<KpiService> {
+  return { getSummary: vi.fn().mockReturnValue(of({ ...MOCK_KPI, ...data })) };
 }
 
 function makeAuthService(role = 'OPERATOR'): Partial<AuthService> {
-  return {
-    role: signal(role) as AuthService['role'],
-  };
+  return { role: signal(role) as AuthService['role'] };
 }
 
 describe('KpiDashboardComponent', () => {
@@ -33,110 +28,95 @@ describe('KpiDashboardComponent', () => {
   let component: KpiDashboardComponent;
 
   async function setup(
-    dashSvc: Partial<DashboardService> = makeDashboardService(),
+    kpiSvc: Partial<KpiService>  = makeKpiService(),
     authSvc: Partial<AuthService> = makeAuthService(),
   ) {
     await TestBed.configureTestingModule({
       imports: [KpiDashboardComponent],
       providers: [
-        { provide: DashboardService, useValue: dashSvc },
+        provideRouter([]),
+        { provide: KpiService,  useValue: kpiSvc  },
         { provide: AuthService, useValue: authSvc },
       ],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(KpiDashboardComponent);
+    fixture   = TestBed.createComponent(KpiDashboardComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
     await fixture.whenStable();
     fixture.detectChanges();
   }
 
-  it('should render widgets from GET response', async () => {
+  it('should render OEE gauge after data loads', async () => {
     await setup();
-    const cards = fixture.nativeElement.querySelectorAll('[data-testid^="widget-"]');
-    expect(cards.length).toBe(DEFAULT_WIDGETS.length);
-    expect(fixture.nativeElement.querySelector('[data-testid="widget-oee-avg"]')).toBeTruthy();
+    const gauge = fixture.nativeElement.querySelector('[data-testid="gauge-oee-global"]');
+    expect(gauge).toBeTruthy();
   });
 
-  it('should activate edit mode when "Personalizar" is clicked', async () => {
+  it('should display NC open count in kpi-nc-open card', async () => {
     await setup();
-    const btn = fixture.nativeElement.querySelector('[data-testid="btn-personalizar"]');
-    btn.click();
-    fixture.detectChanges();
-    expect(component.editMode()).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('[data-testid="btn-salvar"]')).toBeTruthy();
+    const card = fixture.nativeElement.querySelector('[data-testid="kpi-nc-open"]');
+    expect(card?.textContent).toContain('12');
   });
 
-  it('should remove widget via "×" button and show it in catalog', async () => {
+  it('should highlight NC value as danger when criticals > 0', async () => {
     await setup();
-    component.editMode.set(true);
-    fixture.detectChanges();
-
-    const removeBtns = fixture.nativeElement.querySelectorAll('[data-testid="btn-remove-widget"]');
-    removeBtns[0].click();
-    fixture.detectChanges();
-
-    expect(component.widgetConfigs().length).toBe(DEFAULT_WIDGETS.length - 1);
-    const catalogItem = fixture.nativeElement.querySelector('[data-testid="catalog-oee-avg"]');
-    expect(catalogItem).toBeTruthy();
+    const value = fixture.nativeElement.querySelector('[data-testid="kpi-nc-open"] .kpi-side__value');
+    expect(value?.classList).toContain('kpi-side__value--danger');
   });
 
-  it('should add widget from catalog and remove it from catalog list', async () => {
-    const widgets = DEFAULT_WIDGETS.slice(0, 5);
-    await setup(makeDashboardService(widgets));
-    component.editMode.set(true);
-    fixture.detectChanges();
-
-    const catalogBtn = fixture.nativeElement.querySelector('[data-testid="catalog-equipment-count"]');
-    expect(catalogBtn).toBeTruthy();
-    catalogBtn.click();
-    fixture.detectChanges();
-
-    expect(component.widgetConfigs().some((w) => w.type === 'equipment-count')).toBeTruthy();
-    expect(fixture.nativeElement.querySelector('[data-testid="catalog-equipment-count"]')).toBeFalsy();
+  it('should NOT highlight NC value as danger when criticals = 0', async () => {
+    await setup(makeKpiService({ totalNcCritical: 0 }));
+    const value = fixture.nativeElement.querySelector('[data-testid="kpi-nc-open"] .kpi-side__value');
+    expect(value?.classList).not.toContain('kpi-side__value--danger');
   });
 
-  it('should call PUT when saving layout and clear edit mode', async () => {
-    const saveSpy = vi.fn().mockReturnValue(of({ widgetsJson: JSON.stringify(DEFAULT_WIDGETS) }));
-    await setup({ ...makeDashboardService(), saveLayout: saveSpy });
-    component.editMode.set(true);
-    fixture.detectChanges();
-
-    fixture.nativeElement.querySelector('[data-testid="btn-salvar"]').click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(saveSpy).toHaveBeenCalledWith(JSON.stringify(DEFAULT_WIDGETS));
-    expect(component.editMode()).toBeFalsy();
+  it('should show work orders count in kpi-wo-open card', async () => {
+    await setup();
+    const card = fixture.nativeElement.querySelector('[data-testid="kpi-wo-open"]');
+    expect(card?.textContent).toContain('7');
   });
 
-  it('should call DELETE then GET when resetting layout', async () => {
-    const deleteSpy = vi.fn().mockReturnValue(of(undefined));
-    let getCallCount = 0;
-    const getSpy = vi.fn().mockImplementation(() => {
-      getCallCount++;
-      return of({ widgetsJson: JSON.stringify(DEFAULT_WIDGETS) });
-    });
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
-
-    await setup({ deleteLayout: deleteSpy, getLayout: getSpy, saveLayout: vi.fn() });
-    component.editMode.set(true);
-    fixture.detectChanges();
-
-    fixture.nativeElement.querySelector('[data-testid="btn-resetar"]').click();
-    fixture.detectChanges();
-    await fixture.whenStable();
-
-    expect(deleteSpy).toHaveBeenCalled();
-    expect(getCallCount).toBeGreaterThanOrEqual(2);
-    expect(component.editMode()).toBeFalsy();
+  it('should show equipment count in kpi-equipment card', async () => {
+    await setup();
+    const card = fixture.nativeElement.querySelector('[data-testid="kpi-equipment"]');
+    expect(card?.textContent).toContain('18');
   });
 
-  it('should show load error when GET fails', async () => {
-    const failingService: Partial<DashboardService> = {
-      getLayout: vi.fn().mockReturnValue(throwError(() => new Error('fail'))),
+  it('should display OEE as percentage string', async () => {
+    await setup();
+    expect(component.oeeDisplay()).toBe('78.0%');
+  });
+
+  it('should flag oeeOk when oee >= 65%', async () => {
+    await setup(makeKpiService({ oeeAvgLast30Days: 0.65 }));
+    expect(component.oeeOk()).toBe(true);
+  });
+
+  it('should flag oeeOk as false when oee < 65%', async () => {
+    await setup(makeKpiService({ oeeAvgLast30Days: 0.60 }));
+    expect(component.oeeOk()).toBe(false);
+  });
+
+  it('should show "Nova NC" button only for SUPERVISOR/ADMIN', async () => {
+    await setup(makeKpiService(), makeAuthService('OPERATOR'));
+    expect(fixture.nativeElement.querySelector('a[routerlink="/qms/non-conformances/new"]')).toBeFalsy();
+
+    await setup(makeKpiService(), makeAuthService('SUPERVISOR'));
+    expect(fixture.nativeElement.querySelector('a[routerlink="/qms/non-conformances/new"]')).toBeTruthy();
+  });
+
+  it('should show error message when API call fails', async () => {
+    const failSvc: Partial<KpiService> = {
+      getSummary: vi.fn().mockReturnValue(throwError(() => new Error('fail'))),
     };
-    await setup(failingService);
-    expect(component.loadError()).toBeTruthy();
+    await setup(failSvc);
+    expect(fixture.nativeElement.querySelector('.sp-error')).toBeTruthy();
+  });
+
+  it('should render the MSB hero block', async () => {
+    await setup();
+    const hero = fixture.nativeElement.querySelector('[data-testid="kpi-dashboard"]');
+    expect(hero?.querySelector('.msb-hero')).toBeTruthy();
   });
 });

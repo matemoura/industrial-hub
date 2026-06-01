@@ -1,96 +1,225 @@
-<div class="dashboard-page">
-  <div class="page-header">
-    <h2>Dashboard</h2>
-    <div class="page-header__actions">
-      @if (!editMode()) {
-        <button class="btn btn--secondary" (click)="toggleEditMode()" data-testid="btn-personalizar">
-          Personalizar
-        </button>
-      } @else {
-        <button class="btn btn--primary" [disabled]="isSaving()" (click)="saveLayout()" data-testid="btn-salvar">
-          {{ isSaving() ? 'Salvando…' : 'Salvar Layout' }}
-        </button>
-        <button class="btn btn--danger-outline" (click)="confirmReset()" data-testid="btn-resetar">
-          Resetar
-        </button>
-        <button class="btn btn--ghost" (click)="toggleEditMode()">Cancelar</button>
+<div class="sp-page" data-testid="kpi-dashboard">
+
+  <!-- ── Cabeçalho ── -->
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MONITOR DE OPERAÇÕES · {{ today }}</p>
+      <h1 class="sp-title">Dashboard <span class="sp-title-accent">/ Visão Executiva</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+        <a routerLink="/qms/non-conformances/new" class="sp-btn sp-btn--primary">+ Nova NC</a>
       }
     </div>
   </div>
 
-  @if (toast()) {
-    <div class="toast toast--success" role="status">{{ toast() }}</div>
-  }
-  @if (errorToast()) {
-    <div class="toast toast--error" role="alert">{{ errorToast() }}</div>
+  @if (error()) {
+    <div class="sp-error" role="alert">Não foi possível carregar os dados. Tente novamente.</div>
   }
 
-  @if (isLoading()) {
-    <div class="widget-grid">
-      @for (i of [1, 2, 3, 4, 5, 6]; track i) {
-        <div class="widget-card skeleton"></div>
-      }
-    </div>
-  } @else {
-    <div class="dashboard-layout">
-      <div class="widget-grid">
-        @for (widget of widgetConfigs(); track widget.id; let idx = $index) {
-          <div
-            class="widget-card"
-            [class.widget-card--edit]="editMode()"
-            [style]="gridStyle(widget)"
-            [draggable]="editMode()"
-            (dragstart)="onDragStart(idx)"
-            (dragover)="onDragOver($event)"
-            (drop)="onDrop(idx)"
-            [attr.data-testid]="'widget-' + widget.type"
-          >
-            @if (editMode()) {
-              <div class="widget-card__toolbar">
-                <span class="drag-handle" aria-label="Arrastar widget">⠿</span>
-                <button
-                  class="btn-remove"
-                  (click)="removeWidget(idx)"
-                  [attr.aria-label]="'Remover ' + widgetLabels[widget.type]"
-                  data-testid="btn-remove-widget"
-                >
-                  ×
-                </button>
-              </div>
-            }
-
-            @switch (widget.type) {
-              @case ('oee-avg') { <app-oee-avg-widget /> }
-              @case ('nc-open') { <app-nc-open-widget /> }
-              @case ('nc-critical') { <app-nc-critical-widget /> }
-              @case ('wo-open') { <app-wo-open-widget /> }
-              @case ('mttr') { <app-mttr-widget /> }
-              @case ('equipment-count') { <app-equipment-count-widget /> }
-              @case ('oee-trend') { <app-oee-trend-widget /> }
-              @case ('nc-pareto') { <app-nc-pareto-widget /> }
-            }
-          </div>
-        }
+  <!-- ── OEE Hero Card ── -->
+  <div class="oee-hero" [class.oee-hero--loading]="loading()">
+    <div class="oee-hero__wave" aria-hidden="true"></div>
+    <div class="oee-hero__content">
+      <div class="oee-hero__header">
+        <div>
+          <p class="oee-hero__kicker">MONITOR OEE · MÉDIO 30 DIAS</p>
+          <p class="oee-hero__subtitle">Eficiência global de operações</p>
+        </div>
+        <div class="oee-hero__sync">
+          <span class="sync-dot" aria-hidden="true"></span>
+          AO VIVO
+        </div>
       </div>
 
-      @if (editMode() && catalogWidgets().length > 0) {
-        <aside class="catalog-panel" data-testid="catalog-panel">
-          <h3 class="catalog-panel__title">Adicionar Widget</h3>
-          <ul class="catalog-list">
-            @for (type of catalogWidgets(); track type) {
-              <li>
-                <button
-                  class="catalog-item"
-                  (click)="addFromCatalog(type)"
-                  [attr.data-testid]="'catalog-' + type"
-                >
-                  + {{ widgetLabels[type] }}
-                </button>
-              </li>
-            }
-          </ul>
-        </aside>
-      }
+      <div class="oee-hero__body">
+        <!-- Gauge principal -->
+        <div class="oee-gauge-main">
+          @if (loading()) {
+            <div class="gauge-skeleton" aria-label="Carregando..."></div>
+          } @else {
+            <app-gauge
+              [value]="oeeValue()"
+              [target]="0.8"
+              [color]="oeeOk() ? '#56A4BB' : '#E8A93C'"
+              [size]="180"
+              sub="OEE GLOBAL"
+              [label]="oeeDisplay()"
+              data-testid="gauge-oee-global"
+            />
+          }
+          <p class="oee-gauge-main__note">Alvo 80% · Médio 30 dias</p>
+        </div>
+
+        <!-- KPIs laterais -->
+        <div class="oee-kpis">
+          @if (loading()) {
+            @for (i of [1,2,3]; track i) { <div class="kpi-side-skeleton"></div> }
+          } @else {
+            <a routerLink="/qms/non-conformances" class="kpi-side" data-testid="kpi-nc-open">
+              <span class="kpi-side__label">NCs ABERTAS</span>
+              <span class="kpi-side__value"
+                    [class.kpi-side__value--danger]="(kpi()?.totalNcCritical ?? 0) > 0">
+                {{ kpi()?.totalNcOpen ?? '–' }}
+              </span>
+              @if ((kpi()?.totalNcCritical ?? 0) > 0) {
+                <span class="kpi-side__badge kpi-side__badge--danger">
+                  {{ kpi()!.totalNcCritical }} CRÍTICA{{ kpi()!.totalNcCritical > 1 ? 'S' : '' }}
+                </span>
+              }
+            </a>
+
+            <a routerLink="/maintenance/equipment" class="kpi-side" data-testid="kpi-wo-open">
+              <span class="kpi-side__label">ORDENS ABERTAS</span>
+              <span class="kpi-side__value">{{ kpi()?.totalWorkOrdersOpen ?? '–' }}</span>
+              @if (kpi()?.mttrGlobalHours != null) {
+                <span class="kpi-side__note">MTTR {{ kpi()!.mttrGlobalHours!.toFixed(1) }}h</span>
+              }
+            </a>
+
+            <a routerLink="/maintenance/equipment" class="kpi-side" data-testid="kpi-equipment">
+              <span class="kpi-side__label">EQUIPAMENTOS ATIVOS</span>
+              <span class="kpi-side__value">{{ kpi()?.activeEquipmentCount ?? '–' }}</span>
+              <span class="kpi-side__note kpi-side__note--ok">● EM OPERAÇÃO</span>
+            </a>
+          }
+        </div>
+      </div>
     </div>
-  }
+  </div>
+
+  <!-- ── Linha de separação com onda ── -->
+  <div class="wave-divider" aria-hidden="true"></div>
+
+  <!-- ── Grid de cards ── -->
+  <div class="cards-grid">
+
+    <!-- NC Card -->
+    <div class="sp-card" data-testid="card-nc">
+      <p class="sp-card__kicker">QMS · NÃO-CONFORMIDADES</p>
+      <div class="sp-card__title-row">
+        <p class="sp-card__title">
+          @if (!loading() && kpi()) {
+            {{ kpi()!.totalNcOpen }}<span class="sp-card__title-muted"> em aberto</span>
+          } @else { – }
+        </p>
+        @if (!loading() && (kpi()?.totalNcCritical ?? 0) > 0) {
+          <span class="sp-badge sp-badge--danger">
+            <span class="badge-pulse" aria-hidden="true"></span>
+            {{ kpi()!.totalNcCritical }} CRÍTICAS
+          </span>
+        }
+      </div>
+      @if (!loading() && kpi()) {
+        <div class="nc-breakdown">
+          <div class="nc-bar">
+            <span class="nc-bar__label">Abertas</span>
+            <div class="nc-bar__track">
+              <div class="nc-bar__fill nc-bar__fill--warn"
+                   [style.width.%]="(kpi()!.totalNcOpen / (kpi()!.totalNcOpen + kpi()!.totalNcCritical + 0.001)) * 100"></div>
+            </div>
+            <span class="nc-bar__val">{{ kpi()!.totalNcOpen }}</span>
+          </div>
+          <div class="nc-bar">
+            <span class="nc-bar__label">Críticas</span>
+            <div class="nc-bar__track">
+              <div class="nc-bar__fill nc-bar__fill--danger"
+                   [style.width.%]="(kpi()!.totalNcCritical / (kpi()!.totalNcOpen + 0.001)) * 100"></div>
+            </div>
+            <span class="nc-bar__val">{{ kpi()!.totalNcCritical }}</span>
+          </div>
+        </div>
+      }
+      <a routerLink="/qms/non-conformances" class="sp-card__link">Ver fila completa →</a>
+    </div>
+
+    <!-- Manutenção Card -->
+    <div class="sp-card" data-testid="card-maintenance">
+      <p class="sp-card__kicker">MANUTENÇÃO · TPM</p>
+      <p class="sp-card__title">Ordens de serviço</p>
+      @if (!loading() && kpi()) {
+        <div class="maint-metrics">
+          <div class="maint-metric">
+            <span class="maint-metric__label">ABERTAS</span>
+            <span class="maint-metric__value">{{ kpi()!.totalWorkOrdersOpen }}</span>
+          </div>
+          @if (kpi()!.mttrGlobalHours != null) {
+            <div class="maint-metric">
+              <span class="maint-metric__label">MTTR</span>
+              <span class="maint-metric__value">
+                {{ kpi()!.mttrGlobalHours!.toFixed(1) }}<span class="maint-metric__unit">h</span>
+              </span>
+            </div>
+          }
+          <div class="maint-metric">
+            <span class="maint-metric__label">EQUIPAMENTOS</span>
+            <span class="maint-metric__value">{{ kpi()!.activeEquipmentCount }}</span>
+          </div>
+        </div>
+      } @else if (loading()) {
+        <div class="maint-skeleton"></div>
+      }
+      <a routerLink="/maintenance/equipment" class="sp-card__link">Ver equipamentos →</a>
+    </div>
+
+    <!-- OEE Link Card -->
+    <div class="sp-card" data-testid="card-oee-link">
+      <p class="sp-card__kicker">EFICIÊNCIA · OEE</p>
+      <p class="sp-card__title">Análise por operador</p>
+      <p class="sp-card__body">
+        Consulte eficiência individual por operador, paradas planejadas e causas de perda de produção.
+      </p>
+      <div class="sp-card__links">
+        <a routerLink="/oee/efficiency" class="sp-card__link">Eficiência OEE →</a>
+        <a routerLink="/oee/planned-downtimes" class="sp-card__link">Paradas Planejadas →</a>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Conceito MSB hero ── -->
+  <div class="msb-hero">
+    <div class="msb-hero__wave" aria-hidden="true"></div>
+    <div class="msb-hero__content">
+      <div class="msb-hero__left">
+        <p class="msb-hero__kicker">CONCEITO MSB</p>
+        <h2 class="msb-hero__headline">Cuidado<br>nos processos.</h2>
+        <p class="msb-hero__body">
+          Cada produto da MSB passa por rigorosos pontos de inspeção.
+          Qualidade e rastreabilidade são os pilares da nossa operação industrial.
+        </p>
+      </div>
+      <div class="msb-hero__right">
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <a routerLink="/analytics/oee" class="msb-hero__stat-link">
+            <span class="msb-hero__stat-label">ANALYTICS OEE</span>
+            <span class="msb-hero__stat-arrow">→</span>
+          </a>
+          <a routerLink="/production/overview" class="msb-hero__stat-link">
+            <span class="msb-hero__stat-label">VISÃO GERAL PRODUÇÃO</span>
+            <span class="msb-hero__stat-arrow">→</span>
+          </a>
+        }
+        <a routerLink="/oee/summary" class="msb-hero__stat-link">
+          <span class="msb-hero__stat-label">RESUMO OPERACIONAL</span>
+          <span class="msb-hero__stat-arrow">→</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Quick links ── -->
+  <div class="quick-links">
+    @for (link of quickLinks; track link.route) {
+      <a [routerLink]="link.route" class="quick-link">
+        <div>
+          <p class="quick-link__kicker">{{ link.kicker }}</p>
+          <p class="quick-link__title">{{ link.label }}</p>
+          <p class="quick-link__sub">{{ link.sub }}</p>
+        </div>
+        <span class="quick-link__arrow">→</span>
+      </a>
+    }
+  </div>
+
 </div>
