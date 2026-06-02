@@ -55,6 +55,8 @@ import com.industrialhub.backend.common.webhook.domain.WebhookInvalidUrlExceptio
 import com.industrialhub.backend.common.webhook.domain.WebhookNotFoundException;
 import com.industrialhub.backend.production.domain.ImportProductionBatchNotFoundException;
 import com.industrialhub.backend.production.domain.ProductNotFoundException;
+import com.industrialhub.backend.qms.ged.domain.DocumentNotFoundException;
+import com.industrialhub.backend.qms.ged.domain.InvalidGedTransitionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -559,6 +561,22 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(ProductNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleProductNotFound(ProductNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(DocumentNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleDocumentNotFound(DocumentNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(InvalidGedTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidGedTransition(InvalidGedTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));

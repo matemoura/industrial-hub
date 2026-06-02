@@ -1,0 +1,101 @@
+package com.industrialhub.backend.qms.ged.presentation;
+
+import com.industrialhub.backend.qms.ged.application.dto.*;
+import com.industrialhub.backend.qms.ged.application.usecase.AddRevisionUseCase;
+import com.industrialhub.backend.qms.ged.application.usecase.GedGetDownloadUrlUseCase;
+import com.industrialhub.backend.qms.ged.application.usecase.GetDocumentUseCase;
+import com.industrialhub.backend.qms.ged.application.usecase.ListDocumentsUseCase;
+import com.industrialhub.backend.qms.ged.application.usecase.TransitionDocumentStatusUseCase;
+import com.industrialhub.backend.qms.ged.application.usecase.UploadDocumentUseCase;
+import com.industrialhub.backend.qms.ged.domain.DocumentCategory;
+import com.industrialhub.backend.qms.ged.domain.DocumentStatus;
+import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.web.PageableDefault;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+
+import java.security.Principal;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/v1/qms/ged")
+public class GedController {
+
+    private final UploadDocumentUseCase uploadDocumentUseCase;
+    private final AddRevisionUseCase addRevisionUseCase;
+    private final TransitionDocumentStatusUseCase transitionDocumentStatusUseCase;
+    private final ListDocumentsUseCase listDocumentsUseCase;
+    private final GetDocumentUseCase getDocumentUseCase;
+    private final GedGetDownloadUrlUseCase getDownloadUrlUseCase;
+
+    public GedController(UploadDocumentUseCase uploadDocumentUseCase,
+                         AddRevisionUseCase addRevisionUseCase,
+                         TransitionDocumentStatusUseCase transitionDocumentStatusUseCase,
+                         ListDocumentsUseCase listDocumentsUseCase,
+                         GetDocumentUseCase getDocumentUseCase,
+                         GedGetDownloadUrlUseCase getDownloadUrlUseCase) {
+        this.uploadDocumentUseCase = uploadDocumentUseCase;
+        this.addRevisionUseCase = addRevisionUseCase;
+        this.transitionDocumentStatusUseCase = transitionDocumentStatusUseCase;
+        this.listDocumentsUseCase = listDocumentsUseCase;
+        this.getDocumentUseCase = getDocumentUseCase;
+        this.getDownloadUrlUseCase = getDownloadUrlUseCase;
+    }
+
+    @PostMapping(value = "/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    public DocumentResponse createDocument(
+            @RequestPart("data") @Valid CreateDocumentRequest request,
+            @RequestPart("file") MultipartFile file,
+            Principal principal) {
+        return uploadDocumentUseCase.execute(request, file, principal.getName());
+    }
+
+    @PostMapping(value = "/documents/{id}/revisions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    public DocumentRevisionResponse addRevision(
+            @PathVariable UUID id,
+            @RequestParam String changeReason,
+            @RequestPart("file") MultipartFile file,
+            Principal principal) {
+        return addRevisionUseCase.execute(id, changeReason, file, principal.getName());
+    }
+
+    @PutMapping("/documents/{id}/status")
+    @PreAuthorize("hasRole('ADMIN')")
+    public DocumentResponse updateStatus(
+            @PathVariable UUID id,
+            @RequestBody @Valid UpdateDocumentStatusRequest request) {
+        return transitionDocumentStatusUseCase.execute(id, request.status());
+    }
+
+    @GetMapping("/documents")
+    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    public Page<DocumentSummaryResponse> listDocuments(
+            @RequestParam(required = false) DocumentCategory category,
+            @RequestParam(required = false) DocumentStatus status,
+            @PageableDefault(size = 20) Pageable pageable) {
+        return listDocumentsUseCase.execute(category, status, pageable);
+    }
+
+    @GetMapping("/documents/{id}")
+    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    public DocumentResponse getDocument(@PathVariable UUID id) {
+        return getDocumentUseCase.execute(id);
+    }
+
+    @GetMapping("/documents/{id}/revisions/{revId}/download")
+    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    public DownloadUrlResponse getDownloadUrl(
+            @PathVariable UUID id,
+            @PathVariable UUID revId) {
+        return getDownloadUrlUseCase.execute(id, revId);
+    }
+}
