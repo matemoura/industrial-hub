@@ -1,0 +1,191 @@
+<div class="ged-detail-page">
+
+  <!-- Breadcrumb -->
+  <nav class="breadcrumb" aria-label="Navegação">
+    <a routerLink="/qms/ged" class="breadcrumb__back">← Documentos</a>
+  </nav>
+
+  @if (loading()) {
+    <div class="loading-state" aria-busy="true" aria-label="Carregando documento">
+      <div class="skeleton-header"></div>
+      <div class="skeleton-block"></div>
+      <div class="skeleton-block skeleton-block--sm"></div>
+    </div>
+  } @else if (!doc()) {
+    <div class="empty-state">
+      <p>Documento não encontrado.</p>
+      <a routerLink="/qms/ged" class="btn btn--outline">Voltar à lista</a>
+    </div>
+  } @else {
+    <!-- Header do Documento -->
+    <div class="doc-header">
+      <div class="doc-header__meta">
+        <span class="doc-code">{{ doc()!.code }}</span>
+        <span class="chip chip--category"
+              [style.background]="categoryColors[doc()!.category]">
+          {{ categoryLabels[doc()!.category] }}
+        </span>
+        <span class="chip"
+              [style.background]="statusColors[doc()!.status]"
+              [attr.data-testid]="'detail-status-' + doc()!.status">
+          {{ statusLabels[doc()!.status] }}
+        </span>
+      </div>
+      <h2 class="doc-title">{{ doc()!.title }}</h2>
+      <p class="doc-info">
+        Criado por <strong>{{ doc()!.createdBy }}</strong> em {{ formatDate(doc()!.createdAt) }}
+      </p>
+    </div>
+
+    <!-- Ações -->
+    <div class="action-bar">
+      @if (isSupervisor) {
+        <button class="btn btn--outline" (click)="openAddRevisionModal()">
+          + Nova Revisão
+        </button>
+      }
+      @if (isAdmin && doc()!.status === 'DRAFT') {
+        <button class="btn btn--success" (click)="publish()">
+          Publicar
+        </button>
+      }
+      @if (isAdmin && doc()!.status === 'PUBLISHED') {
+        <button class="btn btn--danger" (click)="obsolete()">
+          Tornar Obsoleto
+        </button>
+      }
+    </div>
+
+    <!-- Revisão Atual -->
+    @if (doc()!.currentRevision) {
+      <div class="current-revision-card">
+        <div class="section-title">Revisão Atual</div>
+        <div class="revision-info">
+          <div class="revision-info__item">
+            <span class="revision-info__label">Nº Revisão</span>
+            <span class="revision-info__value monospace">{{ doc()!.currentRevision!.revisionNumber }}</span>
+          </div>
+          <div class="revision-info__item">
+            <span class="revision-info__label">Arquivo</span>
+            <span class="revision-info__value">{{ doc()!.currentRevision!.originalFileName }}</span>
+          </div>
+          <div class="revision-info__item">
+            <span class="revision-info__label">Tamanho</span>
+            <span class="revision-info__value">{{ formatSize(doc()!.currentRevision!.fileSizeBytes) }}</span>
+          </div>
+          <div class="revision-info__item">
+            <span class="revision-info__label">Enviado por</span>
+            <span class="revision-info__value">{{ doc()!.currentRevision!.uploadedBy }}</span>
+          </div>
+          <div class="revision-info__item">
+            <span class="revision-info__label">Data</span>
+            <span class="revision-info__value">{{ formatDateTime(doc()!.currentRevision!.uploadedAt) }}</span>
+          </div>
+        </div>
+        <button class="btn btn--primary btn--sm"
+                [disabled]="downloadingRevId() === doc()!.currentRevision!.id"
+                (click)="downloadRevision(doc()!.currentRevision!.id)">
+          @if (downloadingRevId() === doc()!.currentRevision!.id) {
+            ...
+          } @else {
+            ⬇ Baixar
+          }
+        </button>
+      </div>
+    }
+
+    <!-- Histórico de Revisões -->
+    <div class="revisions-section">
+      <div class="section-title">Histórico de Revisões</div>
+      @if (doc()!.revisions.length === 0) {
+        <p class="no-revisions">Nenhuma revisão registrada.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table class="revisions-table">
+            <thead>
+              <tr>
+                <th>Nº Revisão</th>
+                <th>Arquivo</th>
+                <th>Tamanho</th>
+                <th>Enviado por</th>
+                <th>Data</th>
+                <th>Motivo</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rev of doc()!.revisions; track rev.id) {
+                <tr class="rev-row">
+                  <td class="monospace">{{ rev.revisionNumber }}</td>
+                  <td class="file-name-cell">{{ rev.originalFileName }}</td>
+                  <td class="size-cell">{{ formatSize(rev.fileSizeBytes) }}</td>
+                  <td>{{ rev.uploadedBy }}</td>
+                  <td class="date-cell">{{ formatDateTime(rev.uploadedAt) }}</td>
+                  <td class="reason-cell">{{ rev.changeReason }}</td>
+                  <td>
+                    <button class="btn btn--outline btn--sm"
+                            [disabled]="downloadingRevId() === rev.id"
+                            (click)="downloadRevision(rev.id)"
+                            [attr.data-testid]="'download-' + rev.id">
+                      @if (downloadingRevId() === rev.id) {
+                        ...
+                      } @else {
+                        ⬇ Baixar
+                      }
+                    </button>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+</div>
+
+<!-- Modal Nova Revisão -->
+@if (showAddRevisionModal()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="rev-modal-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 id="rev-modal-title">Nova Revisão</h3>
+        <button class="modal__close" (click)="closeAddRevisionModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal__body">
+        @if (addRevisionError()) {
+          <div class="form-error" role="alert">{{ addRevisionError() }}</div>
+        }
+        <div class="form-group">
+          <label class="form-label" for="revFile">Arquivo *</label>
+          <input id="revFile" type="file" class="form-file"
+                 (change)="onRevisionFileSelected($event)" />
+          @if (newRevisionFile()) {
+            <span class="file-name-hint">{{ newRevisionFile()!.name }}</span>
+          }
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="revReason">Motivo da Revisão *</label>
+          <textarea id="revReason" class="form-input form-textarea"
+                    [value]="newRevisionReason()"
+                    (input)="newRevisionReason.set($any($event.target).value)"
+                    placeholder="Descreva o motivo desta revisão"
+                    rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeAddRevisionModal()">Cancelar</button>
+        <button class="btn btn--primary"
+                [disabled]="!newRevisionFile() || addRevisionLoading()"
+                (click)="submitAddRevision()">
+          @if (addRevisionLoading()) {
+            Adicionando...
+          } @else {
+            Adicionar
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
