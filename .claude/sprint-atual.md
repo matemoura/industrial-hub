@@ -3028,3 +3028,91 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 13. Rota `/qms/capas` (SUPERVISOR+, lazy-loaded): lista de todas as CAPAs com colunas `NC`, `Descrição`, `Tipo` (chip), `Status` (chip), `Responsável`, `Prazo`, `Data verif. eficácia`; filtros: tipo e status; link na sidebar seção OPERAÇÃO (SUPERVISOR+)
 14. Sidebar: adicionar link "CAPAs" (SUPERVISOR+) sob "Não-Conformidades" na seção OPERAÇÃO
 15. Spec `capa-list.component.spec.ts`: (a) filtro por tipo dispara nova requisição; (b) chip PENDING_EFFECTIVENESS exibido corretamente; (c) "CAPAs" não aparece na sidebar para OPERATOR
+
+---
+
+## Sprint 38 🔄
+**Objetivo**: Hardening de segurança — liquidar os 2 achados HIGH e 4 MEDIUM/LOW diferidos dos Sprints 36 (GED) e 37 (CAPAS): validação MIME type via Apache Tika, prevenção de path traversal, constraints de input, mascaramento de `uploadedBy`, handler de race condition e fix de TOCTOU no auto-close NC.
+**ADR**: ADR-049
+**Status**: concluída
+**Pontos totais**: 7 pts (US-113: 5 + US-114: 2)
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-113 | GED: hardening de segurança — MIME type, path traversal, constraints, uploadedBy, race condition | 5 | ✅ concluído |
+| US-114 | CAPAS: TOCTOU auto-close NC + accept= file input | 2 | ✅ concluído |
+
+### Débito técnico liquidado nesta sprint
+
+| ID | Severidade | Origem | Descrição |
+|----|-----------|--------|-----------|
+| SEC-125 | HIGH | Sprint 36 | Upload GED sem validação MIME type real — Tika magic bytes |
+| SEC-126 | HIGH | Sprint 36 | Path traversal via `getOriginalFilename()` e `code` sem regex |
+| SEC-127 | MEDIUM | Sprint 36 | `GedController` sem `@Validated`; `changeReason` sem `@NotBlank @Size` |
+| SEC-128 | MEDIUM | Sprint 36 | `DocumentRevisionResponse.uploadedBy` exposto para OPERATOR+ |
+| SEC-129 | MEDIUM | Sprint 36 | Race condition `existsByCode + save` sem handler |
+| SEC-139 | LOW | Sprint 37 | TOCTOU auto-close NC em `VerifyEffectivenessUseCase` |
+| SEC-135 | INFO | Sprint 36 | `accept=` ausente no `<input type="file">` — diferido com SEC-125 |
+
+### Dependências
+- US-113 depende de Sprint 36 (módulo GED existente — `UploadDocumentUseCase`, `AddRevisionUseCase`, `GedController`, `DocumentRevisionResponse`)
+- US-113 depende de Sprint 29 (Apache Tika já no `pom.xml` via `ExcelFileValidator`)
+- US-114 depende de Sprint 37 (entidade `CorrectiveAction`, `VerifyEffectivenessUseCase`, `CorrectiveActionRepository`)
+- US-114 depende de US-113 (sequência lógica, mas podem ser desenvolvidas em paralelo)
+
+### Sequência de entrega sugerida
+1. US-113 backend (GedFileValidator + path sanitization + constraints + uploadedBy + race condition handler)
+2. US-113 frontend (accept= nos file inputs)
+3. US-114 backend (TOCTOU fix em VerifyEffectivenessUseCase)
+
+---
+
+#### US-113 — GED: hardening de segurança (5 pts)
+
+**Contexto**: Beatriz identificou 5 achados em Sprint 36 diferidos para Sprint 38 — 2 HIGH (SEC-125/126) que permitem upload de arquivo malicioso e path traversal no storage path, e 3 MEDIUM (SEC-127/128/129) de validação insuficiente, exposição de dado de autoria e race condition. ADR-049 Decisões 1–5 cobrem cada achado.
+
+**Backend — MIME type validation (SEC-125)**
+1. Criar `GedFileValidator` em `qms/ged/application/usecase/`: campo `static final Tika TIKA = new Tika()`, `ALLOWED_MIME = Set.of("application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")`, `MAX_SIZE_BYTES = 50L * 1024 * 1024`; método `validate(MultipartFile file)` lança `InvalidGedFileException` para arquivo null/vazio, tamanho > 50 MB e MIME type fora do set permitido (detectado via `TIKA.detect(bytes, originalFilename)`)
+2. `InvalidGedFileException` nova em `qms/ged/domain/` — extends `RuntimeException`; registrar em `GlobalExceptionHandler` → 422 com `{ "message": "..." }`
+3. Chamar `gedFileValidator.validate(file)` como **primeira instrução** em `UploadDocumentUseCase.execute()` e `AddRevisionUseCase.execute()` — antes de qualquer acesso a `StorageService`; injetar `GedFileValidator` no construtor dos dois use cases
+4. Testes: (a) arquivo HTML com bytes reais (`<html>`) e `Content-Type=application/pdf` → `InvalidGedFileException` (Tika detecta `text/html`); (b) bytes de PDF legítimo → sem exceção; (c) arquivo > 50 MB (mock com `file.getSize() > MAX`) → exceção 422; (d) `AddRevisionUseCase` com arquivo inválido → `StorageService` nunca chamado (mock verify zero interactions)
+
+**Backend — Path traversal (SEC-126)**
+5. Em `CreateDocumentRequest`: adicionar `@Pattern(regexp = "^[A-Z0-9\\-]{3,20}$", message = "Código deve conter apenas letras maiúsculas, números e hífens (3–20 caracteres)")` ao campo `code`; `GedController` precisa de `@Validated` (AC 9 abaixo) para que o `@Pattern` do record seja validado
+6. Em `UploadDocumentUseCase.execute()` e `AddRevisionUseCase.execute()`: sanitizar `originalFilename` via `Paths.get(Optional.ofNullable(file.getOriginalFilename()).orElse("file")).getFileName().toString()`; usar `safeFilename` no storagePath — mesmo padrão de `ExcelFileValidator` (SEC-107)
+7. Testes: (a) `code = "../etc/passwd"` → 400 (Bean Validation `@Pattern`); (b) `originalFilename = "../../secret.pdf"` → `storagePath` contém apenas `secret.pdf`; (c) `originalFilename = null` → `storagePath` contém `file` (fallback); (d) `code = "SOP-001"` + filename normal → path `ged/SOP-001/{uuid}_secret.pdf` correto
+
+**Backend — @Validated + changeReason (SEC-127)**
+8. Adicionar anotação `@Validated` à classe `GedController` (ADR-031 — habilita `ConstraintViolationException` para `@RequestParam` com Bean Validation)
+9. No endpoint `POST /{id}/revisions`: alterar assinatura para `@RequestParam @NotBlank @Size(max = 1000) String changeReason`
+10. Testes: (a) `changeReason` em branco → 400 `ConstraintViolationException`; (b) `changeReason` com 1001 chars → 400; (c) `changeReason` com 1000 chars → 201
+
+**Backend — uploadedBy masking (SEC-128)**
+11. Remover campo `uploadedBy` do record `DocumentRevisionResponse` e do factory method `from(DocumentRevision)`; campo permanece na entidade `DocumentRevision.uploadedBy` (persistido no banco, disponível via auditoria ADMIN); consistente com ADR-041 Decisão 7
+12. Testes: (a) response de `GET /api/v1/qms/ged/documents/{id}` não contém campo `uploadedBy` (verificar via reflexão no record ou asserção JSON); (b) campo `uploadedBy` ainda existe e é preenchido na entidade (verificar via repositório)
+
+**Backend — Race condition (SEC-129)**
+13. Em `UploadDocumentUseCase.execute()`: envolver bloco de `documentRepository.save(document)` em try-catch `DataIntegrityViolationException`; ao capturar, lançar `DocumentCodeAlreadyExistsException(request.code())`
+14. `DocumentCodeAlreadyExistsException` nova em `qms/ged/domain/` — extends `RuntimeException`; registrar em `GlobalExceptionHandler` → 409 CONFLICT com `{ "message": "Já existe um documento com o código: {code}" }`
+15. Testes: (a) mock `documentRepository.save()` lança `DataIntegrityViolationException` → response 409 com mensagem de domínio; (b) save normal → 201 sem exceção
+
+**Frontend (SEC-135)**
+16. Adicionar `accept=".pdf,.docx,.xlsx"` ao `<input type="file">` no modal "Novo Documento" (`ged-list.component.html`) e no modal "Nova Revisão" (`ged-detail.component.html`)
+17. Não altera lógica de componente — apenas atributo HTML
+
+---
+
+#### US-114 — CAPAS: TOCTOU auto-close NC + accept= (2 pts)
+
+**Contexto**: `VerifyEffectivenessUseCase` tem race condition no auto-close da NC (SEC-139): dois requests concorrentes podem ler `hasOpen=false` e ambos persistir `NC.status=CLOSED`, com `closedBy` do segundo sobrescrevendo o primeiro. Fix: lock pessimista na leitura da ação. ADR-049 Decisão 6.
+
+**Backend**
+1. Em `CorrectiveActionRepository`: adicionar método:
+   ```java
+   @Lock(LockModeType.PESSIMISTIC_WRITE)
+   @Query("SELECT a FROM CorrectiveAction a WHERE a.id = :id")
+   Optional<CorrectiveAction> findByIdForUpdate(@Param("id") UUID id);
+   ```
+2. Em `VerifyEffectivenessUseCase.execute()`: substituir `actionRepository.findById(actionId)` por `actionRepository.findByIdForUpdate(actionId)` — obtém `SELECT FOR UPDATE` antes de transicionar o status; garante que segundo request concorrente aguarda commit do primeiro antes de prosseguir
+3. Testes: (a) `VerifyEffectivenessUseCaseTest` existentes (2 cenários) continuam passando sem alteração; (b) novo teste: `CorrectiveActionRepository.findByIdForUpdate` possui anotação `@Lock(LockModeType.PESSIMISTIC_WRITE)` verificada via reflexão (`Method.getAnnotation(Lock.class)`); (c) use case usa `findByIdForUpdate` (não `findById`) — verificar no mock que o método correto é invocado

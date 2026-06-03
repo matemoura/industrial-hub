@@ -35,7 +35,10 @@ public class VerifyEffectivenessUseCase {
         NonConformance nc = ncRepository.findById(ncId)
                 .orElseThrow(() -> new NcNotFoundException(ncId));
 
-        CorrectiveAction action = actionRepository.findById(actionId)
+        // SEC-139: PESSIMISTIC_WRITE lock prevents TOCTOU race condition on auto-close NC.
+        // Two concurrent verify-effectiveness calls on the same action would both read
+        // hasOpen=false and both close the NC; the lock serializes them at DB level.
+        CorrectiveAction action = actionRepository.findByIdForUpdate(actionId)
                 .orElseThrow(() -> new ActionNotFoundException(actionId));
 
         if (!action.getNonConformance().getId().equals(ncId)) {

@@ -73,7 +73,8 @@ class VerifyEffectivenessUseCaseTest {
                 "Eficácia confirmada", "supervisor");
 
         when(ncRepository.findById(ncId)).thenReturn(Optional.of(nc));
-        when(actionRepository.findById(actionId)).thenReturn(Optional.of(action));
+        // SEC-139: use findByIdForUpdate (PESSIMISTIC_WRITE lock)
+        when(actionRepository.findByIdForUpdate(actionId)).thenReturn(Optional.of(action));
         when(actionRepository.existsByNonConformanceIdAndStatusIn(
                 eq(ncId), any(List.class))).thenReturn(false);
 
@@ -110,7 +111,8 @@ class VerifyEffectivenessUseCaseTest {
                 "Eficácia confirmada", "supervisor");
 
         when(ncRepository.findById(ncId)).thenReturn(Optional.of(nc));
-        when(actionRepository.findById(actionId)).thenReturn(Optional.of(action));
+        // SEC-139: use findByIdForUpdate (PESSIMISTIC_WRITE lock)
+        when(actionRepository.findByIdForUpdate(actionId)).thenReturn(Optional.of(action));
         when(actionRepository.existsByNonConformanceIdAndStatusIn(
                 eq(ncId), any(List.class))).thenReturn(true);
 
@@ -118,5 +120,30 @@ class VerifyEffectivenessUseCaseTest {
 
         assertThat(response.status()).isEqualTo(ActionStatus.DONE);
         assertThat(nc.getStatus()).isEqualTo(NcStatus.IN_ANALYSIS);
+    }
+
+    // --- SEC-139: verify use case calls findByIdForUpdate, not findById ---
+
+    @Test
+    void verifyEffectiveness_usesLockedRead_notSimpleFindById() {
+        NonConformance nc = NonConformance.builder()
+                .id(ncId).title("NC Test").status(NcStatus.IN_ANALYSIS).build();
+
+        CorrectiveAction action = CorrectiveAction.builder()
+                .id(actionId).nonConformance(nc).description("Fix")
+                .responsible("user").dueDate(LocalDate.now().plusDays(7))
+                .status(ActionStatus.PENDING_EFFECTIVENESS).type(ActionType.CORRECTIVE)
+                .build();
+
+        VerifyEffectivenessRequest req = new VerifyEffectivenessRequest("OK", "supervisor");
+
+        when(ncRepository.findById(ncId)).thenReturn(Optional.of(nc));
+        when(actionRepository.findByIdForUpdate(actionId)).thenReturn(Optional.of(action));
+        when(actionRepository.existsByNonConformanceIdAndStatusIn(eq(ncId), any())).thenReturn(true);
+
+        useCase.execute(ncId, actionId, req, "supervisor");
+
+        // Must use locked read
+        verify(actionRepository).findByIdForUpdate(actionId);
     }
 }
