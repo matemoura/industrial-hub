@@ -162,24 +162,73 @@
         } @else {
           <ul class="action-list">
             @for (action of actions(); track action.id) {
-              <li class="action-item">
+              <li class="action-item" [attr.data-testid]="'action-' + action.id">
                 <div class="action-item__header">
-                  <span [class]="'action-status action-status--' + action.status.toLowerCase()">
-                    {{ action.status === 'DONE' ? 'Concluída' : 'Pendente' }}
+                  <!-- Badge de tipo -->
+                  <span [class]="'action-type-badge action-type-badge--' + (action.type ?? 'corrective').toLowerCase()">
+                    {{ typeLabels[action.type ?? 'CORRECTIVE'] }}
+                  </span>
+                  <!-- Status chip -->
+                  <span [class]="'action-status action-status--' + action.status.toLowerCase().replace('_','-')">
+                    {{ statusLabels2[action.status] }}
                   </span>
                   <span class="action-due">Vence: {{ formatLocalDate(action.dueDate) }}</span>
-                  @if (isSupervisor && action.status === 'PENDING') {
+                  @if (isSupervisor) {
                     <div class="action-item__btns">
-                      <button type="button" class="btn btn--primary btn--sm" (click)="completeAction(action.id)">
-                        Concluir
-                      </button>
-                      <button type="button" class="btn btn--danger btn--sm" (click)="deleteAction(action.id)">
-                        Excluir
-                      </button>
+                      @if (action.status === 'PENDING') {
+                        <button type="button" class="btn btn--secondary btn--sm" (click)="startEditCapa(action)" [attr.data-testid]="'btn-edit-capa-' + action.id">
+                          Editar CAPA
+                        </button>
+                        <button type="button" class="btn btn--primary btn--sm" (click)="submitForEffectiveness(action)" [disabled]="capaActionLoading()" [attr.data-testid]="'btn-submit-effectiveness-' + action.id">
+                          Enviar para Verificação
+                        </button>
+                        <button type="button" class="btn btn--danger btn--sm" (click)="deleteAction(action.id)">Excluir</button>
+                      }
+                      @if (action.status === 'PENDING_EFFECTIVENESS') {
+                        <button type="button" class="btn btn--primary btn--sm" (click)="openVerifyModal(action)" [attr.data-testid]="'btn-verify-effectiveness-' + action.id">
+                          Confirmar Eficácia
+                        </button>
+                      }
                     </div>
                   }
                 </div>
                 <p class="action-desc">{{ action.description }}</p>
+                <!-- Campos CAPA em modo visualização -->
+                @if (editingActionId() !== action.id) {
+                  @if (action.rootCauseConfirmed) {
+                    <p class="capa-field"><strong>Causa raiz confirmada:</strong> {{ action.rootCauseConfirmed }}</p>
+                  }
+                  @if (action.preventiveMeasure) {
+                    <p class="capa-field"><strong>Medida preventiva:</strong> {{ action.preventiveMeasure }}</p>
+                  }
+                  @if (action.effectivenessCheckDate) {
+                    <p class="capa-field"><strong>Data de verificação:</strong> {{ formatLocalDate(action.effectivenessCheckDate) }}</p>
+                  }
+                }
+                <!-- Formulário de edição inline (apenas quando PENDING e editando) -->
+                @if (editingActionId() === action.id && capaEditForm(); as editForm) {
+                  <div class="capa-edit-form">
+                    <label class="form-label">Tipo
+                      <select [ngModel]="editForm.type" (ngModelChange)="capaEditForm.update(f => f ? {...f, type: $event} : f)" name="capaType">
+                        <option value="CORRECTIVE">Corretiva</option>
+                        <option value="PREVENTIVE">Preventiva</option>
+                      </select>
+                    </label>
+                    <label class="form-label">Causa raiz confirmada
+                      <textarea [ngModel]="editForm.rootCauseConfirmed" (ngModelChange)="capaEditForm.update(f => f ? {...f, rootCauseConfirmed: $event} : f)" name="capaRoot" rows="2"></textarea>
+                    </label>
+                    <label class="form-label">Medida preventiva
+                      <textarea [ngModel]="editForm.preventiveMeasure" (ngModelChange)="capaEditForm.update(f => f ? {...f, preventiveMeasure: $event} : f)" name="capaPrev" rows="2"></textarea>
+                    </label>
+                    <label class="form-label">Data de verificação de eficácia
+                      <input type="date" [ngModel]="editForm.effectivenessCheckDate" (ngModelChange)="capaEditForm.update(f => f ? {...f, effectivenessCheckDate: $event} : f)" name="capaDate" />
+                    </label>
+                    <div class="form-actions">
+                      <button type="button" class="btn btn--primary btn--sm" (click)="saveCapaEdit(action)" [disabled]="capaActionLoading()">Salvar</button>
+                      <button type="button" class="btn btn--secondary btn--sm" (click)="cancelEditCapa()">Cancelar</button>
+                    </div>
+                  </div>
+                }
                 <p class="action-meta">
                   Responsável: <strong>{{ action.responsible }}</strong>
                   @if (action.completedBy) {
@@ -199,5 +248,24 @@
         [entityId]="nc.id"
       />
     </div>
+
+    <!-- Modal Confirmar Eficácia -->
+    @if (showVerifyModal()) {
+      <div class="modal-overlay" (click)="showVerifyModal.set(false)">
+        <div class="modal-box" (click)="$event.stopPropagation()">
+          <h3>Confirmar Eficácia da Ação</h3>
+          <label class="form-label">Resultado da verificação
+            <textarea [ngModel]="effectivenessResult()" (ngModelChange)="effectivenessResult.set($event)" rows="3" placeholder="Descreva o resultado..."></textarea>
+          </label>
+          <label class="form-label">Verificado por
+            <input type="text" [ngModel]="effectivenessCheckedBy()" (ngModelChange)="effectivenessCheckedBy.set($event)" placeholder="Usuário responsável" />
+          </label>
+          <div class="modal-actions">
+            <button type="button" class="btn btn--primary" (click)="confirmVerify(nc.id)" [disabled]="!effectivenessResult() || !effectivenessCheckedBy() || capaActionLoading()">Confirmar</button>
+            <button type="button" class="btn btn--secondary" (click)="showVerifyModal.set(false)">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    }
   }
 </div>

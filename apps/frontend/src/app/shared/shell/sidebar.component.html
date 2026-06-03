@@ -49,6 +49,14 @@
             Não-Conformidades
           </a>
         </li>
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/qms/capas" routerLinkActive="active" class="nav-item">CAPAs</a></li>
+        }
+        <li>
+          <a routerLink="/qms/ged" routerLinkActive="active" class="nav-item">
+            Documentos
+          </a>
+        </li>
         <li>
           <a routerLink="/maintenance/equipment" routerLinkActive="active" class="nav-item">
             Manutenção

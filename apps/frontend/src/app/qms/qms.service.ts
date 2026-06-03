@@ -5,7 +5,8 @@ import { Observable } from 'rxjs';
 export type NcStatus = 'OPEN' | 'IN_ANALYSIS' | 'CLOSED';
 export type NcType = 'PROCESS' | 'PRODUCT' | 'SUPPLIER' | 'EQUIPMENT' | 'OTHER';
 export type NcSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
-export type ActionStatus = 'PENDING' | 'DONE';
+export type ActionStatus = 'PENDING' | 'PENDING_EFFECTIVENESS' | 'DONE';
+export type ActionType = 'CORRECTIVE' | 'PREVENTIVE';
 
 // ── Supplier ──────────────────────────────────────────────────────────────────
 
@@ -58,6 +59,32 @@ export interface ActionResponse {
   status: ActionStatus;
   completedAt: string | null;
   completedBy: string | null;
+  type?: ActionType;
+  rootCauseConfirmed?: string | null;
+  preventiveMeasure?: string | null;
+  effectivenessCheckDate?: string | null;
+  effectivenessCheckedBy?: string | null;
+  effectivenessResult?: string | null;
+}
+
+export interface CAPASummary {
+  actionId: string;
+  ncCode: string;
+  ncTitle: string;
+  description: string;
+  type: ActionType;
+  status: ActionStatus | 'PENDING_EFFECTIVENESS';
+  responsible: string;
+  dueDate: string | null;
+  effectivenessCheckDate: string | null;
+}
+
+export interface Page<T> {
+  content: T[];
+  number: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
 }
 
 export interface RcaResponse {
@@ -184,6 +211,34 @@ export class QmsService {
 
   deleteAction(ncId: string, actionId: string): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/${ncId}/actions/${actionId}`);
+  }
+
+  updateCapa(ncId: string, actionId: string, body: {
+    type?: ActionType;
+    rootCauseConfirmed?: string;
+    preventiveMeasure?: string;
+    effectivenessCheckDate?: string;
+  }): Observable<ActionResponse> {
+    return this.http.put<ActionResponse>(`${this.baseUrl}/${ncId}/corrective-actions/${actionId}`, body);
+  }
+
+  submitForEffectiveness(ncId: string, actionId: string): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/${ncId}/actions/${actionId}/submit-for-effectiveness`, {});
+  }
+
+  verifyEffectiveness(ncId: string, actionId: string, body: {
+    effectivenessResult: string;
+    effectivenessCheckedBy: string;
+  }): Observable<ActionResponse> {
+    return this.http.post<ActionResponse>(`${this.baseUrl}/${ncId}/actions/${actionId}/verify-effectiveness`, body);
+  }
+
+  listCapas(params: { type?: string; status?: string; page?: number }): Observable<Page<CAPASummary>> {
+    let httpParams = new HttpParams();
+    if (params.type) httpParams = httpParams.set('type', params.type);
+    if (params.status) httpParams = httpParams.set('status', params.status);
+    if (params.page !== undefined) httpParams = httpParams.set('page', params.page.toString());
+    return this.http.get<Page<CAPASummary>>('/api/v1/qms/capas', { params: httpParams });
   }
 
   createRca(ncId: string, payload: CreateRcaPayload): Observable<RcaResponse> {

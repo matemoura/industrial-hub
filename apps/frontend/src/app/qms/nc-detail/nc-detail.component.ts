@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ActionResponse, NcResponse, NcStatus, QmsService } from '../qms.service';
+import { ActionResponse, ActionStatus, ActionType, NcResponse, NcStatus, QmsService } from '../qms.service';
 import { AuthService } from '../../auth/auth.service';
 import { NcRcaComponent } from './nc-rca/nc-rca.component';
 import { AttachmentListComponent } from '../../shared/attachment/attachment-list.component';
@@ -43,6 +43,32 @@ export class NcDetailComponent implements OnInit {
     OPEN: 'Aberta',
     IN_ANALYSIS: 'Em análise',
     CLOSED: 'Fechada',
+  };
+
+  // ── CAPAS ────────────────────────────────────────────────────────────────────
+  editingActionId = signal<string | null>(null);
+  capaEditForm = signal<{
+    type: ActionType;
+    rootCauseConfirmed: string;
+    preventiveMeasure: string;
+    effectivenessCheckDate: string;
+  } | null>(null);
+
+  showVerifyModal = signal(false);
+  verifyingActionId = signal<string | null>(null);
+  effectivenessResult = signal('');
+  effectivenessCheckedBy = signal('');
+  capaActionLoading = signal(false);
+
+  readonly typeLabels: Record<ActionType, string> = {
+    CORRECTIVE: 'Corretiva',
+    PREVENTIVE: 'Preventiva',
+  };
+
+  readonly statusLabels2: Record<ActionStatus, string> = {
+    PENDING: 'Pendente',
+    PENDING_EFFECTIVENESS: 'Aguard. Eficácia',
+    DONE: 'Concluída',
   };
 
   get isSupervisor(): boolean {
@@ -193,5 +219,91 @@ export class NcDetailComponent implements OnInit {
   formatLocalDate(date: string | null): string {
     if (!date) return '—';
     return date;
+  }
+
+  startEditCapa(action: ActionResponse): void {
+    this.editingActionId.set(action.id);
+    this.capaEditForm.set({
+      type: action.type ?? 'CORRECTIVE',
+      rootCauseConfirmed: action.rootCauseConfirmed ?? '',
+      preventiveMeasure: action.preventiveMeasure ?? '',
+      effectivenessCheckDate: action.effectivenessCheckDate ?? '',
+    });
+  }
+
+  cancelEditCapa(): void {
+    this.editingActionId.set(null);
+    this.capaEditForm.set(null);
+  }
+
+  saveCapaEdit(action: ActionResponse): void {
+    const nc = this.nc();
+    const form = this.capaEditForm();
+    if (!nc || !form || this.capaActionLoading()) return;
+
+    this.capaActionLoading.set(true);
+    this.qmsService.updateCapa(nc.id, action.id, {
+      type: form.type,
+      rootCauseConfirmed: form.rootCauseConfirmed || undefined,
+      preventiveMeasure: form.preventiveMeasure || undefined,
+      effectivenessCheckDate: form.effectivenessCheckDate || undefined,
+    }).subscribe({
+      next: (updated) => {
+        this.actions.update(list => list.map(a => a.id === action.id ? updated : a));
+        this.editingActionId.set(null);
+        this.capaEditForm.set(null);
+        this.capaActionLoading.set(false);
+      },
+      error: (err) => {
+        this.actionError.set(err?.error?.message ?? 'Erro ao salvar CAPA.');
+        this.capaActionLoading.set(false);
+      },
+    });
+  }
+
+  submitForEffectiveness(action: ActionResponse): void {
+    const nc = this.nc();
+    if (!nc || this.capaActionLoading()) return;
+
+    this.capaActionLoading.set(true);
+    this.qmsService.submitForEffectiveness(nc.id, action.id).subscribe({
+      next: (updated) => {
+        this.actions.update(list => list.map(a => a.id === action.id ? updated : a));
+        this.capaActionLoading.set(false);
+      },
+      error: (err) => {
+        this.actionError.set(err?.error?.message ?? 'Erro ao enviar para verificação.');
+        this.capaActionLoading.set(false);
+      },
+    });
+  }
+
+  openVerifyModal(action: ActionResponse): void {
+    this.verifyingActionId.set(action.id);
+    this.effectivenessResult.set('');
+    this.effectivenessCheckedBy.set('');
+    this.showVerifyModal.set(true);
+  }
+
+  confirmVerify(ncId: string): void {
+    const actionId = this.verifyingActionId();
+    if (!actionId || this.capaActionLoading()) return;
+
+    this.capaActionLoading.set(true);
+    this.qmsService.verifyEffectiveness(ncId, actionId, {
+      effectivenessResult: this.effectivenessResult(),
+      effectivenessCheckedBy: this.effectivenessCheckedBy(),
+    }).subscribe({
+      next: (updated) => {
+        this.actions.update(list => list.map(a => a.id === actionId ? updated : a));
+        this.showVerifyModal.set(false);
+        this.verifyingActionId.set(null);
+        this.capaActionLoading.set(false);
+      },
+      error: (err) => {
+        this.actionError.set(err?.error?.message ?? 'Erro ao confirmar eficácia.');
+        this.capaActionLoading.set(false);
+      },
+    });
   }
 }

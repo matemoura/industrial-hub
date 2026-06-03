@@ -1,0 +1,87 @@
+<div class="capa-list-page">
+  <div class="page-header">
+    <h1 class="page-title">CAPAs — Ações Corretivas e Preventivas</h1>
+  </div>
+
+  <div class="filters">
+    <select [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="filterType">
+      <option value="">Todos os tipos</option>
+      @for (t of types; track t) {
+        <option [value]="t">{{ typeLabels[t] }}</option>
+      }
+    </select>
+    <select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="filterStatus"
+            data-testid="filter-status">
+      <option value="">Todos os status</option>
+      @for (s of statuses; track s) {
+        <option [value]="s">{{ statusLabels[s] }}</option>
+      }
+    </select>
+    <button type="button" class="btn btn--primary btn--sm" (click)="applyFilters()">Filtrar</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>NC</th>
+          <th>Descrição</th>
+          <th>Tipo</th>
+          <th>Status</th>
+          <th>Responsável</th>
+          <th>Prazo</th>
+          <th>Data verif. eficácia</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading()) {
+          @for (_ of [1, 2, 3, 4, 5]; track $index) {
+            <tr class="skeleton-row">
+              @for (__ of [1, 2, 3, 4, 5, 6, 7]; track $index) {
+                <td><span class="skeleton-cell"></span></td>
+              }
+            </tr>
+          }
+        } @else if (!page()?.content?.length) {
+          <tr>
+            <td colspan="7" class="empty-state">Nenhuma CAPA encontrada.</td>
+          </tr>
+        } @else {
+          @for (row of page()!.content; track row.actionId) {
+            <tr data-testid="capa-row">
+              <td class="nc-code">{{ row.ncCode | slice:0:8 }}</td>
+              <td class="description">{{ row.description }}</td>
+              <td>
+                <span [class]="'type-chip type-chip--' + row.type.toLowerCase()"
+                      [attr.data-testid]="'type-' + row.type">
+                  {{ typeLabels[row.type] }}
+                </span>
+              </td>
+              <td>
+                <span [class]="'status-chip status-chip--' + row.status.toLowerCase().replace('_', '-')"
+                      [attr.data-testid]="'status-' + row.status">
+                  {{ statusLabels[row.status] }}
+                </span>
+              </td>
+              <td>{{ row.responsible }}</td>
+              <td>{{ row.dueDate ?? '—' }}</td>
+              <td>{{ row.effectivenessCheckDate ?? '—' }}</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+
+  @if (page() && page()!.totalPages > 1) {
+    <div class="pagination">
+      <button class="btn btn--secondary btn--sm"
+              [disabled]="page()!.number === 0"
+              (click)="goToPage(page()!.number - 1)">← Anterior</button>
+      <span class="pagination__info">{{ page()!.number + 1 }} / {{ page()!.totalPages }}</span>
+      <button class="btn btn--secondary btn--sm"
+              [disabled]="page()!.number >= page()!.totalPages - 1"
+              (click)="goToPage(page()!.number + 1)">Próxima →</button>
+    </div>
+  }
+</div>

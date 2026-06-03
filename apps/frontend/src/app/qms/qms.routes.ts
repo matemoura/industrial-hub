@@ -2,6 +2,26 @@ import { Routes } from '@angular/router';
 import { authGuard } from '../auth/auth.guard';
 
 export const QMS_ROUTES: Routes = [
+  // ── CAPAS — lista cross-NC de ações corretivas/preventivas
+  {
+    path: 'capas',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./capa-list/capa-list.component').then((m) => m.CapaListComponent),
+  },
+  // ── GED — Gestão de Documentos ── rotas estáticas ANTES de /:id
+  {
+    path: 'ged',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./ged-list/ged-list.component').then((m) => m.GedListComponent),
+  },
+  {
+    path: 'ged/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./ged-detail/ged-detail.component').then((m) => m.GedDetailComponent),
+  },
   {
     path: 'non-conformances',
     canActivate: [authGuard],
