@@ -1,5 +1,29 @@
 # Log Aisha
 
+## [2026-06-04] Sincronização pós-Sprint 36 e 37
+Fontes lidas:
+  - CLAUDE.md
+  - ADR-047 (GED), ADR-048 (CAPAS)
+  - log-mateus.md, log-tadeu.md, log-maiana.md, log-beatriz.md, log-maite.md
+
+Mudanças feitas:
+  - CLAUDE.md: Domain Modules — Sprint 36 (GED) e Sprint 37 (CAPAS Formal): `⬜ planned` → `✅ done`
+  - CLAUDE.md: Key Conventions — adicionadas 3 notas relevantes para devs: estrutura do sub-módulo `qms/ged/`, renomeação `GedGetDownloadUrlUseCase` (conflito de bean), e `CapaController` separado do `QmsController`
+  - sprint-atual.md: nenhuma alteração necessária (Sprint 36 e 37 já estavam como `✅ concluída` com US marcadas como `✅ concluído`)
+  - Inconsistências encontradas: nenhuma
+
+Tech debt pendente (segurança):
+  - SEC-125 (HIGH) — GED: upload sem validação MIME type via magic bytes (Apache Tika) em UploadDocumentUseCase e AddRevisionUseCase — previsto Sprint 38
+  - SEC-126 (HIGH) — GED: path traversal no storagePath via getOriginalFilename() e code não sanitizados — previsto Sprint 38
+  - SEC-138 (MEDIUM) — CAPAS: SubmitForEffectivenessUseCase lança IllegalArgumentException→400 em vez de 422 — previsto Sprint 38
+  - SEC-139 (LOW) — TOCTOU auto-close NC em VerifyEffectivenessUseCase — previsto Sprint 38
+
+Observações:
+  - sprint-atual.md não possui seção "Tech Debt diferido" para os Sprints 36 e 37; conforme protocolo, não foi criada (SEC-125/126/138/139 registrados apenas neste log)
+  - log-beatriz.md Sprint 36 lista também SEC-127/128/129 diferidos "para Sprint 37" — porém o log de Beatriz do Sprint 37 (US-112) não menciona esses itens como resolvidos; confirmação de resolução pendente com Beatriz/Mateus
+
+---
+
 ## [2026-06-01] Sincronização Sprints 36 e 37 — GED e CAPAS Formal
 Fontes lidas: CLAUDE.md, sprint-atual.md, log-athos.md, log-atlas.md, ADR-047, ADR-048
 Mudanças feitas:

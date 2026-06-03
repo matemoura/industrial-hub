@@ -117,8 +117,8 @@ Shell: topbar gradient `#1F3A4A → #5F88A1 → #56A4BB` (60px) + dark sidebar `
 | BOM Import + Planning Report | `production/` | 33 | ✅ done |
 | Production Overview + BOM Level 2 MRP | `production/` | 34 | ✅ done |
 | Cache Caffeine (TTL 5 min) + NgxCharts trend chart + Security debt (SEC-112/113/069) | `production/`, `common/config/` | 35 | ✅ done |
-| GED — Gestão de Documentos controlados (Document + DocumentRevision imutável + MinIO) | `qms/ged/` | 36 | ⬜ planned |
-| CAPAS Formal — CorrectiveAction + PENDING_EFFECTIVENESS + lista cross-NC | `qms/` | 37 | ⬜ planned |
+| GED — Gestão de Documentos controlados (Document + DocumentRevision imutável + MinIO) | `qms/ged/` | 36 | ✅ done |
+| CAPAS Formal — CorrectiveAction + PENDING_EFFECTIVENESS + lista cross-NC | `qms/` | 37 | ✅ done |
 
 ## Key Conventions
 
@@ -127,4 +127,7 @@ Shell: topbar gradient `#1F3A4A → #5F88A1 → #56A4BB` (60px) + dark sidebar `
 - **Pagination**: `Page<T>` with `@PageableDefault(size = 20)` for lists > 50 items
 - **Auth**: JWT Bearer, roles checked via `@PreAuthorize("hasRole('SUPERVISOR')")`
 - **`@RequestParam` validation**: controllers with `@Min`/`@Max`/`@NotNull` on `@RequestParam` **must** have `@Validated` on the class; violations throw `ConstraintViolationException` (not `MethodArgumentNotValidException`) — handled by `GlobalExceptionHandler` returning 400 (ADR-031)
+- **`qms/ged/` sub-module**: GED (Sprint 36) lives under `qms/ged/` with its own `domain/`, `application/`, `infrastructure/` and `presentation/` — not a top-level feature package. `GedController` is its own `@RestController`.
+- **Bean name collision**: use case named `GetDocumentDownloadUrlUseCase` conflicts with the `GetDownloadUrlUseCase` bean in `common/storage/`; the GED use case is registered as `GedGetDownloadUrlUseCase` (class renamed to avoid `ConflictingBeanDefinitionException`).
+- **`CapaController`** (Sprint 37): CAPA cross-NC list lives in a dedicated `CapaController`, separate from `QmsController`, to respect SRP.
 - **No CLAUDE/agent references** in committed code or docs

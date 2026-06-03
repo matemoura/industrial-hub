@@ -2231,8 +2231,8 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 33 | BOM import do Dynamics + relatório de planejamento + tech debt MRP | US-101, US-102, US-103 | ADR-044 |
 | ✅ Sprint 34 | Painel executivo de produção + BOM nível 2 no MRP + tech debt S33 | US-104, US-105, US-106 | ADR-045 |
 | ✅ Sprint 35 | Cache Caffeine no painel executivo + gráfico NgxCharts + liquidação tech debt security | US-107, US-108, US-109 | ADR-046 |
-| ⬜ Sprint 36 | Gestão de Documentos (GED) — catálogo controlado com revisões imutáveis + MinIO | US-110, US-111 | ADR-047 |
-| ⬜ Sprint 37 | CAPAS Formal — extensão da CorrectiveAction com PENDING_EFFECTIVENESS + lista dedicada | US-112 | ADR-048 |
+| ✅ Sprint 36 | Gestão de Documentos (GED) — catálogo controlado com revisões imutáveis + MinIO | US-110, US-111 | ADR-047 |
+| ✅ Sprint 37 | CAPAS Formal — extensão da CorrectiveAction com PENDING_EFFECTIVENESS + lista dedicada | US-112 | ADR-048 |
 
 ---
 
@@ -2918,17 +2918,17 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 36 ⬜
+## Sprint 36 ✅
 **Objetivo**: Gestão de Documentos (GED) — módulo de controle documental no package `qms/ged/` com entidades `Document` + `DocumentRevision` imutáveis, integrado ao `StorageService` MinIO/S3 do Sprint 21. Documentos publicados não podem ser alterados — novas versões criam revisões.
 **ADR**: ADR-047
-**Status**: pendente
+**Status**: concluída
 **Pontos totais**: 8 pts (US-110: 5 + US-111: 3)
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-110 | GED — backend: entidades, API e integração MinIO | 5 | ⬜ pendente |
-| US-111 | GED — frontend: catálogo, detalhe, upload e download | 3 | ⬜ pendente |
+| US-110 | GED — backend: entidades, API e integração MinIO | 5 | ✅ concluído |
+| US-111 | GED — frontend: catálogo, detalhe, upload e download | 3 | ✅ concluído |
 
 ### Dependências
 - US-110 depende de Sprint 21 (`StorageService` já implementado em `common/storage/`)
@@ -2981,16 +2981,16 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 37 ⬜
+## Sprint 37 ✅
 **Objetivo**: CAPAS Formal — elevação das ações corretivas ao padrão ISO 13485 §8.5.2/8.5.3 com status `PENDING_EFFECTIVENESS`, campos de tipo (CORRECTIVE/PREVENTIVE), verificação de eficácia e lista dedicada `/qms/capas` acessível para supervisores.
 **ADR**: ADR-048
-**Status**: pendente
+**Status**: concluída
 **Pontos totais**: 6 pts (US-112: 6)
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-112 | CAPAS Formal — extensão do CorrectiveAction + status PENDING_EFFECTIVENESS + lista CAPA | 6 | ⬜ pendente |
+| US-112 | CAPAS Formal — extensão do CorrectiveAction + status PENDING_EFFECTIVENESS + lista CAPA | 6 | ✅ concluído |
 
 ### Dependências
 - US-112 depende de Sprints 5/6/13 (entidade `CorrectiveAction` e `ActionStatus` existentes no package `qms/`)
