@@ -10,20 +10,28 @@ import com.industrialhub.backend.qms.ged.application.usecase.UploadDocumentUseCa
 import com.industrialhub.backend.qms.ged.domain.DocumentCategory;
 import com.industrialhub.backend.qms.ged.domain.DocumentStatus;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.UUID;
 
+/**
+ * SEC-127: @Validated enables ConstraintViolationException for @RequestParam constraints
+ * (ADR-031). Without it, @NotBlank/@Size on @RequestParam are silently ignored.
+ */
 @RestController
 @RequestMapping("/api/v1/qms/ged")
+@Validated
 public class GedController {
 
     private final UploadDocumentUseCase uploadDocumentUseCase;
@@ -57,12 +65,16 @@ public class GedController {
         return uploadDocumentUseCase.execute(request, file, principal.getName());
     }
 
+    /**
+     * SEC-127: @NotBlank @Size(max=1000) on changeReason — requires @Validated on class
+     * to trigger ConstraintViolationException (ADR-031).
+     */
     @PostMapping(value = "/documents/{id}/revisions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
     public DocumentRevisionResponse addRevision(
             @PathVariable UUID id,
-            @RequestParam String changeReason,
+            @RequestParam @NotBlank @Size(max = 1000) String changeReason,
             @RequestPart("file") MultipartFile file,
             Principal principal) {
         return addRevisionUseCase.execute(id, changeReason, file, principal.getName());

@@ -16,7 +16,10 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
+
+import static com.industrialhub.backend.qms.ged.application.usecase.UploadDocumentUseCase.sanitizeFilename;
 
 @Service
 public class AddRevisionUseCase {
@@ -24,17 +27,23 @@ public class AddRevisionUseCase {
     private final DocumentRepository documentRepository;
     private final DocumentRevisionRepository revisionRepository;
     private final StorageService storageService;
+    private final GedFileValidator gedFileValidator;
 
     public AddRevisionUseCase(DocumentRepository documentRepository,
                                DocumentRevisionRepository revisionRepository,
-                               StorageService storageService) {
+                               StorageService storageService,
+                               GedFileValidator gedFileValidator) {
         this.documentRepository = documentRepository;
         this.revisionRepository = revisionRepository;
         this.storageService = storageService;
+        this.gedFileValidator = gedFileValidator;
     }
 
     @Transactional
     public DocumentRevisionResponse execute(UUID documentId, String changeReason, MultipartFile file, String uploadedBy) {
+        // SEC-125: validate MIME type via Tika magic bytes
+        gedFileValidator.validate(file);
+
         Document document = documentRepository.findById(documentId)
             .orElseThrow(() -> new DocumentNotFoundException(documentId));
 
@@ -44,21 +53,24 @@ public class AddRevisionUseCase {
 
         String nextRevisionNumber = calculateNextRevisionNumber(documentId);
 
+        // SEC-126: sanitize originalFilename — strip path components to prevent traversal
+        String safeFilename = sanitizeFilename(file.getOriginalFilename());
+
         String storagePath = String.format("ged/%s/%s_%s",
-            document.getCode(), UUID.randomUUID(), file.getOriginalFilename());
+            document.getCode(), UUID.randomUUID(), safeFilename);
 
         try {
             storageService.upload(storagePath, file.getInputStream(),
                 file.getContentType(), file.getSize());
         } catch (IOException e) {
-            throw new IllegalStateException("Erro ao fazer upload do arquivo", e);
+            throw new IllegalStateException("Erro ao fazer upload do arquivo.", e);
         }
 
         DocumentRevision revision = DocumentRevision.builder()
             .document(document)
             .revisionNumber(nextRevisionNumber)
             .storagePath(storagePath)
-            .originalFileName(file.getOriginalFilename())
+            .originalFileName(safeFilename)
             .fileSizeBytes(file.getSize())
             .uploadedBy(uploadedBy)
             .uploadedAt(LocalDateTime.now())
@@ -91,7 +103,6 @@ public class AddRevisionUseCase {
             .orElse(0.0);
 
         double next = maxVersion + 1.0;
-        // format as "N.0"
         long nextLong = (long) next;
         return nextLong + ".0";
     }

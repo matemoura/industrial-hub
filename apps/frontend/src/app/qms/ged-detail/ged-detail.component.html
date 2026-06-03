@@ -74,10 +74,6 @@
             <span class="revision-info__value">{{ formatSize(doc()!.currentRevision!.fileSizeBytes) }}</span>
           </div>
           <div class="revision-info__item">
-            <span class="revision-info__label">Enviado por</span>
-            <span class="revision-info__value">{{ doc()!.currentRevision!.uploadedBy }}</span>
-          </div>
-          <div class="revision-info__item">
             <span class="revision-info__label">Data</span>
             <span class="revision-info__value">{{ formatDateTime(doc()!.currentRevision!.uploadedAt) }}</span>
           </div>
@@ -107,7 +103,6 @@
                 <th>Nº Revisão</th>
                 <th>Arquivo</th>
                 <th>Tamanho</th>
-                <th>Enviado por</th>
                 <th>Data</th>
                 <th>Motivo</th>
                 <th></th>
@@ -119,7 +114,6 @@
                   <td class="monospace">{{ rev.revisionNumber }}</td>
                   <td class="file-name-cell">{{ rev.originalFileName }}</td>
                   <td class="size-cell">{{ formatSize(rev.fileSizeBytes) }}</td>
-                  <td>{{ rev.uploadedBy }}</td>
                   <td class="date-cell">{{ formatDateTime(rev.uploadedAt) }}</td>
                   <td class="reason-cell">{{ rev.changeReason }}</td>
                   <td>
@@ -160,6 +154,7 @@
         <div class="form-group">
           <label class="form-label" for="revFile">Arquivo *</label>
           <input id="revFile" type="file" class="form-file"
+                 accept=".pdf,.docx,.xlsx"
                  (change)="onRevisionFileSelected($event)" />
           @if (newRevisionFile()) {
             <span class="file-name-hint">{{ newRevisionFile()!.name }}</span>

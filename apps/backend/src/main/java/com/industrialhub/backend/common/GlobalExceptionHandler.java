@@ -55,7 +55,9 @@ import com.industrialhub.backend.common.webhook.domain.WebhookInvalidUrlExceptio
 import com.industrialhub.backend.common.webhook.domain.WebhookNotFoundException;
 import com.industrialhub.backend.production.domain.ImportProductionBatchNotFoundException;
 import com.industrialhub.backend.production.domain.ProductNotFoundException;
+import com.industrialhub.backend.qms.ged.domain.DocumentCodeAlreadyExistsException;
 import com.industrialhub.backend.qms.ged.domain.DocumentNotFoundException;
+import com.industrialhub.backend.qms.ged.domain.InvalidGedFileException;
 import com.industrialhub.backend.qms.ged.domain.InvalidGedTransitionException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -577,6 +579,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidGedTransitionException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidGedTransition(InvalidGedTransitionException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // SEC-125: GED file MIME type / size validation failure → 422
+    @ExceptionHandler(InvalidGedFileException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidGedFile(InvalidGedFileException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // SEC-129: GED document with duplicate code → 409
+    @ExceptionHandler(DocumentCodeAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleDocumentCodeAlreadyExists(DocumentCodeAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));

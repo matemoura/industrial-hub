@@ -20,7 +20,7 @@ export interface DocumentRevision {
   revisionNumber: string;
   originalFileName: string;
   fileSizeBytes: number;
-  uploadedBy: string;
+  // SEC-128: uploadedBy removed — authorship is internal; not exposed to OPERATOR+ (ADR-041 §7)
   uploadedAt: string;
   changeReason: string;
 }

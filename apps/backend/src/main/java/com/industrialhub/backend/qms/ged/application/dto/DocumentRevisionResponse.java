@@ -5,12 +5,15 @@ import com.industrialhub.backend.qms.ged.domain.DocumentRevision;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+/**
+ * SEC-128: uploadedBy field removed — consistent with ADR-041 Decision 7.
+ * Authorship data (PII) is available only via audit log for ADMIN role.
+ */
 public record DocumentRevisionResponse(
     UUID id,
     String revisionNumber,
     String originalFileName,
     long fileSizeBytes,
-    String uploadedBy,
     LocalDateTime uploadedAt,
     String changeReason
 ) {
@@ -20,7 +23,6 @@ public record DocumentRevisionResponse(
             rev.getRevisionNumber(),
             rev.getOriginalFileName(),
             rev.getFileSizeBytes(),
-            rev.getUploadedBy(),
             rev.getUploadedAt(),
             rev.getChangeReason()
         );

@@ -180,6 +180,7 @@
         <div class="form-group">
           <label class="form-label" for="newFile">Arquivo *</label>
           <input id="newFile" type="file" class="form-file"
+                 accept=".pdf,.docx,.xlsx"
                  (change)="onFileSelected($event)" />
           @if (selectedFile()) {
             <span class="file-name">{{ selectedFile()!.name }}</span>
