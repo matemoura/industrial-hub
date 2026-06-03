@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -50,6 +51,12 @@ public class CompleteCorrectiveActionUseCase {
             throw new ActionNotAllowedException("Ação já foi concluída");
         }
 
+        // CAPAS formais (com tipo definido) devem passar por PENDING_EFFECTIVENESS antes de DONE
+        if (action.getType() != null && action.getStatus() == ActionStatus.PENDING) {
+            throw new ActionNotAllowedException(
+                "Ações CAPA devem ser enviadas para verificação de eficácia antes de serem concluídas");
+        }
+
         action.setStatus(ActionStatus.DONE);
         action.setCompletedAt(LocalDateTime.now());
         action.setCompletedBy(username);
@@ -58,8 +65,9 @@ public class CompleteCorrectiveActionUseCase {
         auditService.log(username, AuditAction.ACTION_COMPLETED, "CorrectiveAction",
                 actionId, Map.of("ncId", ncId.toString()));
 
-        boolean hasPending = actionRepository.existsByNonConformanceIdAndStatus(ncId, ActionStatus.PENDING);
-        if (!hasPending) {
+        boolean hasOpen = actionRepository.existsByNonConformanceIdAndStatusIn(
+                ncId, List.of(ActionStatus.PENDING, ActionStatus.PENDING_EFFECTIVENESS));
+        if (!hasOpen) {
             NonConformance nc = ncRepository.findById(ncId)
                     .orElseThrow(() -> new NcNotFoundException(ncId));
             if (nc.getStatus() == NcStatus.IN_ANALYSIS) {

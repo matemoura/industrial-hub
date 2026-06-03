@@ -11,8 +11,11 @@ import com.industrialhub.backend.qms.application.usecase.GetNcKpiSummaryUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcListUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetRcaByNcUseCase;
 import com.industrialhub.backend.qms.application.usecase.ListCorrectiveActionsUseCase;
+import com.industrialhub.backend.qms.application.usecase.SubmitForEffectivenessUseCase;
 import com.industrialhub.backend.qms.application.usecase.TransitionNcStatusUseCase;
+import com.industrialhub.backend.qms.application.usecase.UpdateCAPAUseCase;
 import com.industrialhub.backend.qms.application.usecase.UpdateRcaUseCase;
+import com.industrialhub.backend.qms.application.usecase.VerifyEffectivenessUseCase;
 import com.industrialhub.backend.qms.presentation.QmsController;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,6 +53,9 @@ class NcListCacheControlTest {
     @Mock private CreateRcaUseCase createRca;
     @Mock private UpdateRcaUseCase updateRca;
     @Mock private GetRcaByNcUseCase getRca;
+    @Mock private UpdateCAPAUseCase updateCapa;
+    @Mock private SubmitForEffectivenessUseCase submitForEffectiveness;
+    @Mock private VerifyEffectivenessUseCase verifyEffectiveness;
 
     private QmsController controller;
     private MockHttpServletResponse response;
@@ -59,7 +65,7 @@ class NcListCacheControlTest {
         controller = new QmsController(
                 createNc, transitionStatus, getNcList, getNcDetail, getKpiSummary,
                 exportCsv, createAction, listActions, completeAction, deleteAction,
-                createRca, updateRca, getRca);
+                createRca, updateRca, getRca, updateCapa, submitForEffectiveness, verifyEffectiveness);
         response = new MockHttpServletResponse();
     }
 

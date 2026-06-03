@@ -41,4 +41,23 @@ public class CorrectiveAction {
 
     @Column(length = 50)
     private String completedBy;
+
+    @Enumerated(EnumType.STRING)
+    @Column(length = 20, columnDefinition = "varchar(20) default 'CORRECTIVE'")
+    @Builder.Default
+    private ActionType type = ActionType.CORRECTIVE;
+
+    @Column(columnDefinition = "text")
+    private String rootCauseConfirmed;
+
+    @Column(columnDefinition = "text")
+    private String preventiveMeasure;
+
+    private LocalDate effectivenessCheckDate;
+
+    @Column(length = 255)
+    private String effectivenessCheckedBy;
+
+    @Column(columnDefinition = "text")
+    private String effectivenessResult;
 }

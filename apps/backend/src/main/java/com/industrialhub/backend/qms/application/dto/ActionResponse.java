@@ -1,6 +1,7 @@
 package com.industrialhub.backend.qms.application.dto;
 
 import com.industrialhub.backend.qms.domain.ActionStatus;
+import com.industrialhub.backend.qms.domain.ActionType;
 import com.industrialhub.backend.qms.domain.CorrectiveAction;
 
 import java.time.LocalDate;
@@ -15,7 +16,13 @@ public record ActionResponse(
     LocalDate dueDate,
     ActionStatus status,
     LocalDateTime completedAt,
-    String completedBy
+    String completedBy,
+    ActionType type,
+    String rootCauseConfirmed,
+    String preventiveMeasure,
+    LocalDate effectivenessCheckDate,
+    String effectivenessCheckedBy,
+    String effectivenessResult
 ) {
     public static ActionResponse from(CorrectiveAction action) {
         return new ActionResponse(
@@ -26,7 +33,13 @@ public record ActionResponse(
             action.getDueDate(),
             action.getStatus(),
             action.getCompletedAt(),
-            action.getCompletedBy()
+            action.getCompletedBy(),
+            action.getType(),
+            action.getRootCauseConfirmed(),
+            action.getPreventiveMeasure(),
+            action.getEffectivenessCheckDate(),
+            action.getEffectivenessCheckedBy(),
+            action.getEffectivenessResult()
         );
     }
 }

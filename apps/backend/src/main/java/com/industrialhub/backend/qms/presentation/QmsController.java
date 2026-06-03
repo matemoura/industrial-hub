@@ -1,6 +1,7 @@
 package com.industrialhub.backend.qms.presentation;
 
 import com.industrialhub.backend.qms.application.dto.ActionResponse;
+import com.industrialhub.backend.qms.application.dto.CAPAUpdateRequest;
 import com.industrialhub.backend.qms.application.dto.CreateActionRequest;
 import com.industrialhub.backend.qms.application.dto.CreateNcRequest;
 import com.industrialhub.backend.qms.application.dto.CreateRcaRequest;
@@ -9,6 +10,7 @@ import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.application.dto.NcSummaryItem;
 import com.industrialhub.backend.qms.application.dto.RcaResponse;
 import com.industrialhub.backend.qms.application.dto.TransitionStatusRequest;
+import com.industrialhub.backend.qms.application.dto.VerifyEffectivenessRequest;
 import com.industrialhub.backend.qms.application.usecase.CompleteCorrectiveActionUseCase;
 import com.industrialhub.backend.qms.application.usecase.CreateCorrectiveActionUseCase;
 import com.industrialhub.backend.qms.application.usecase.CreateNcUseCase;
@@ -20,8 +22,11 @@ import com.industrialhub.backend.qms.application.usecase.GetNcKpiSummaryUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcListUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetRcaByNcUseCase;
 import com.industrialhub.backend.qms.application.usecase.ListCorrectiveActionsUseCase;
+import com.industrialhub.backend.qms.application.usecase.SubmitForEffectivenessUseCase;
 import com.industrialhub.backend.qms.application.usecase.TransitionNcStatusUseCase;
+import com.industrialhub.backend.qms.application.usecase.UpdateCAPAUseCase;
 import com.industrialhub.backend.qms.application.usecase.UpdateRcaUseCase;
+import com.industrialhub.backend.qms.application.usecase.VerifyEffectivenessUseCase;
 import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
 import com.industrialhub.backend.qms.domain.NcType;
@@ -57,6 +62,9 @@ public class QmsController {
     private final CreateRcaUseCase createRca;
     private final UpdateRcaUseCase updateRca;
     private final GetRcaByNcUseCase getRca;
+    private final UpdateCAPAUseCase updateCapa;
+    private final SubmitForEffectivenessUseCase submitForEffectiveness;
+    private final VerifyEffectivenessUseCase verifyEffectiveness;
 
     public QmsController(CreateNcUseCase createNc,
                          TransitionNcStatusUseCase transitionStatus,
@@ -70,7 +78,10 @@ public class QmsController {
                          DeleteCorrectiveActionUseCase deleteAction,
                          CreateRcaUseCase createRca,
                          UpdateRcaUseCase updateRca,
-                         GetRcaByNcUseCase getRca) {
+                         GetRcaByNcUseCase getRca,
+                         UpdateCAPAUseCase updateCapa,
+                         SubmitForEffectivenessUseCase submitForEffectiveness,
+                         VerifyEffectivenessUseCase verifyEffectiveness) {
         this.createNc = createNc;
         this.transitionStatus = transitionStatus;
         this.getNcList = getNcList;
@@ -84,6 +95,9 @@ public class QmsController {
         this.createRca = createRca;
         this.updateRca = updateRca;
         this.getRca = getRca;
+        this.updateCapa = updateCapa;
+        this.submitForEffectiveness = submitForEffectiveness;
+        this.verifyEffectiveness = verifyEffectiveness;
     }
 
     @PostMapping
@@ -162,6 +176,31 @@ public class QmsController {
     @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
     public void deleteAction(@PathVariable UUID id, @PathVariable UUID aid) {
         deleteAction.execute(id, aid);
+    }
+
+    @PutMapping("/{ncId}/corrective-actions/{actionId}")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public ActionResponse updateCapa(@PathVariable UUID ncId,
+                                      @PathVariable UUID actionId,
+                                      @RequestBody @Valid CAPAUpdateRequest req) {
+        return updateCapa.execute(ncId, actionId, req);
+    }
+
+    @PostMapping("/{id}/actions/{actionId}/submit-for-effectiveness")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public ActionResponse submitForEffectiveness(@PathVariable UUID id,
+                                                  @PathVariable UUID actionId,
+                                                  Principal principal) {
+        return submitForEffectiveness.execute(id, actionId, principal.getName());
+    }
+
+    @PostMapping("/{id}/actions/{actionId}/verify-effectiveness")
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public ActionResponse verifyEffectiveness(@PathVariable UUID id,
+                                               @PathVariable UUID actionId,
+                                               @RequestBody @Valid VerifyEffectivenessRequest req,
+                                               Principal principal) {
+        return verifyEffectiveness.execute(id, actionId, req, principal.getName());
     }
 
     @PostMapping("/{ncId}/rca")
