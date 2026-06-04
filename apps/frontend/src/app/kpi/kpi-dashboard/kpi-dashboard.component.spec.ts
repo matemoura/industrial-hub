@@ -98,10 +98,12 @@ describe('KpiDashboardComponent', () => {
     expect(component.oeeOk()).toBe(false);
   });
 
-  it('should show "Nova NC" button only for SUPERVISOR/ADMIN', async () => {
+  it('should hide "Nova NC" button for OPERATOR', async () => {
     await setup(makeKpiService(), makeAuthService('OPERATOR'));
     expect(fixture.nativeElement.querySelector('a[routerlink="/qms/non-conformances/new"]')).toBeFalsy();
+  });
 
+  it('should show "Nova NC" button for SUPERVISOR', async () => {
     await setup(makeKpiService(), makeAuthService('SUPERVISOR'));
     expect(fixture.nativeElement.querySelector('a[routerlink="/qms/non-conformances/new"]')).toBeTruthy();
   });
