@@ -1,0 +1,81 @@
+<div class="aging-page">
+  <div class="page-header">
+    <div class="page-header__breadcrumb">
+      <a routerLink="/qms/capas" class="back-link">← CAPAs</a>
+    </div>
+    <div class="page-header__row">
+      <h1 class="page-title">Aging de CAPAs</h1>
+      <button
+        type="button"
+        class="btn btn--outline"
+        (click)="exportCsv()"
+        [disabled]="exportLoading() || !aging()"
+        data-testid="btn-export-csv"
+      >
+        {{ exportLoading() ? 'Exportando…' : '⬇ Exportar CSV' }}
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-grid">
+      @for (i of [1,2,3,4]; track i) {
+        <div class="skeleton-card"></div>
+      }
+    </div>
+  } @else if (error()) {
+    <div class="error-banner" role="alert">{{ error() }}</div>
+  } @else if (aging(); as a) {
+
+    <!-- Summary cards -->
+    <div class="summary-grid">
+      <div class="summary-card" data-testid="card-total-open">
+        <span class="summary-card__label">Total Aberto</span>
+        <span class="summary-card__value">{{ a.totalOpen }}</span>
+      </div>
+      <div class="summary-card summary-card--danger" data-testid="card-overdue">
+        <span class="summary-card__label">Vencidas</span>
+        <span class="summary-card__value">{{ a.overdueCount }}</span>
+      </div>
+      <div class="summary-card summary-card--warn" data-testid="card-no-due-date">
+        <span class="summary-card__label">Sem prazo definido</span>
+        <span class="summary-card__value">{{ a.noDueDateCount }}</span>
+      </div>
+      <div class="summary-card" data-testid="card-avg-days">
+        <span class="summary-card__label">Média de dias (abertos)</span>
+        <span class="summary-card__value">{{ avgDaysLabel() }}</span>
+      </div>
+    </div>
+
+    <!-- Aging buckets chart -->
+    <div class="chart-card">
+      <div class="chart-card__title">Distribuição por Prazo</div>
+      <div class="chart-card__body">
+        <app-bar-chart
+          [labels]="chartLabels()"
+          [values]="chartValues()"
+          [colors]="chartColors"
+          yLabel="CAPAs"
+        />
+      </div>
+    </div>
+
+    <!-- Overdue by severity -->
+    @if (a.overdueByNcSeverity.length > 0) {
+      <div class="severity-section">
+        <div class="severity-section__title">CAPAs Vencidas por Severidade da NC</div>
+        <div class="severity-grid">
+          @for (item of a.overdueByNcSeverity; track item.severity) {
+            <div class="severity-item">
+              <span [class]="'severity-badge severity-badge--' + item.severity.toLowerCase()">
+                {{ item.severity }}
+              </span>
+              <span class="severity-count">{{ item.overdueCount }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  }
+</div>

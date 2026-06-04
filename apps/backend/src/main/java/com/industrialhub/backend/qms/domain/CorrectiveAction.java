@@ -33,6 +33,9 @@ public class CorrectiveAction {
     @Column(nullable = false)
     private LocalDate dueDate;
 
+    @Column(nullable = false, updatable = false)
+    private LocalDate createdAt;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private ActionStatus status;

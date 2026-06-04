@@ -15,6 +15,7 @@ import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.Map;
 import java.util.UUID;
 
@@ -49,6 +50,7 @@ public class CreateCorrectiveActionUseCase {
                 .description(request.description())
                 .responsible(request.responsible())
                 .dueDate(request.dueDate())
+                .createdAt(LocalDate.now())
                 .status(ActionStatus.PENDING)
                 .build();
 
