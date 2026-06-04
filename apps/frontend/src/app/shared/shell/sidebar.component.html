@@ -51,6 +51,8 @@
         </li>
         @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
           <li><a routerLink="/qms/capas" routerLinkActive="active" class="nav-item">CAPAs</a></li>
+          <li><a routerLink="/qms/capas/aging" routerLinkActive="active" class="nav-item nav-item--sub">Aging de CAPAs</a></li>
+          <li><a routerLink="/qms/reports/quality" routerLinkActive="active" class="nav-item nav-item--sub">Relatório Executivo</a></li>
         }
         <li>
           <a routerLink="/qms/ged" routerLinkActive="active" class="nav-item">

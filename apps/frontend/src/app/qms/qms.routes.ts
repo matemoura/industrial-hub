@@ -9,6 +9,13 @@ export const QMS_ROUTES: Routes = [
     loadComponent: () =>
       import('./capa-list/capa-list.component').then((m) => m.CapaListComponent),
   },
+  // ── US-116: CAPA Aging Dashboard — rota estática ANTES de qualquer :id
+  {
+    path: 'capas/aging',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./aging-dashboard/aging-dashboard.component').then((m) => m.AgingDashboardComponent),
+  },
   // ── GED — Gestão de Documentos ── rotas estáticas ANTES de /:id
   {
     path: 'ged',
@@ -39,6 +46,13 @@ export const QMS_ROUTES: Routes = [
     canActivate: [authGuard],
     loadComponent: () =>
       import('./nc-detail/nc-detail.component').then((m) => m.NcDetailComponent),
+  },
+  // ── US-117: Relatório Executivo de Qualidade
+  {
+    path: 'reports/quality',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./quality-report/quality-report.component').then((m) => m.QualityReportComponent),
   },
   // ── Suppliers ── rotas estáticas ANTES de /:id para evitar conflito
   {

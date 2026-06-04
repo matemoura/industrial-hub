@@ -1,0 +1,121 @@
+<div class="quality-report-page">
+
+  <div class="page-header">
+    <a routerLink="/qms/non-conformances" class="back-link">← QMS</a>
+    <h1 class="page-title">Relatório Executivo de Qualidade</h1>
+    <p class="page-subtitle">Gere relatórios consolidados em PDF ou Excel para auditorias e reuniões.</p>
+  </div>
+
+  <div class="report-card">
+
+    <!-- Error / success banners -->
+    @if (error()) {
+      <div class="banner banner--error" role="alert" data-testid="report-error">{{ error() }}</div>
+    }
+    @if (successMsg()) {
+      <div class="banner banner--success" role="status" data-testid="report-success">{{ successMsg() }}</div>
+    }
+
+    <!-- Period -->
+    <fieldset class="fieldset">
+      <legend class="fieldset__legend">Período <span class="required">*</span></legend>
+      <div class="date-row">
+        <label class="form-field">
+          De
+          <input
+            type="date"
+            [ngModel]="from()"
+            (ngModelChange)="from.set($event)"
+            name="from"
+            class="form-input"
+            data-testid="input-from"
+            required
+          />
+        </label>
+        <label class="form-field">
+          Até
+          <input
+            type="date"
+            [ngModel]="to()"
+            (ngModelChange)="to.set($event)"
+            name="to"
+            class="form-input"
+            data-testid="input-to"
+            required
+          />
+        </label>
+      </div>
+    </fieldset>
+
+    <!-- Format -->
+    <fieldset class="fieldset">
+      <legend class="fieldset__legend">Formato</legend>
+      <div class="format-row">
+        <label class="radio-label" [class.radio-label--active]="format() === 'PDF'">
+          <input
+            type="radio"
+            name="format"
+            value="PDF"
+            [ngModel]="format()"
+            (ngModelChange)="format.set($event)"
+            data-testid="radio-pdf"
+          />
+          PDF
+        </label>
+        <label class="radio-label" [class.radio-label--active]="format() === 'EXCEL'">
+          <input
+            type="radio"
+            name="format"
+            value="EXCEL"
+            [ngModel]="format()"
+            (ngModelChange)="format.set($event)"
+            data-testid="radio-excel"
+          />
+          Excel
+        </label>
+      </div>
+    </fieldset>
+
+    <!-- Sections -->
+    <fieldset class="fieldset">
+      <legend class="fieldset__legend">Seções <span class="required">*</span></legend>
+      <div class="sections-grid">
+        @for (section of sections(); track section.id) {
+          <label class="checkbox-label" [class.checkbox-label--checked]="section.checked">
+            <input
+              type="checkbox"
+              [checked]="section.checked"
+              (change)="toggleSection(section.id)"
+              [attr.data-testid]="'checkbox-' + section.id"
+            />
+            {{ section.label }}
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    <!-- Validation -->
+    @if (validationError() && (from() || to() || selectedSections().length > 0)) {
+      <p class="validation-msg" role="alert" data-testid="validation-msg">{{ validationError() }}</p>
+    }
+
+    <!-- Generate button -->
+    <div class="form-actions">
+      <button
+        type="button"
+        class="btn btn--primary btn--lg"
+        [disabled]="!isFormValid || generating()"
+        (click)="generate()"
+        data-testid="btn-generate"
+      >
+        @if (generating()) {
+          <span class="spinner" aria-hidden="true"></span>
+          Gerando relatório…
+        } @else {
+          ⬇ Gerar e Baixar Relatório
+        }
+      </button>
+    </div>
+
+  </div>
+</div>
