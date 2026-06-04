@@ -2233,6 +2233,15 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 35 | Cache Caffeine no painel executivo + gráfico NgxCharts + liquidação tech debt security | US-107, US-108, US-109 | ADR-046 |
 | ✅ Sprint 36 | Gestão de Documentos (GED) — catálogo controlado com revisões imutáveis + MinIO | US-110, US-111 | ADR-047 |
 | ✅ Sprint 37 | CAPAS Formal — extensão da CorrectiveAction com PENDING_EFFECTIVENESS + lista dedicada | US-112 | ADR-048 |
+| ✅ Sprint 38 | GED & CAPAS Security Hardening — MIME validation, path traversal, TOCTOU fix | US-113, US-114 | ADR-049 |
+| 🚧 Sprint 39 | Rastreabilidade Regulatória NC↔GED + Dashboard CAPA Aging + Relatório Executivo de Qualidade | US-115, US-116, US-117 | ADR-050 |
+| ⬜ Sprint 40 | Gestão de Treinamentos e Competências — ISO 13485 §6.2 | US-118, US-119, US-120 | ADR-051 |
+| ⬜ Sprint 41 | Gestão de Calibração e MSA — ISO 13485 §7.6 | US-121, US-122, US-123 | ADR-052 |
+| ⬜ Sprint 42 | Auditorias Internas — ISO 13485 §8.2.4 | US-124, US-125, US-126 | ADR-053 |
+| ⬜ Sprint 43 | Gestão de Risco / FMEA — ISO 14971 | US-127, US-128, US-129 | ADR-054 |
+| ⬜ Sprint 44 | Controle de Mudanças — ISO 13485 §4.1 | US-130, US-131 | ADR-055 |
+| ⬜ Sprint 45 | Reclamações de Clientes + MDR — ISO 13485 §8.2.1 / ANVISA | US-132, US-133, US-134 | ADR-056 |
+| ⬜ Sprint 46 | Análise Crítica pela Direção — ISO 13485 §5.6 | US-135, US-136 | ADR-057 |
 
 ---
 
@@ -3031,7 +3040,7 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 38 🔄
+## Sprint 38 ✅
 **Objetivo**: Hardening de segurança — liquidar os 2 achados HIGH e 4 MEDIUM/LOW diferidos dos Sprints 36 (GED) e 37 (CAPAS): validação MIME type via Apache Tika, prevenção de path traversal, constraints de input, mascaramento de `uploadedBy`, handler de race condition e fix de TOCTOU no auto-close NC.
 **ADR**: ADR-049
 **Status**: concluída
@@ -3116,3 +3125,787 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
    ```
 2. Em `VerifyEffectivenessUseCase.execute()`: substituir `actionRepository.findById(actionId)` por `actionRepository.findByIdForUpdate(actionId)` — obtém `SELECT FOR UPDATE` antes de transicionar o status; garante que segundo request concorrente aguarda commit do primeiro antes de prosseguir
 3. Testes: (a) `VerifyEffectivenessUseCaseTest` existentes (2 cenários) continuam passando sem alteração; (b) novo teste: `CorrectiveActionRepository.findByIdForUpdate` possui anotação `@Lock(LockModeType.PESSIMISTIC_WRITE)` verificada via reflexão (`Method.getAnnotation(Lock.class)`); (c) use case usa `findByIdForUpdate` (não `findById`) — verificar no mock que o método correto é invocado
+
+---
+
+## Sprint 39 🚧
+**Objetivo**: Rastreabilidade Regulatória + Relatório Executivo de Qualidade — vinculação NC↔GED, dashboard de aging de CAPAs e exportação de relatório de qualidade para auditorias ANVISA/FDA
+**ADR**: ADR-050
+**Status**: planejada
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-115 | Vinculação NC ↔ Documento GED (rastreabilidade regulatória) | 4 | ⬜ planejado |
+| US-116 | Dashboard de aging de CAPAs com exportação CSV | 4 | ⬜ planejado |
+| US-117 | Relatório executivo de qualidade exportável (PDF/Excel) | 5 | ⬜ planejado |
+
+**Total**: 13 pontos
+
+### Dependências
+- US-115 depende de Sprints 5 (NC) e 36 (GED) — entidades `NonConformance` e `Document` devem existir
+- US-116 depende de Sprints 5/6/37 — entidades `CorrectiveAction`, `NonConformance`, `ActionStatus.PENDING_EFFECTIVENESS`
+- US-117 depende de US-115 e US-116 — consolida dados de NC, CAPA, GED e RCA no relatório
+
+### Sequência de desenvolvimento sugerida
+1. US-115 backend (tabela de associação NC↔GED + endpoints)
+2. US-116 backend (aging query + exportação CSV)
+3. US-115 frontend (seção "Documentos Associados" na NC)
+4. US-116 frontend (dashboard de aging)
+5. US-117 backend (geração de relatório PDF via iText 7 Community + Excel via Apache POI — ADR-050 §6/§7)
+6. US-117 frontend (formulário de parâmetros + download)
+
+---
+
+#### US-115 — Vinculação NC ↔ Documento GED (4 pts)
+
+**Contexto**: Empresas de dispositivos médicos sujeitas à RDC 665/2022 (ANVISA) e ISO 13485 precisam rastrear qual procedimento/instrução de trabalho estava vigente quando uma NC foi registrada. Hoje NC e documentos GED existem em silos — sem ligação formal entre eles.
+
+**Backend**
+
+1. Entidade `NcDocumentLink` criada em `qms/domain/NcDocumentLink.java`: campos `id` (UUID), `nonConformance` (`@ManyToOne LAZY`, not null), `document` (`@ManyToOne LAZY`, FK para `qms_ged_document`, not null), `linkType` (enum `NcDocumentLinkType`: `PROCEDURE_AT_OCCURRENCE`, `CORRECTIVE_REFERENCE`, `OTHER`), `linkedBy` (String, username do JWT), `linkedAt` (LocalDateTime); constraint UNIQUE em `(non_conformance_id, document_id)` — impede duplicata da mesma associação.
+2. Migration `V{N}__nc_document_link.sql`: tabela `nc_document_link` com FK para `non_conformance(id)` e `ged_document(id)` (nomes reais conforme Sprint 36); índice em `non_conformance_id`; índice em `document_id`.
+3. `POST /api/v1/qms/non-conformances/{ncId}/documents` (SUPERVISOR+) cria link; `CreateNcDocumentLinkRequest` record: `@NotNull UUID documentId`, `@NotNull NcDocumentLinkType linkType`; NC inexistente → `404`; Document inexistente → `404 { "message": "Documento GED não encontrado" }`; link duplicado → `409 { "message": "Este documento já está vinculado a esta NC" }`; retorna `201 NcDocumentLinkResponse`.
+4. `NcDocumentLinkResponse` record: `linkId`, `documentId`, `documentCode`, `documentTitle`, `documentCategory`, `documentStatus`, `linkType`, `linkedAt`. **`linkedBy` não é exposto** — dado de autoria retido na entidade para auditoria, mas não disponibilizado via API (padrão ADR-049 §4); `documentRevisionNumber` não compõe o response (ADR-050 §3).
+5. `GET /api/v1/qms/non-conformances/{ncId}/documents` (OPERATOR+) retorna `List<NcDocumentLinkResponse>` dos vínculos da NC, ordenados por `linkedAt DESC`; NC inexistente → `404`; lista vazia → `[]`.
+6. `DELETE /api/v1/qms/non-conformances/{ncId}/documents/{documentId}` (SUPERVISOR+) remove o vínculo; `204`; link inexistente → `404`. URL semântica: usa `documentId` (não UUID interno do link) — use case chama `findByNonConformanceIdAndDocumentId` para localizar e remover o vínculo (ADR-050 §2).
+7. `GET /api/v1/qms/ged/documents/{documentId}/non-conformances` (OPERATOR+) — sentido inverso: lista todas as NCs que referenciam o documento; retorna `List<DocumentNcLinkSummary>` (projeção de interface, sem carregar entidade completa); útil para impact analysis antes de publicar nova revisão de um SOP. Endpoint adicionado ao `GedController` existente — não cria controller novo (ADR-050 §3).
+8. `AuditAction` enum: adicionar `NC_DOCUMENT_LINKED` e `NC_DOCUMENT_UNLINKED`; use cases de criação e remoção chamam `auditService.log(username, NC_DOCUMENT_LINKED, "NcDocumentLink", linkId, Map.of("ncId", ncId, "documentId", documentId, "linkType", linkType))`.
+9. `NcResponse` (detalhe existente — endpoint `GET /api/v1/qms/non-conformances/{id}`) passa a incluir campo `documentLinks: List<NcDocumentLinkResponse>` (carregado via `NcDocumentLinkRepository.findByNonConformanceId(ncId)`; lazy, não incluso na listagem paginada).
+10. Pacotes: `NcDocumentLink`, `NcDocumentLinkType` em `qms/domain/`; `CreateNcDocumentLinkUseCase`, `GetNcDocumentLinksUseCase`, `RemoveNcDocumentLinkUseCase`, `GetDocumentNonConformancesUseCase` em `qms/application/usecase/`; `NcDocumentLinkRepository` em `qms/infrastructure/`; endpoints adicionados ao `QmsController` e ao `GedController` (GET inverso).
+11. Teste unitário `CreateNcDocumentLinkUseCaseTest`: (a) criação bem-sucedida — `save()` + `auditService.log(NC_DOCUMENT_LINKED)` chamados; (b) NC inexistente → `404` antes de `save()`; (c) Document inexistente → `404`; (d) link duplicado (`DataIntegrityViolationException`) → `409`; (e) `NcDocumentLinkResponse` retornado contém `documentRevisionNumber` correto.
+
+**Frontend**
+
+12. Seção "Documentos GED Vinculados" adicionada à página de detalhe de NC (`/qms/non-conformances/{id}`), abaixo da seção de Análise de Causa Raiz; carregada via `GET /api/v1/qms/non-conformances/{ncId}/documents` no `ngOnInit`.
+13. Cada item da lista exibe: chip de tipo (`PROCEDURE_AT_OCCURRENCE` = azul, `CORRECTIVE_REFERENCE` = verde, `OTHER` = cinza), código do documento (`documentCode`), título do documento, revisão vigente (ex: "Rev. 003"), link "Ver documento" navegando para `/qms/ged/{documentId}`.
+14. Botão "+ Vincular Documento" (SUPERVISOR+, `@if (canLink())`): abre `MatDialog` com:
+    - Autocomplete de documentos GED (busca via `GET /api/v1/qms/ged/documents?page=0&size=20&search=<texto>` com debounce 300 ms); cada opção exibe `[{code}] {title}`
+    - Select de tipo do vínculo (`linkType`): "Procedimento em vigor na ocorrência", "Referência para ação corretiva", "Outro"
+    - Botão "Vincular" desabilitado enquanto formulário inválido ou `isLinking()`; erro `409` exibe snackbar "Este documento já está vinculado"
+15. Botão lixeira por item (SUPERVISOR+): `window.confirm()` nativo antes de `DELETE`; sucesso: item removido da lista (optimistic); erro: snackbar com mensagem da API.
+16. Loading state: skeleton de 2 linhas enquanto `isLoading()=true`; empty state: "Nenhum documento GED vinculado" com ícone `link`.
+17. Na página de detalhe de Documento GED (`/qms/ged/{id}`), nova seção "NCs que referenciam este documento" (SUPERVISOR+): carrega via `GET /api/v1/qms/ged/documents/{id}/non-conformances`; tabela com colunas ID, Título, Severidade, Status; cada linha é link para `/qms/non-conformances/{ncId}`; empty state: "Nenhuma NC referencia este documento".
+18. `NcDocumentLinkService` em `qms/`: métodos `listLinks(ncId): Observable<NcDocumentLinkResponse[]>`, `createLink(ncId, req): Observable<NcDocumentLinkResponse>`, `removeLink(ncId, linkId): Observable<void>`, `listNcsByDocument(documentId): Observable<NcSummaryResponse[]>`; interfaces tipadas.
+19. `ChangeDetectionStrategy.OnPush`, standalone, signals; `links = signal<NcDocumentLinkResponse[]>([])`, `isLoading = signal(false)`, `isLinking = signal(false)`, `canLink = computed(() => role === 'SUPERVISOR' || role === 'ADMIN')`.
+20. Spec `nc-detail.component.spec.ts` — novos casos: (a) seção "Documentos GED Vinculados" exibe 2 links mockados; (b) empty state quando `links()` vazio; (c) botão "+ Vincular" oculto para OPERATOR; (d) erro `409` exibe snackbar correto; (e) lixeira chama `removeLink()` após confirmação.
+
+---
+
+#### US-116 — Dashboard de aging de CAPAs com exportação CSV (4 pts)
+
+**Contexto**: O time de qualidade precisa monitorar o pipeline de ações corretivas — quais estão atrasadas, em que fase estão (PENDING / PENDING_EFFECTIVENESS / DONE), qual o tempo médio de resolução e quais NCs têm ações críticas vencidas. Hoje existe apenas a lista flat de CAPAs sem visão de aging ou prazo.
+
+**Backend**
+
+1. Campo `dueDate` já existe na entidade `CorrectiveAction` (ADR-007 §3, referenciado também em ADR-048 via `CAPASummaryProjection`). **Nenhuma migration de schema é necessária** para US-116 — o campo está presente e é nullable (ADR-050 §4). AC corrigido: verificar que `dueDate` está mapeado e exposto no `CorrectiveActionResponse` existente; se ausente, adicionar sem migration nova.
+2. `CreateCorrectiveActionRequest` (existente): adicionar campo opcional `LocalDate dueDate` sem quebrar contratos existentes (null = sem prazo).
+3. `CorrectiveActionResponse` (existente): adicionar campos `dueDate` (LocalDate, nullable) e `overdue` (boolean, calculado: `dueDate != null && LocalDate.now().isAfter(dueDate) && status != DONE`); `overdue` calculado no use case factory `from()`, não armazenado no banco.
+4. `GET /api/v1/qms/capas/aging` (SUPERVISOR+) retorna `CapaAgingResponse` (ADR-050 §4 — record Java com campos nomeados separados):
+   ```json
+   {
+     "totalOpen": 23,
+     "overdueCount": 5,
+     "noDueDateCount": 3,
+     "bucket0to7":  { "count": 4, "label": "0–7 dias" },
+     "bucket8to15": { "count": 6, "label": "8–15 dias" },
+     "bucket16to30": { "count": 3, "label": "16–30 dias" },
+     "bucketOver30": { "count": 2, "label": ">30 dias", "overdueCount": 0 },
+     "overdueByNcSeverity": [
+       { "severity": "CRITICAL", "overdueCount": 2 },
+       { "severity": "HIGH",     "overdueCount": 3 }
+     ]
+   }
+   ```
+   `totalOpen` = ações com status `PENDING` ou `PENDING_EFFECTIVENESS`; buckets referem-se a ações não vencidas agrupadas por `dueDate − hoje`; ações sem `dueDate` contabilizadas em `noDueDateCount` e não entram nos buckets.
+5. `avgResolutionDays` = média de `(completedAt − createdAt)` em dias para ações com `status = DONE` e `completedAt` não nulo; calculado em Java via `ChronoUnit.DAYS` (sem SQL nativo — padrão do projeto); `null` quando nenhuma ação DONE com `completedAt` existir.
+6. `agingBuckets`: agrupa ações com `status != DONE` por faixa de idade (`LocalDate.now() − createdAt.toLocalDate()`): 0–7, 8–15, 16–30, >30 dias; calculado em Java via `Collectors.groupingBy`.
+7. `overdueByNcSeverity`: para ações `overdue = true`, agrupa por `nonConformance.severity`; calculado em Java após buscar as ações com JOIN FETCH na NC.
+8. `GET /api/v1/qms/capas/aging/export` (SUPERVISOR+) retorna CSV com `Content-Type: text/csv` e `Content-Disposition: attachment; filename="capas-aging-{date}.csv"`; colunas: `capaId`, `ncId`, `ncTitle`, `ncSeverity`, `capaDescription`, `status`, `assignedTo`, `createdAt`, `dueDate`, `completedAt`, `ageInDays`, `overdue`; `ageInDays` = `ChronoUnit.DAYS.between(createdAt.toLocalDate(), LocalDate.now())` para ações abertas, `ChronoUnit.DAYS.between(createdAt.toLocalDate(), completedAt.toLocalDate())` para fechadas.
+9. `GetCapaAgingUseCase` criado em `qms/application/usecase/`; `ExportCapaAgingUseCase` em `qms/application/usecase/`; ambos adicionados ao `CapaController` (conforme convenção Sprint 37 — `CapaController` separado por SRP).
+10. `CorrectiveActionRepository`: adicionar método `List<CorrectiveAction> findAllWithNonConformance()` com `@Query("SELECT a FROM CorrectiveAction a JOIN FETCH a.nonConformance")` para evitar N+1 no aging (NC é necessária para `severity` e `title`).
+11. Teste unitário `GetCapaAgingUseCaseTest`: (a) aging com mix de ações PENDING/DONE/OVERDUE — contagens corretas; (b) `avgResolutionDays` correto com 2 ações DONE; (c) `avgResolutionDays = null` quando zero ações DONE; (d) `agingBuckets` com ação de 3 dias → bucket "0–7 dias"; (e) `overdueByNcSeverity` com 1 CRITICAL overdue → `{ "CRITICAL": 1, ... }`.
+12. Teste unitário `ExportCapaAgingUseCaseTest`: (a) CSV gerado com cabeçalho correto; (b) ação overdue exportada com `overdue=true`; (c) `ageInDays` calculado corretamente para ação aberta e fechada.
+
+**Frontend**
+
+13. Rota lazy `/qms/capas/aging` (SUPERVISOR+, protegida por `AuthGuard`): painel com 4 cartões de resumo no topo: "Pendentes", "Aguardando Eficácia", "Vencidas", "Tempo Médio de Resolução (dias)"; cartão "Vencidas" com borda e texto vermelhos (`#D24A4A`) quando `totalOverdue > 0`.
+14. Gráfico de barras "Distribuição por Aging" via `BarChartComponent` (existente em `shared/charts/`): barras coloridas por bucket — 0–7 dias: `#3FA66A`, 8–15 dias: `#E8A93C`, 16–30 dias: `#F97316`, >30 dias: `#D24A4A`.
+15. Tabela "CAPAs Vencidas" abaixo dos gráficos: lista `CorrectiveActionResponse` com `overdue = true`; colunas: NC (link), Descrição, Atribuído a, Criado em, Prazo, Dias em atraso; ordenada por `dueDate ASC` (mais urgentes primeiro); empty state "Nenhuma CAPA vencida" com ícone check verde.
+16. Botão "Exportar CSV" (SUPERVISOR+): chama `GET /api/v1/qms/capas/aging/export`; download automático via `window.open(url)` ou `<a [href]>` com `download` attribute; nome do arquivo inclui data atual (ex: `capas-aging-2026-06-04.csv`).
+17. `CapaAgingService` em `qms/`: métodos `getAging(): Observable<CapaAgingResponse>` e `exportCsv(): Observable<Blob>` (usa `responseType: 'blob'` no `HttpClient`); interface `CapaAgingResponse` tipada estritamente.
+18. `ChangeDetectionStrategy.OnPush`, standalone, signals; `aging = signal<CapaAgingResponse | null>(null)`, `isLoading = signal(false)`, `overdueCapas = signal<CorrectiveActionResponse[]>([])`.
+19. Link "Aging de CAPAs" adicionado ao submenu QMS no `NavComponent`, visível apenas para SUPERVISOR+.
+20. Spec `capa-aging.component.spec.ts`: (a) cartões exibem contagens mockadas; (b) cartão "Vencidas" com classe CSS de alerta quando `totalOverdue > 0`; (c) tabela de vencidas exibe 2 ações mockadas; (d) empty state tabela quando sem vencidas; (e) botão "Exportar CSV" chama `exportCsv()`.
+
+---
+
+#### US-117 — Relatório executivo de qualidade exportável (PDF/Excel) (5 pts)
+
+**Contexto**: Auditorias ANVISA (RDC 665/2022) e ISO 13485 exigem evidências documentadas de NCs, CAPAs e eficácia de ações. Atualmente o time exporta dados separados por módulo (CSV de NCs, CSV de CAPAs) — sem consolidação em documento formal único. Esta US entrega um relatório executivo parametrizado em PDF e Excel.
+
+**Backend**
+
+1. Dependências adicionadas ao `pom.xml`:
+   - **`com.itextpdf:itext7-core:7.2.6`** (iText 7 Community, licença AGPL — adequado para uso interno sem redistribuição pública; ~53 usuários) — **não usar `com.lowagie:itext:2.1.7`**, versão obsoleta de 2009 descartada pelo ADR-050 §6
+   - `org.apache.poi:poi-ooxml` (Excel `.xlsx`, Apache POI — já disponível no projeto desde Sprint 33 ADR-044; verificar versão antes de adicionar novamente)
+   - Alternativas descartadas: `JasperReports` (dependência > 15 MB, curva alta); `iText 2.1.7` (obsoleto, sem suporte Unicode completo, API de tabelas arcaica) — ADR-050 §6
+
+2. `QualityReportRequest` record em `qms/application/dto/`: `LocalDate from`, `LocalDate to`, `@NotNull ReportFormat format` (enum `ReportFormat`: `PDF`, `EXCEL`), `boolean includeNcs` (default true), `boolean includeCapas` (default true), `boolean includeGedDocuments` (default true), `boolean includeRca` (default false); `from` e `to` obrigatórios; `from` não pode ser depois de `to` → `400 { "message": "Data inicial não pode ser posterior à data final" }`; período máximo: 365 dias → `400 { "message": "Período máximo: 365 dias" }`.
+
+3. `POST /api/v1/qms/reports/quality` (SUPERVISOR+): aceita `QualityReportRequest` como `@RequestBody`; retorna o arquivo gerado com `Content-Type` correto:
+   - PDF: `application/pdf`, `Content-Disposition: attachment; filename="quality-report-{from}-to-{to}.pdf"`
+   - Excel: `application/vnd.openxmlformats-officedocument.spreadsheetml.sheet`, `Content-Disposition: attachment; filename="quality-report-{from}-to-{to}.xlsx"`
+   - `ResponseEntity<byte[]>` com status `200`
+
+4. `GenerateQualityReportUseCase` em `qms/application/usecase/`: orquestra a coleta de dados e delega à strategy correta (`PdfReportStrategy` / `ExcelReportStrategy`), ambas implementando interface `ReportStrategy { byte[] generate(QualityReportData data) }`; `QualityReportData` record interno com as listas coletadas.
+
+5. Coleta de dados dentro do `GenerateQualityReportUseCase`:
+   - Se `includeNcs`: busca NCs com `reportedAt BETWEEN from AND to.plusDays(1).atStartOfDay()` via `NonConformanceRepository.findByReportedAtBetween(...)` (JPQL existente ou novo); carrega com `JOIN FETCH` para `correctiveActions` se `includeCapas=true` — evita N+1
+   - Se `includeCapas`: busca `CorrectiveAction` com `createdAt BETWEEN` do período; inclui campo `overdue` calculado
+   - Se `includeGedDocuments`: busca `Document` com `uploadedAt BETWEEN` do período (data da primeira revisão); retorna código, título, revisão atual
+   - Se `includeRca`: busca `RootCauseAnalysis` vinculadas às NCs do período via `rcaRepository.findByNonConformanceIdIn(ncIds)`
+
+6. **Estrutura do PDF** (iText):
+   - Capa: logo MSB (`msb-logo.png`), título "Relatório Executivo de Qualidade", período, data de geração, gerado por (username do JWT)
+   - Seção 1 (se `includeNcs`): tabela de NCs — ID, Título, Tipo, Severidade, Status, Registrado em, Fechado em; subtítulo "Resumo: {totalOpen} abertas, {totalClosed} fechadas, {totalCritical} críticas"
+   - Seção 2 (se `includeCapas`): tabela de CAPAs — NC vinculada, Descrição, Atribuído a, Status, Prazo, Concluída em; linha destacada em vermelho claro quando `overdue = true`
+   - Seção 3 (se `includeGedDocuments`): tabela de documentos publicados no período — Código, Título, Revisão, Publicado em
+   - Seção 4 (se `includeRca`): tabela de RCAs — NC, Why1, Causa Raiz Identificada
+   - Rodapé de cada página: número de página + "Industrial Hub — MSB — Confidencial"
+
+7. **Estrutura do Excel** (Apache POI):
+   - Aba "Resumo": células com totais — Total NCs, NCs Abertas, NCs Críticas, Total CAPAs, CAPAs Vencidas, Documentos publicados no período
+   - Aba "NCs" (se `includeNcs`): uma linha por NC com as mesmas colunas do PDF; cabeçalho bold, linhas alternadas em cinza claro (`#F4F7F9`); coluna Severidade com célula colorida: CRITICAL=#FECACA, HIGH=#FED7AA, MEDIUM=#FEF9C3, LOW=#DCFCE7
+   - Aba "CAPAs" (se `includeCapas`): uma linha por CAPA; linha vermelha clara quando `overdue = true`
+   - Aba "GED" (se `includeGedDocuments`): uma linha por documento
+   - Auto-size de colunas para legibilidade; `WorkbookFactory` do POI com `SXSSFWorkbook` para streaming (evita OOM com listas grandes)
+
+8. `AuditAction` enum: adicionar `QUALITY_REPORT_GENERATED`; `GenerateQualityReportUseCase` chama `auditService.log(username, QUALITY_REPORT_GENERATED, "QualityReport", null, Map.of("from", from, "to", to, "format", format, "sections", Map.of("ncs", includeNcs, "capas", includeCapas, "ged", includeGedDocuments, "rca", includeRca)))` após gerar o relatório com sucesso.
+
+9. Endpoint em `QmsController` (ou novo `QualityReportController` — preferir `QmsController` para manter endpoint sob `/api/v1/qms/reports/`); `@PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")`.
+
+10. Testes:
+    - `GenerateQualityReportUseCaseTest`: (a) formato PDF delegado a `PdfReportStrategy`; (b) formato EXCEL delegado a `ExcelReportStrategy`; (c) `from > to` → `400` antes de qualquer coleta; (d) período > 365 dias → `400`; (e) `includeNcs=false` → `nonConformanceRepository` não consultado; (f) auditoria registrada após geração bem-sucedida
+    - `PdfReportStrategyTest`: (a) PDF gerado não é vazio (`bytes.length > 0`); (b) PDF é um PDF válido (verificar magic bytes `%PDF`); não é necessário validar conteúdo interno — teste de smoke
+    - `ExcelReportStrategyTest`: (a) arquivo gerado é XLSX válido (abre sem exceção via `WorkbookFactory.create(new ByteArrayInputStream(bytes))`); (b) aba "NCs" existe quando `includeNcs=true`; (c) aba "NCs" ausente quando `includeNcs=false`
+
+**Frontend**
+
+11. Rota lazy `/qms/reports/quality` (SUPERVISOR+): formulário de parâmetros com:
+    - `MatDateRangePicker` do Angular Material para seleção de período (`from` / `to`); validação client-side: `from` obrigatório, `to` obrigatório, `from <= to`, período máximo 365 dias (exibe erro inline "Período máximo: 365 dias")
+    - Checkboxes para seções: "Não-conformidades", "CAPAs", "Documentos GED", "Análise de Causa Raiz" (todos marcados por default)
+    - Radio buttons para formato: "PDF" (default) / "Excel"
+    - Botão "Gerar Relatório" desabilitado enquanto formulário inválido ou `isGenerating()`; spinner dentro do botão durante geração
+12. `isGenerating = signal(false)`: ao clicar "Gerar Relatório", seta `true`; ao receber resposta (sucesso ou erro), seta `false`.
+13. Download do arquivo gerado: resposta é `Blob`; criar URL via `URL.createObjectURL(blob)`, criar `<a>` temporário com `download` e `href`, clicar programaticamente e revogar URL após 100 ms; nome do arquivo: `quality-report-{from}-to-{to}.pdf` ou `.xlsx`.
+14. Erro `400` (período inválido, > 365 dias): snackbar com mensagem retornada pela API; erro `500`: snackbar "Erro ao gerar relatório. Tente novamente."
+15. `QualityReportService` em `qms/`: método `generateReport(req: QualityReportRequest): Observable<Blob>` — `HttpClient.post(url, req, { responseType: 'blob' })`; interface `QualityReportRequest` tipada; enum `ReportFormat`: `'PDF' | 'EXCEL'`.
+16. Link "Relatório de Qualidade" adicionado ao submenu QMS no `NavComponent`, visível apenas para SUPERVISOR+.
+17. `ChangeDetectionStrategy.OnPush`, standalone, signals; `isGenerating = signal(false)`, `form: FormGroup` com `FormBuilder`.
+18. Spec `quality-report.component.spec.ts`: (a) botão "Gerar Relatório" desabilitado quando `from` ausente; (b) botão desabilitado quando período > 365 dias (validador custom no `FormGroup`); (c) `generateReport()` chamado com parâmetros corretos ao submeter; (d) `isGenerating()` é `true` durante chamada e `false` após; (e) download disparado após blob recebido (mock de `URL.createObjectURL`).
+
+---
+
+### Tabela de acompanhamento de sprints (atualizada)
+
+| Sprint | Objetivo | US | ADR |
+|--------|----------|----|-----|
+| ✅ Sprint 1 | OEE core: importação Excel, entidades e persistência | US-001, US-002 | ADR-001/002/003 |
+| ✅ Sprint 2 | OEE extensions: dashboard, análise, resumo | US-003, US-004, US-005, US-006, US-007, US-008, US-009 | ADR-006 |
+| ✅ Sprint 3 | OEE read: worker directory, process efficiency, CSV export | US-010, US-011, US-012 | ADR-005/006 |
+| ✅ Sprint 4 | Autenticação JWT | US-013, US-014 | ADR-004 |
+| ✅ Sprint 5 | QMS: cadastro e ciclo de vida de NCs | US-021, US-022, US-023 | ADR-007 |
+| ✅ Sprint 6 | QMS: planos de ação corretiva (CAP) + email | US-024, US-025, US-026 | ADR-007 |
+| ✅ Sprint 7 | Maintenance: equipment registration + work orders | US-027, US-028 | ADR-008 |
+| ✅ Sprint 8 | Maintenance: MTTR + metrics | US-029 | ADR-008 |
+| ✅ Sprint 9 | Cross-module KPI dashboard + weekly report | US-030, US-031 | ADR-009 |
+| ✅ Sprint 10 | Audit trail, E2E (Playwright), health, performance | US-033, US-034, US-035, US-036 | ADR-009 |
+| ✅ Sprint 11 | API Security Hardening (rate limiting, headers, CORS) | US-065, US-066 | ADR-021 |
+| ✅ Sprint 12 | User management UI + self-service password | US-037, US-038, US-039 | ADR-010 |
+| ✅ Sprint 13 | Análise de causa raiz — 5-Porquês em NCs | US-052, US-053 | ADR-015 |
+| ✅ Sprint 14 | Gestão de fornecedores + score de qualidade | US-057, US-058 | ADR-017 |
+| ✅ Sprint 15 | Preventive maintenance scheduling + calendar | US-040, US-041, US-042 | ADR-011 |
+| ✅ Sprint 16 | Advanced analytics: OEE trend, NC pareto, MTTR trend + tech debt | US-043, US-044, US-045, US-059 | ADR-012, ADR-031 |
+| ✅ Sprint 17 | Planned Downtime + correção residual BUG-2 (qms-analytics) | US-073, US-074, US-060 | ADR-025, ADR-032 |
+| ✅ Sprint 18 | Tech debt Sprint 17 + threshold alerts + notificações in-app | US-088, US-046, US-047, US-048 | ADR-013, ADR-033 |
+| ✅ Sprint 19 | Gestão de turnos + rastreabilidade por turno | US-054, US-055, US-056, US-089 | ADR-016, ADR-034 |
+| ✅ Sprint 20 | Peças e insumos (spare parts inventory) | US-049, US-050, US-051, US-090 | ADR-014, ADR-035 |
+| ✅ Sprint 21 | Anexos — upload de documentos e imagens + tech debt S20 | US-059, US-060 | ADR-018, ADR-036 |
+| ✅ Sprint 22 | SLA e escalação automática + tech debt security S21 | US-061, US-062, US-091 | ADR-019, ADR-037 |
+| ✅ Sprint 23 | Multi-plant support + tech debt SLA/email/shifts | US-063, US-064, US-092 | ADR-020, ADR-038 |
+| ✅ Sprint 24 | OEE Benchmarking + tech debt multi-plant | US-075, US-076, US-093 | ADR-026, ADR-039 |
+| ✅ Sprint 25 | LGPD compliance e data retention + tech debt benchmark OEE | US-067, US-068, US-094 | ADR-022, ADR-039 |
+| ✅ Sprint 26 | Progressive Web App (PWA + offline queue) + tech debt LGPD/security | US-069, US-070, US-095 | ADR-023 |
+| ✅ Sprint 27 | Outbound webhooks para integração com sistemas externos | US-071, US-072 | ADR-024, ADR-040 |
+| ✅ Sprint 28 | Dashboard customizável por usuário (widgets drag-and-drop) | US-077, US-078, US-096 | ADR-027 |
+| ✅ Sprint 29 | Production module: importação do Dynamics (produtos, estoque, OPs, tempos) + tech debt S28 | US-079, US-080, US-081, US-097 | ADR-028 |
+| ✅ Sprint 30 | Acompanhamento visual de produção e tracking de OPs por família + tech debt S29 | US-082, US-083, US-098 | ADR-029, ADR-041 |
+| ✅ Sprint 31 | Gestão de cargas de esterilização (Hub-managed) + tech debt S30 | US-084, US-099 | ADR-029, ADR-042 |
+| ✅ Sprint 32 | Motor MRP, planejamento por família e staffing por OP + tech debt S31 | US-085, US-086, US-087, US-100 | ADR-030, ADR-043 |
+| ✅ Sprint 33 | BOM import do Dynamics + relatório de planejamento + tech debt MRP | US-101, US-102, US-103 | ADR-044 |
+| ✅ Sprint 34 | Painel executivo de produção + BOM nível 2 no MRP + tech debt S33 | US-104, US-105, US-106 | ADR-045 |
+| ✅ Sprint 35 | Cache Caffeine no painel executivo + gráfico NgxCharts + liquidação tech debt security | US-107, US-108, US-109 | ADR-046 |
+| ✅ Sprint 36 | Gestão de Documentos (GED) — catálogo controlado com revisões imutáveis + MinIO | US-110, US-111 | ADR-047 |
+| ✅ Sprint 37 | CAPAS Formal — extensão da CorrectiveAction com PENDING_EFFECTIVENESS + lista dedicada | US-112 | ADR-048 |
+| ✅ Sprint 38 | GED & CAPAS Security Hardening — MIME validation, path traversal, TOCTOU fix | US-113, US-114 | ADR-049 |
+| 🚧 Sprint 39 | Rastreabilidade Regulatória NC↔GED + Dashboard CAPA Aging + Relatório Executivo de Qualidade | US-115, US-116, US-117 | ADR-050 |
+| ⬜ Sprint 40 | Gestão de Treinamentos e Competências — ISO 13485 §6.2 | US-118, US-119, US-120 | ADR-051 |
+| ⬜ Sprint 41 | Gestão de Calibração e MSA — ISO 13485 §7.6 | US-121, US-122, US-123 | ADR-052 |
+| ⬜ Sprint 42 | Auditorias Internas — ISO 13485 §8.2.4 | US-124, US-125, US-126 | ADR-053 |
+| ⬜ Sprint 43 | Gestão de Risco / FMEA — ISO 14971 | US-127, US-128, US-129 | ADR-054 |
+| ⬜ Sprint 44 | Controle de Mudanças — ISO 13485 §4.1 | US-130, US-131 | ADR-055 |
+| ⬜ Sprint 45 | Reclamações de Clientes + MDR — ISO 13485 §8.2.1 / ANVISA | US-132, US-133, US-134 | ADR-056 |
+| ⬜ Sprint 46 | Análise Crítica pela Direção — ISO 13485 §5.6 | US-135, US-136 | ADR-057 |
+
+---
+
+## Sprint 40 ⬜
+**Objetivo**: Gestão de Treinamentos e Competências — registro de treinamentos por colaborador, matriz de competências, avaliação de eficácia e alertas de certificações vencendo (ISO 13485 §6.2)
+**ADR**: ADR-051
+**Status**: planejada
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-118 | Backend de treinamentos — CRUD de cursos, registros por colaborador e matriz de competências | 5 | ⬜ planejado |
+| US-119 | Avaliação de eficácia e alertas de certificações vencendo | 3 | ⬜ planejado |
+| US-120 | Frontend — catálogo, registros de treinamento e dashboard de compliance | 4 | ⬜ planejado |
+
+**Total**: 12 pontos
+
+### Dependências
+- US-118 cria as entidades base; US-119 depende de US-118 (TrainingRecord precisa existir)
+- US-120 depende de US-118 e US-119 (consome todos os endpoints)
+
+### Sequência de entrega sugerida
+1. US-118 backend (entidades + migrations + endpoints CRUD)
+2. US-119 backend (avaliação de eficácia + job de alerta)
+3. US-120 frontend (catálogo + registros + dashboard)
+
+---
+
+#### US-118 — Backend de treinamentos: CRUD e matriz de competências (5 pts)
+
+**Contexto**: ISO 13485 §6.2 exige registros de treinamento para funções que afetam a qualidade do produto, com avaliação de eficácia. Esta US cria o módulo de RH e treinamentos do zero.
+
+**Backend — Entidades e migration**
+1. Pacote `training/` criado em `com.industrialhub.backend.training/` com subpacotes `domain/`, `application/dto/`, `application/usecase/`, `infrastructure/`, `presentation/`
+2. Entidade `TrainingCourse` em `training/domain/`: `id` (UUID), `code` (String, único, max 30), `title` (String, max 200), `description` (TEXT nullable), `category` (enum `TrainingCategory`: `GMP`, `QUALITY`, `SAFETY`, `REGULATORY`, `TECHNICAL`, `OTHER`), `durationHours` (Integer, min 1), `validityMonths` (Integer nullable — null = sem vencimento), `requiredForRoles` (`@ElementCollection` de String representando roles: `OPERATOR`, `SUPERVISOR`, `ADMIN`), `active` (boolean, default true), `createdAt` (LocalDateTime)
+3. Entidade `TrainingRecord` em `training/domain/`: `id` (UUID), `course` (`@ManyToOne LAZY`), `username` (String — referência leve sem FK física), `completedAt` (LocalDate), `expiresAt` (LocalDate nullable — `completedAt + validityMonths meses`; null se `validityMonths = null`), `instructorName` (String nullable), `score` (Integer nullable, 0–100), `passed` (boolean), `certificateStoragePath` (String nullable — chave MinIO), `recordedBy` (String), `recordedAt` (LocalDateTime)
+4. Migrations: `V{N}__training_course.sql` e `V{N+1}__training_record.sql` com índices em `username`, `course_id`, `expires_at`
+
+**Backend — CRUD de cursos**
+5. `POST /api/v1/training/courses` (ADMIN): `code` duplicado → `409`; retorna `201 TrainingCourseResponse`
+6. `GET /api/v1/training/courses` (OPERATOR+): lista cursos ativos; filtros `?category=<enum>`, `?requiredForRole=<string>`
+7. `GET /api/v1/training/courses/{id}` (OPERATOR+): detalhe ou `404`
+8. `PUT /api/v1/training/courses/{id}` (ADMIN): atualiza todos exceto `code` (imutável); `200` ou `404`
+9. `PUT /api/v1/training/courses/{id}/deactivate` (ADMIN): soft-delete; `204`; bloqueia se registros recentes (`422`)
+
+**Backend — Registros de treinamento**
+10. `POST /api/v1/training/records` (SUPERVISOR+, multipart/form-data): obrigatórios `courseId`, `username`, `completedAt`, `passed`; opcionais `instructorName`, `score`, `file` (PDF certificado max 10 MB, MIME validado via `GedFileValidator`, path `training/{username}/{uuid}_{filename}`); retorna `201 TrainingRecordResponse`
+11. `GET /api/v1/training/records` (SUPERVISOR+): paginado `@PageableDefault(size=20)`; filtros `?username`, `?courseId`, `?passed`, `?expired=true`, `?effectivenessResult=<enum>`
+12. `GET /api/v1/training/records/me` (qualquer usuário autenticado): próprios registros ordenados por `completedAt DESC`
+13. `GET /api/v1/training/records/{id}/certificate` (OPERATOR+): URL pré-assinada TTL 15 min; `404` se sem certificado
+14. `DELETE /api/v1/training/records/{id}` (ADMIN): `204` ou `404`
+
+**Backend — Matriz de competências**
+15. `GET /api/v1/training/competency-matrix` (SUPERVISOR+): `List<CompetencyMatrixRow>` — uma linha por `username`; `role` buscado via `UserRepository`; cursos com `CompetencyStatus { courseCode, courseTitle, category, status (VALID/EXPIRING/EXPIRED/MISSING), completedAt, expiresAt }`; cursos sem registro = `MISSING`; `expiresAt BETWEEN today AND today+30` = `EXPIRING`
+16. `TrainingCourseResponse` record: `id`, `code`, `title`, `category`, `durationHours`, `validityMonths`, `requiredForRoles`, `active`
+17. `TrainingRecordResponse` record: `id`, `courseId`, `courseCode`, `courseTitle`, `username`, `completedAt`, `expiresAt`, `passed`, `score`, `instructorName`, `hasCertificate`, `recordedBy`, `recordedAt`, `effectivenessResult` (nullable), `effectivenessAssessedAt` (nullable), `effectivenessAssessedBy` (nullable)
+18. `AuditAction` enum: `TRAINING_RECORD_CREATED`, `TRAINING_RECORD_DELETED`
+19. Testes: `CreateTrainingRecordUseCaseTest` — (a) sem certificado: `storageService` não chamado; (b) PDF válido: `storageService.upload()` chamado; (c) PDF inválido: `InvalidGedFileException`; `GetCompetencyMatrixUseCaseTest` — (d) curso obrigatório sem registro: `MISSING`; (e) `expiresAt < today`: `EXPIRED`; (f) `expiresAt BETWEEN today AND today+30`: `EXPIRING`
+
+---
+
+#### US-119 — Avaliação de eficácia e alertas de certificações vencendo (3 pts)
+
+**Contexto**: ISO 13485 §6.2 exige avaliação da eficácia dos treinamentos. Certificações com validade próxima do vencimento devem gerar alertas automáticos.
+
+**Backend — Avaliação de eficácia**
+1. `TrainingRecord` ganha campos nullable via migration `V{N+2}__training_effectiveness.sql`: `effectivenessAssessedAt` (LocalDate), `effectivenessAssessedBy` (String), `effectivenessResult` (enum `EffectivenessResult`: `EFFECTIVE`, `PARTIALLY_EFFECTIVE`, `NOT_EFFECTIVE`), `effectivenessNotes` (TEXT nullable)
+2. `POST /api/v1/training/records/{id}/effectiveness` (SUPERVISOR+): body `{ "result": "EFFECTIVE", "assessedBy": "...", "notes": "..." }`; `passed=false` → `422`; segunda avaliação → `409`; retorna `200 TrainingRecordResponse` atualizado
+3. `AuditAction` enum: `TRAINING_EFFECTIVENESS_RECORDED`
+
+**Backend — Job de alertas**
+4. `TrainingExpiryAlertJob` com `@Scheduled(cron = "0 0 8 * * MON", zone = "America/Sao_Paulo")`: busca registros com `expiresAt BETWEEN today AND today+30` e `passed=true`; debounce 144h via `notificationRepository.existsByTitleAndCreatedAtAfter`; cria notificação pessoal `notificationService.createForUser(username, title, body, WARNING)`
+5. Registros com `expiresAt < today`: severidade `CRITICAL`; debounce 24h
+6. `POST /api/v1/admin/training/alerts/run-now` (ADMIN): dispara job; retorna `200 { "alertsSent": N }`
+7. `GET /api/v1/training/compliance-summary` (SUPERVISOR+): `TrainingComplianceSummary` record: `totalTrackedUsers`, `fullyCompliant`, `partiallyCompliant`, `nonCompliant`, `expiringIn30Days`
+8. Testes: `TrainingExpiryAlertJobTest` — (a) `expiresAt = today+10` → WARNING; (b) `expiresAt = yesterday` → CRITICAL; (c) sem `expiresAt` → sem alerta; (d) debounce ativo → sem duplicata; `AssessEffectivenessUseCaseTest` — (e) `passed=true` → persiste; (f) `passed=false` → 422; (g) segunda chamada → 409
+
+---
+
+#### US-120 — Frontend: catálogo, registros e dashboard de compliance (4 pts)
+
+**Frontend**
+1. Módulo `training/` criado em `apps/frontend/src/app/training/`; rota lazy `/training`; link "Treinamentos" no `NavComponent` (OPERATOR+)
+2. `TrainingService` em `training/training.service.ts`: métodos `listCourses`, `createCourse`, `deactivateCourse`, `listRecords`, `getMyRecords`, `createRecord(FormData)`, `getCertificateUrl`, `assessEffectiveness`, `getCompetencyMatrix`, `getComplianceSummary`; interfaces tipadas
+
+**Catálogo de cursos**
+3. Rota `/training/courses` (OPERATOR+): tabela Código, Título, Categoria (chip colorido: GMP=azul, QUALITY=verde, SAFETY=vermelho, REGULATORY=roxo, TECHNICAL=cinza), Duração (h), Validade, Roles; filtros: categoria, role; botão "Novo Curso" (ADMIN)
+4. Dialog "Novo Curso" (ADMIN): `code`, `title`, `category`, `durationHours`, `validityMonths` (opcional), checkboxes `requiredForRoles`, `description` (opcional); botão "Salvar" desabilitado enquanto inválido
+
+**Registros de treinamento**
+5. Rota `/training/records` (SUPERVISOR+): tabela Colaborador, Curso, Concluído em, Validade (chip: Válido=verde, Vencendo=âmbar, Vencido=vermelho, Permanente=cinza), Aprovado (ícone), Eficácia (chip ou "—"), Certificado (ícone); paginação `MatPaginator`
+6. Dialog "+ Registrar Treinamento" (SUPERVISOR+): autocomplete cursos, input username, datepicker, toggle passed, score opcional, instructorName opcional, file input PDF
+7. Botão "Avaliar Eficácia" (SUPERVISOR+, apenas quando `passed=true` e sem avaliação): dialog com select `effectivenessResult`, textarea `notes`; `409` exibe snackbar
+8. Ícone certificado: `getCertificateUrl()` + `window.open` `noopener,noreferrer`
+9. Rota `/training/my-records` (todos autenticados): próprios registros; link "Meus Treinamentos" no menu de perfil
+
+**Matriz e dashboard**
+10. Rota `/training/matrix` (SUPERVISOR+): tabela matriz colunas = cursos obrigatórios, linhas = colaboradores; chip verde/âmbar/vermelho/cinza por status; botão "Exportar CSV"
+11. Rota `/training/dashboard` (SUPERVISOR+): 4 cards de compliance; clique navega para `/training/records` com filtro
+12. `ChangeDetectionStrategy.OnPush`, standalone, signals
+13. Spec `training-records.component.spec.ts`: (a) tabela exibe registros mockados; (b) chip "Vencido" para `expiresAt` no passado; (c) "Avaliar Eficácia" oculto quando `passed=false`; (d) download chama `getCertificateUrl`; (e) "+ Registrar" oculto para OPERATOR
+
+---
+
+## Sprint 41 ⬜
+**Objetivo**: Gestão de Calibração e MSA — agenda por equipamento, registros com resultado in/out-of-tolerance, vínculo com GED, alertas automáticos e NC automática quando fora de tolerância (ISO 13485 §7.6)
+**ADR**: ADR-052
+**Status**: planejada
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-121 | Backend de calibração — planos, registros e resultados | 5 | ⬜ planejado |
+| US-122 | NC automática + alertas de vencimento de calibração | 3 | ⬜ planejado |
+| US-123 | Frontend — agenda, histórico e dashboard de calibração | 4 | ⬜ planejado |
+
+**Total**: 12 pontos
+
+### Dependências
+- US-121 depende de Sprint 7 (Equipment) e Sprint 36 (GED)
+- US-122 depende de US-121 e Sprint 5 (NC automática via `CreateNonConformanceUseCase`)
+- US-123 depende de US-121 e US-122
+
+---
+
+#### US-121 — Backend de calibração: planos, registros e resultados (5 pts)
+
+**Contexto**: ISO 13485 §7.6 exige calibração em intervalos definidos com resultados registrados; equipamentos fora de tolerância exigem ação imediata.
+
+**Backend — Entidades**
+1. `CalibrationSchedule` em `maintenance/domain/`: `id` (UUID), `equipment` (`@ManyToOne LAZY`), `intervalDays` (Integer, min 1), `lastCalibratedAt` (LocalDate nullable), `nextDueAt` (LocalDate — `today + intervalDays` na criação sem `lastCalibratedAt`), `externalProvider` (String nullable, max 200), `active` (boolean, default true), `createdBy`, `createdAt`
+2. `CalibrationRecord` em `maintenance/domain/`: `id` (UUID), `schedule` (`@ManyToOne LAZY`), `equipment` (`@ManyToOne LAZY`), `calibratedAt` (LocalDate), `result` (enum `CalibrationResult`: `IN_TOLERANCE`, `OUT_OF_TOLERANCE`, `ADJUSTED`), `technician` (String, max 200), `certificateDocumentId` (UUID nullable — GED), `certificateStoragePath` (String nullable — upload direto), `notes` (TEXT nullable), `autoNcId` (UUID nullable), `recordedBy`, `recordedAt`
+3. Migrations: `V{N}__calibration_schedule.sql` e `V{N+1}__calibration_record.sql`; índices em `equipment_id`, `schedule_id`, `calibrated_at`
+
+**Backend — Planos**
+4. `POST /api/v1/maintenance/calibration-schedules` (SUPERVISOR+): equipamento `DECOMMISSIONED` → `422`; retorna `201 CalibrationScheduleResponse`
+5. `GET /api/v1/maintenance/calibration-schedules` (OPERATOR+): filtros `?equipmentId`, `?overdue=true`
+6. `PUT /api/v1/maintenance/calibration-schedules/{id}` (SUPERVISOR+): atualiza `intervalDays`, `externalProvider`, recalcula `nextDueAt`
+7. `PUT /api/v1/maintenance/calibration-schedules/{id}/deactivate` (SUPERVISOR+): `204`
+
+**Backend — Registros**
+8. `POST /api/v1/maintenance/calibration-records` (SUPERVISOR+, multipart/form-data): `certificateDocumentId` e `file` mutuamente exclusivos → `400` se ambos; ao salvar: `schedule.lastCalibratedAt = calibratedAt`, `schedule.nextDueAt = calibratedAt + intervalDays`; retorna `201 CalibrationRecordResponse`
+9. `GET /api/v1/maintenance/calibration-records?scheduleId=<uuid>` (OPERATOR+): histórico `DESC`
+10. `GET /api/v1/maintenance/calibration-records/{id}/certificate` (OPERATOR+): URL pré-assinada TTL 15 min; `404` se sem certificado
+11. `CalibrationScheduleResponse` record: `id`, `equipmentId`, `equipmentCode`, `equipmentName`, `intervalDays`, `lastCalibratedAt`, `nextDueAt`, `overdue` (calculado), `externalProvider`, `active`
+12. `CalibrationRecordResponse` record: `id`, `scheduleId`, `equipmentCode`, `calibratedAt`, `result`, `technician`, `notes`, `hasCertificate`, `certificateDocumentId`, `autoNcId`, `recordedBy`, `recordedAt`
+13. Testes: (a) IN_TOLERANCE: `nextDueAt` e `lastCalibratedAt` atualizados corretamente; (b) ambos certificado+file → 400; (c) DECOMMISSIONED ao criar plano → 422; (d) filtro `?overdue=true` correto
+
+---
+
+#### US-122 — NC automática + alertas de vencimento de calibração (3 pts)
+
+**Backend — NC automática**
+1. Em `CreateCalibrationRecordUseCase.execute()`: quando `result == OUT_OF_TOLERANCE` → chama `CreateNonConformanceUseCase.execute()` com `title`, `type=EQUIPMENT`, `severity=HIGH`; seta `calibrationRecord.autoNcId = nc.getId()`
+2. `CalibrationRecordResponse` expõe `autoNcId` (nullable)
+
+**Backend — Alertas de vencimento**
+3. `CalibrationExpiryAlertJob` `@Scheduled(cron = "0 0 7 * * *", zone = "America/Sao_Paulo")`: planos com `nextDueAt BETWEEN today AND today+14`; debounce 72h; notificação `WARNING`; planos com `nextDueAt < today` → `CRITICAL`; debounce 24h
+4. `POST /api/v1/admin/calibration/alerts/run-now` (ADMIN): dispara job; retorna `200 { "alertsSent": N }`
+5. `GET /api/v1/maintenance/calibration-schedules/summary` (SUPERVISOR+): `CalibrationSummary` record: `totalSchedules`, `overdueCount`, `dueSoon14Days`, `lastMonthRecords`, `outOfToleranceLastMonth`
+6. Testes: (a) `nextDueAt = today+7` → WARNING; (b) `nextDueAt = yesterday` → CRITICAL; (c) debounce → sem duplicata; (d) sem `nextDueAt` → ignorado; (e) OUT_OF_TOLERANCE: `createNcUseCase` chamado; `autoNcId` preenchido; (f) IN_TOLERANCE: `createNcUseCase` não chamado
+
+---
+
+#### US-123 — Frontend: agenda, histórico e dashboard de calibração (4 pts)
+
+**Frontend**
+1. Rota `/maintenance/calibration` (OPERATOR+, lazy-loaded); link "Calibração" no submenu Manutenção do `NavComponent`
+2. `CalibrationService` em `maintenance/calibration.service.ts`: `listSchedules`, `createSchedule`, `deactivateSchedule`, `listRecords`, `createRecord`, `getCertificateUrl`, `getCalibrationSummary`
+
+**Agenda**
+3. Página `/maintenance/calibration`: cards de resumo (Total planos, Vencidos, Vencendo 14 dias, OUT_OF_TOLERANCE no mês); tabela com Equipamento, Intervalo, Última cal., Próxima (chip verde/âmbar/vermelho), Provedor; toggle "Apenas Vencidos"; botão "Novo Plano" (SUPERVISOR+)
+4. Dialog "Novo Plano": autocomplete equipamento, `intervalDays` (min 1), `externalProvider` (opcional)
+
+**Histórico e registro**
+5. Painel lateral com histórico: tabela Data, Resultado (chip colorido), Técnico, Certificado (ícone), NC (link quando `autoNcId` presente)
+6. Dialog "+ Registrar Calibração" (SUPERVISOR+): datepicker, select `result`, input `technician`, `notes`; toggle certificado: "Selecionar GED" (autocomplete docs PUBLISHED) ou "Upload direto" (file PDF); aviso de NC automática quando `result=OUT_OF_TOLERANCE`
+7. Rota `/maintenance/calibration/dashboard` (SUPERVISOR+): calendário mensal com badges por `nextDueAt`; clique filtra lista
+8. `ChangeDetectionStrategy.OnPush`, standalone, signals
+9. Spec: (a) chip "Vencido" para `nextDueAt < today`; (b) aviso NC ao selecionar OUT_OF_TOLERANCE; (c) link "Ver NC" quando `autoNcId` presente; (d) "Novo Plano" oculto para OPERATOR
+
+---
+
+## Sprint 42 ⬜
+**Objetivo**: Auditorias Internas — planejamento de auditorias ISO 13485, checklists por processo, achados vinculados a NCs/CAPAs e relatório de auditoria (ISO 13485 §8.2.4)
+**ADR**: ADR-053
+**Status**: planejada
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-124 | Backend de auditorias — planejamento, checklists e achados | 5 | ⬜ planejado |
+| US-125 | Relatório de auditoria exportável (PDF) e dashboard de conformidade | 3 | ⬜ planejado |
+| US-126 | Frontend — planejamento, checklist interativo e achados | 4 | ⬜ planejado |
+
+**Total**: 12 pontos
+
+### Dependências
+- US-124 é base; US-125 depende de US-124; US-126 depende de US-124 e US-125
+- US-124 depende de Sprint 5 (NC) e Sprint 37 (CAPA) para vinculação de achados
+
+---
+
+#### US-124 — Backend de auditorias: planejamento, checklists e achados (5 pts)
+
+**Contexto**: ISO 13485 §8.2.4 exige programa de auditorias internas para verificar se o SGQ está implementado e mantido efetivamente.
+
+**Backend — Entidades**
+1. Pacote `qms/audit/domain/` (subpacote de `qms/` para não colidir com `common/domain/AuditLog`); `InternalAudit` com campos: `id` (UUID), `code` (String, único, auto-gerado `"AUD-{ANO}-{NNN}"`), `title` (String, max 200), `scope` (TEXT), `auditType` (enum `AuditType`: `INTERNAL`, `SUPPLIER`, `PROCESS`, `SYSTEM`), `status` (enum `AuditStatus`: `PLANNED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED`), `plannedDate` (LocalDate), `completedDate` (LocalDate nullable), `leadAuditor` (String), `auditees` (`@ElementCollection` String), `createdBy`, `createdAt`
+2. `AuditChecklistItem`: `id` (UUID), `audit` (`@ManyToOne LAZY`), `process` (String, max 100), `isoClause` (String, max 20), `question` (TEXT), `response` (enum `ChecklistResponse`: `CONFORMING`, `NON_CONFORMING`, `OBSERVATION`, `NOT_APPLICABLE` — nullable), `evidence` (TEXT nullable), `order` (Integer)
+3. `AuditFinding`: `id` (UUID), `audit` (`@ManyToOne LAZY`), `checklistItem` (`@ManyToOne LAZY` nullable), `type` (enum `FindingType`: `NON_CONFORMANCE`, `OBSERVATION`, `OPPORTUNITY_FOR_IMPROVEMENT`), `description` (TEXT), `isoClause` (String, max 20), `severity` (`NcSeverity` reutilizado), `linkedNcId` (UUID nullable), `linkedCapaId` (UUID nullable), `createdBy`, `createdAt`
+4. Migrations: 3 tabelas com índices em `audit.status`, `audit.planned_date`, `checklist_item.audit_id`, `finding.audit_id`
+
+**Backend — Endpoints**
+5. `POST /api/v1/qms/audits` (SUPERVISOR+): cria em `PLANNED`; `code` auto-gerado; `201 InternalAuditResponse`
+6. `GET /api/v1/qms/audits` (OPERATOR+): paginado `@PageableDefault(size=20)`; filtros `?status`, `?auditType`, `?leadAuditor`, `?from`, `?to`
+7. `GET /api/v1/qms/audits/{id}` (OPERATOR+): detalhe com `checklistItems` e `findings`
+8. `PUT /api/v1/qms/audits/{id}/status` (SUPERVISOR+): `PLANNED→IN_PROGRESS`; `IN_PROGRESS→COMPLETED` (requer `completedDate`); `PLANNED→CANCELLED`; `IN_PROGRESS→CANCELLED` → `422`
+9. `PUT /api/v1/qms/audits/{id}` (SUPERVISOR+): atualiza quando `status=PLANNED`; `422` se posterior
+10. `POST /api/v1/qms/audits/{id}/checklist` (SUPERVISOR+): cria itens em batch; bloqueado se `status != IN_PROGRESS` (`422`); `201 List<AuditChecklistItemResponse>`
+11. `PUT /api/v1/qms/audits/{id}/checklist/{itemId}` (SUPERVISOR+): atualiza `response`, `evidence`; `200`
+12. `POST /api/v1/qms/audits/{id}/findings` (SUPERVISOR+): `linkedNcId` validado se informado (`404` se inexistente); `201 AuditFindingResponse`
+13. `DELETE /api/v1/qms/audits/{id}/findings/{findingId}` (SUPERVISOR+): bloqueado se `COMPLETED`; `204`
+14. `AuditAction` enum: `INTERNAL_AUDIT_CREATED`, `INTERNAL_AUDIT_STATUS_CHANGED`, `AUDIT_FINDING_CREATED`
+15. `InternalAuditResponse` record: `id`, `code`, `title`, `scope`, `auditType`, `status`, `plannedDate`, `completedDate`, `leadAuditor`, `auditees`, `checklistItemsCount`, `findingsCount`, `nonConformingItemsCount`
+16. Testes: (a) `PLANNED→IN_PROGRESS`: ok; (b) `IN_PROGRESS→COMPLETED` sem `completedDate`: 422; (c) `IN_PROGRESS→CANCELLED`: 422; (d) achado com `linkedNcId` válido: persiste; (e) `linkedNcId` inexistente: 404; (f) achado em `COMPLETED`: 422
+
+---
+
+#### US-125 — Relatório de auditoria PDF e dashboard de conformidade (3 pts)
+
+**Backend — Relatório PDF**
+1. `POST /api/v1/qms/audits/{id}/report` (SUPERVISOR+): PDF via iText 7; disponível apenas quando `status=COMPLETED` (`422` caso contrário); `application/pdf`, filename `"audit-{code}.pdf"`
+2. Estrutura PDF: capa (código, título, data, auditor, escopo); Sumário Executivo (contagens); Checklist por processo (tabela cláusula/questão/resposta/evidência); Achados (tabela tipo/severidade/descrição/cláusula/NC vinculada); rodapé com número de página
+3. `AuditAction.AUDIT_REPORT_GENERATED` registrado
+4. Testes: (a) `COMPLETED`: bytes não-vazios, magic bytes `%PDF`; (b) `PLANNED`: 422; (c) `CANCELLED`: 422
+
+**Backend — Dashboard**
+5. `GET /api/v1/qms/audits/compliance-dashboard` (SUPERVISOR+): `AuditComplianceDashboard` record: `plannedThisYear`, `completedThisYear`, `overdueAudits` (`PLANNED` com `plannedDate < today`), `openFindings` (achados `NON_CONFORMANCE` com NC não-`CLOSED` ou sem NC), `findingsByType Map<FindingType,Integer>`, `conformityRate` (% itens `CONFORMING` / total respondidos últimos 12 meses)
+6. Testes: (a) `conformityRate` calculado corretamente; (b) auditoria vencida em `overdueAudits`
+
+---
+
+#### US-126 — Frontend: planejamento, checklist interativo e achados (4 pts)
+
+**Frontend**
+1. Rota `/qms/audits` (SUPERVISOR+, lazy-loaded); link "Auditorias" no submenu QMS do `NavComponent` (SUPERVISOR+)
+2. `AuditService` em `qms/audit.service.ts`: `listAudits`, `getAudit`, `createAudit`, `updateAuditStatus`, `addChecklistItems`, `updateChecklistItem`, `addFinding`, `deleteFinding`, `generateReport`, `getComplianceDashboard`
+
+**Lista de auditorias**
+3. Página `/qms/audits`: cards via `getComplianceDashboard()`; tabela Código, Título, Tipo (chip), Status (chip colorido: PLANNED=cinza, IN_PROGRESS=`#56A4BB`, COMPLETED=verde, CANCELLED=cinza-escuro), Data planejada, Auditor líder, Achados; filtros: status, tipo; botão "Nova Auditoria" (SUPERVISOR+)
+4. Dialog "Nova Auditoria": `title`, select `auditType`, textarea `scope`, datepicker `plannedDate`, input `leadAuditor`, chips-input `auditees`
+
+**Detalhes e checklist**
+5. Rota `/qms/audits/{id}`: header com código, status, botões de transição contextual; seção Checklist; seção Achados
+6. Modo checklist (`status=IN_PROGRESS`): select inline de resposta com debounce 800ms → `PUT .../checklist/{itemId}`; chip colorido: CONFORMING=verde, NON_CONFORMING=vermelho, OBSERVATION=âmbar, NOT_APPLICABLE=cinza; textarea evidência expansível
+7. Botão "+ Item ao Checklist" (SUPERVISOR+): dialog com `process`, `isoClause`, `question`
+8. Seção Achados: lista com chip tipo (NON_CONFORMANCE=vermelho, OBSERVATION=âmbar, OFI=azul), severidade, cláusula, link NC vinculada; dialog "+ Achado" com campos obrigatórios
+9. Botão "Gerar PDF" (SUPERVISOR+, apenas `status=COMPLETED`): download blob PDF
+10. `ChangeDetectionStrategy.OnPush`, standalone, signals; `isSavingChecklist = signal(false)`
+11. Spec `audit-detail.component.spec.ts`: (a) select dispara PUT com debounce; (b) "Gerar PDF" oculto quando `status != COMPLETED`; (c) achado com `linkedNcId` exibe link; (d) "Cancelar Auditoria" oculto quando `status=IN_PROGRESS`
+
+---
+
+## Sprint 43 ⬜
+**Objetivo**: Gestão de Risco / FMEA — registro de riscos, análise FMEA (severity/occurrence/detectability/RPN), ações de mitigação e matriz de risco visual (ISO 14971)
+**ADR**: ADR-054
+**Status**: planejada
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-127 | Backend de gestão de risco — registro FMEA e ações de mitigação | 5 | ⬜ planejado |
+| US-128 | Matriz de risco visual e rastreabilidade NC-Risco | 3 | ⬜ planejado |
+| US-129 | Frontend — cadastro FMEA, matriz visual e painel de riscos | 4 | ⬜ planejado |
+
+**Total**: 12 pontos
+
+### Dependências
+- US-127 é base; US-128 depende de US-127; US-129 depende de US-127 e US-128
+- US-128 depende de Sprint 5 (NC) para rastreabilidade NC-Risco
+
+---
+
+#### US-127 — Backend de gestão de risco: registro FMEA e ações de mitigação (5 pts)
+
+**Contexto**: ISO 14971 exige identificação de perigos, estimativa e avaliação de riscos, e implementação de medidas de controle para dispositivos médicos.
+
+**Backend — Entidades**
+1. Pacote `qms/risk/domain/`; `RiskItem` com campos: `id` (UUID), `process` (String, max 200), `failureMode` (TEXT), `failureEffect` (TEXT), `failureCause` (TEXT), `severity` (Integer, 1–10), `occurrence` (Integer, 1–10), `detectability` (Integer, 1–10), `rpn` (Integer, calculado e persistido: `severity × occurrence × detectability`), `riskLevel` (enum `RiskLevel`: `LOW`, `MEDIUM`, `HIGH`, `CRITICAL`), `status` (enum `RiskStatus`: `IDENTIFIED`, `BEING_MITIGATED`, `MITIGATED`, `ACCEPTED`), `owner` (String), `linkedNcId` (UUID nullable), `linkedProductCode` (String nullable), `createdBy`, `createdAt`, `updatedAt`
+2. `RiskMitigationAction`: `id` (UUID), `riskItem` (`@ManyToOne LAZY`), `description` (TEXT), `responsible` (String), `targetDate` (LocalDate nullable), `completedAt` (LocalDate nullable), `residualSeverity` (Integer nullable, 1–10), `residualOccurrence` (Integer nullable, 1–10), `residualDetectability` (Integer nullable, 1–10), `residualRpn` (Integer nullable), `status` (enum `MitigationStatus`: `PLANNED`, `IN_PROGRESS`, `COMPLETED`), `createdBy`, `createdAt`
+3. Thresholds de RPN para `riskLevel`: `LOW` ≤ 30, `MEDIUM` 31–100, `HIGH` 101–200, `CRITICAL` > 200
+4. Migrations: `V{N}__risk_item.sql` e `V{N+1}__risk_mitigation_action.sql`; índices em `status`, `risk_level`, `linked_nc_id`
+
+**Backend — CRUD de riscos**
+5. `POST /api/v1/qms/risks` (SUPERVISOR+): `severity`, `occurrence`, `detectability` com `@Min(1) @Max(10)`; `rpn` e `riskLevel` calculados; `201 RiskItemResponse`
+6. `GET /api/v1/qms/risks` (OPERATOR+): paginado `@PageableDefault(size=20)`, ordenado por `rpn DESC`; filtros `?status`, `?riskLevel`, `?owner`, `?linkedNcId`, `?linkedProductCode`
+7. `GET /api/v1/qms/risks/{id}` (OPERATOR+): detalhe com `mitigationActions`
+8. `PUT /api/v1/qms/risks/{id}` (SUPERVISOR+): atualiza campos FMEA; `rpn` e `riskLevel` recalculados; `200`
+9. `PUT /api/v1/qms/risks/{id}/status` (SUPERVISOR+): `IDENTIFIED→BEING_MITIGATED`, `BEING_MITIGATED→MITIGATED`, `MITIGATED→ACCEPTED`; `CRITICAL→ACCEPTED` sem mitigação com `residualRpn ≤ 100` → `422 { "message": "Riscos críticos devem ser mitigados antes de aceitar" }`
+
+**Backend — Ações de mitigação**
+10. `POST /api/v1/qms/risks/{id}/mitigation-actions` (SUPERVISOR+): `201`
+11. `PUT /api/v1/qms/risks/{id}/mitigation-actions/{actionId}` (SUPERVISOR+): atualiza todos; `status=COMPLETED` + residuais fornecidos → calcula `residualRpn`; `200`
+12. `AuditAction` enum: `RISK_ITEM_CREATED`, `RISK_STATUS_CHANGED`, `MITIGATION_ACTION_COMPLETED`
+13. `RiskItemResponse` record: `id`, `process`, `failureMode`, `failureEffect`, `failureCause`, `severity`, `occurrence`, `detectability`, `rpn`, `riskLevel`, `status`, `owner`, `linkedNcId`, `linkedProductCode`, `createdAt`; `mitigationActions` apenas no detalhe
+14. Testes: (a) RPN calculado (5×4×3=60); (b) `riskLevel=MEDIUM` para RPN=60; (c) `CRITICAL→ACCEPTED` sem mitigação: 422; (d) `CRITICAL→ACCEPTED` com `residualRpn=80`: aceito
+
+---
+
+#### US-128 — Matriz de risco visual e rastreabilidade NC-Risco (3 pts)
+
+**Backend**
+1. `GET /api/v1/qms/risks/matrix` (SUPERVISOR+): `RiskMatrixResponse` — grid 10×10 (severity × occurrence); cada célula `{ severity, occurrence, count, riskLevel }`; apenas riscos `IDENTIFIED` e `BEING_MITIGATED`
+2. `GET /api/v1/qms/risks/summary` (SUPERVISOR+): `RiskSummary` record: `totalRisks`, `criticalCount`, `highCount`, `mediumCount`, `lowCount`, `byStatus Map<RiskStatus,Integer>`, `avgRpn`, `topRisks List<RiskItemSummary>` (top 5 por RPN DESC)
+3. `GET /api/v1/qms/non-conformances/{ncId}/risks` (OPERATOR+): lista `RiskItemSummary` com `linkedNcId = ncId`; adicionado ao `QmsController`; `NcResponse` detalhe inclui `linkedRisks: List<RiskItemSummary>`
+4. `RiskItemSummary` record: `id`, `process`, `rpn`, `riskLevel`, `status`
+5. Testes: (a) risco severity=8, occurrence=6 na célula (8,6) count=1; (b) risco `MITIGATED` não aparece na matriz; (c) `criticalCount=3` quando 3 riscos CRITICAL
+
+---
+
+#### US-129 — Frontend: cadastro FMEA, matriz visual e painel de riscos (4 pts)
+
+**Frontend**
+1. Rota `/qms/risks` (OPERATOR+, lazy-loaded); link "Gestão de Risco" no submenu QMS (OPERATOR+)
+2. `RiskService` em `qms/risk.service.ts`: `listRisks`, `getRisk`, `createRisk`, `updateRisk`, `updateRiskStatus`, `addMitigationAction`, `updateMitigationAction`, `getRiskMatrix`, `getRiskSummary`
+
+**Lista e cadastro**
+3. Página `/qms/risks`: 4 cards resumo (Critical, High, Medium, Low); tabela Processo, Modo de Falha (truncado), S, O, D, RPN (vermelho se > 200), Nível (chip: CRITICAL=`#D24A4A`, HIGH=`#F97316`, MEDIUM=`#E8A93C`, LOW=`#3FA66A`), Status, Responsável; filtros: `riskLevel`, `status`; botão "Novo Risco FMEA" (SUPERVISOR+)
+4. Dialog "Novo Risco FMEA": textareas `process`, `failureMode`, `failureEffect`, `failureCause`; sliders 1–10 para `severity`, `occurrence`, `detectability`; preview live RPN e chip `riskLevel`; `owner`; autocomplete NC vinculada (opcional)
+5. Rota `/qms/risks/{id}`: detalhe; seção "Ações de Mitigação" tabela; botões de transição (SUPERVISOR+)
+6. Dialog "+ Adicionar Ação" (SUPERVISOR+): `description`, `responsible`, `targetDate`; ao concluir: sliders residuais S/O/D; preview `residualRpn` ao vivo
+
+**Matriz visual**
+7. Rota `/qms/risks/matrix` (SUPERVISOR+): grid CSS 10×10 via `@for`; cor de célula por `riskLevel`; count > 0 exibe número; tooltip ao hover; legenda
+8. `ChangeDetectionStrategy.OnPush`, standalone, signals
+9. Spec: (a) chip CRITICAL com `#D24A4A`; (b) RPN > 200 em vermelho; (c) preview RPN atualiza ao mover slider; (d) matriz renderiza células com counts corretos
+
+---
+
+## Sprint 44 ⬜
+**Objetivo**: Controle de Mudanças — change requests formais, avaliação de impacto, aprovação multi-nível (SUPERVISOR revisa, ADMIN aprova) e rastreabilidade com GED, NC, Equipamentos e Riscos (ISO 13485 §4.1)
+**ADR**: ADR-055
+**Status**: planejada
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-130 | Backend de controle de mudanças — CRUD, fluxo de aprovação e vínculos | 5 | ⬜ planejado |
+| US-131 | Frontend — solicitação, fluxo de aprovação e rastreabilidade de mudanças | 5 | ⬜ planejado |
+
+**Total**: 10 pontos
+
+### Dependências
+- US-130 é base; US-131 depende de US-130
+- US-130 depende de Sprints 5 (NC), 36 (GED), 7 (Equipment), 43 (RiskItem) para vínculos
+
+---
+
+#### US-130 — Backend de controle de mudanças: CRUD, fluxo e vínculos (5 pts)
+
+**Contexto**: ISO 13485 §4.1 exige controle das mudanças nos processos do SGQ. Mudanças não controladas são causa frequente de não-conformidade em auditorias ANVISA.
+
+**Backend — Entidades**
+1. Pacote `common/changes/domain/`; `ChangeRequest` com campos: `id` (UUID), `code` (String, único, auto-gerado `"CR-{ANO}-{NNN}"`), `title` (String, max 200), `description` (TEXT), `changeType` (enum `ChangeType`: `PROCESS`, `DOCUMENT`, `EQUIPMENT`, `SOFTWARE`, `REGULATORY`, `OTHER`), `justification` (TEXT), `impactAssessment` (TEXT nullable), `status` (enum `ChangeStatus`: `DRAFT`, `SUBMITTED`, `UNDER_REVIEW`, `APPROVED`, `REJECTED`, `IMPLEMENTED`), `requestedBy` (String), `submittedAt` (LocalDateTime nullable), `reviewedBy` (String nullable), `reviewedAt` (LocalDateTime nullable), `approvedBy` (String nullable), `approvedAt` (LocalDateTime nullable), `implementedAt` (LocalDateTime nullable), `rejectionReason` (TEXT nullable), `createdAt`, `updatedAt`
+2. `ChangeRequestLink`: `id` (UUID), `changeRequest` (`@ManyToOne LAZY`), `entityType` (enum `ChangeEntityType`: `NON_CONFORMANCE`, `DOCUMENT`, `EQUIPMENT`, `RISK_ITEM`), `entityId` (UUID), `linkNote` (String nullable, max 500)
+3. Migrations: `V{N}__change_request.sql` e `V{N+1}__change_request_link.sql`
+
+**Backend — CRUD e fluxo de aprovação multi-nível**
+4. `POST /api/v1/changes` (qualquer usuário autenticado): cria em `DRAFT`; `requestedBy = username JWT`; `201 ChangeRequestResponse`
+5. `POST /api/v1/changes/{id}/submit` (apenas `requestedBy`): `DRAFT→SUBMITTED`; outro usuário → `403`; `422` se `status != DRAFT`
+6. `PUT /api/v1/changes/{id}/review` (SUPERVISOR+): body `{ "impactAssessment": "...", "recommendApproval": true }`; `SUBMITTED→UNDER_REVIEW`; preenche `reviewedBy`, `reviewedAt`; `422` se `status != SUBMITTED`
+7. `PUT /api/v1/changes/{id}/approve` (ADMIN): `UNDER_REVIEW→APPROVED` ou `UNDER_REVIEW→REJECTED`; SUPERVISOR → `403`; `422` se `status != UNDER_REVIEW`
+8. `PUT /api/v1/changes/{id}/implement` (SUPERVISOR+): `APPROVED→IMPLEMENTED`; `422` se `status != APPROVED`
+9. `GET /api/v1/changes` (OPERATOR+): paginado; filtros `?status`, `?changeType`, `?requestedBy`, `?from`, `?to`, `?pendingForMe=true`
+10. `GET /api/v1/changes/{id}` (OPERATOR+): detalhe com `changeRequestLinks`
+11. `PUT /api/v1/changes/{id}` (requestedBy, apenas `DRAFT`): atualiza `title`, `description`, `changeType`, `justification`
+12. `POST /api/v1/changes/{id}/links` (SUPERVISOR+): valida NC e DOCUMENT se informados; `201`; `DELETE /api/v1/changes/{id}/links/{linkId}` (SUPERVISOR+): `204`
+13. `AuditAction` enum: `CR_CREATED`, `CR_SUBMITTED`, `CR_APPROVED`, `CR_REJECTED`, `CR_IMPLEMENTED`
+14. `ChangeRequestResponse` record: todos os campos; `links List<ChangeRequestLinkResponse>` apenas no detalhe
+15. Testes: (a) autor → SUBMITTED; (b) outro usuário → 403; (c) ADMIN → APPROVED; (d) SUPERVISOR aprova → 403; (e) APPROVED → IMPLEMENTED; (f) REJECTED → 422
+
+---
+
+#### US-131 — Frontend: solicitação, fluxo e rastreabilidade de mudanças (5 pts)
+
+**Frontend**
+1. Rota `/changes` (OPERATOR+, lazy-loaded); link "Mudanças" no `NavComponent` (OPERATOR+)
+2. `ChangeRequestService` em `changes/change-request.service.ts`: `listChanges`, `getChange`, `createChange`, `submitChange`, `reviewChange`, `approveChange`, `implementChange`, `addLink`, `removeLink`, `countPendingForMe`
+
+**Lista de CRs**
+3. Página `/changes`: cards resumo (Rascunho, Aguardando Revisão, Aguardando Aprovação, Aprovadas-pendentes, Implementadas); tabela Código, Título, Tipo (chip), Status (chip colorido: DRAFT=cinza, SUBMITTED=azul-claro, UNDER_REVIEW=âmbar, APPROVED=verde, REJECTED=vermelho, IMPLEMENTED=cinza-escuro), Solicitante, Data; filtros: status, tipo; botão "Nova Solicitação" (todos os usuários)
+4. Dialog "Nova Solicitação": `title`, select `changeType`, textarea `description`, textarea `justification`
+
+**Fluxo de aprovação**
+5. Rota `/changes/{id}`: detalhe; timeline vertical de status; botões contextuais por status e role:
+   - DRAFT + autor: "Editar" + "Submeter para Revisão"
+   - SUBMITTED + SUPERVISOR+: "Revisar" → dialog `impactAssessment`
+   - UNDER_REVIEW + ADMIN: "Aprovar" + "Rejeitar" (com textarea motivo)
+   - APPROVED + SUPERVISOR+: "Marcar como Implementado"
+6. Seção "Vínculos": lista agrupada por tipo; botão "+ Vínculo" (SUPERVISOR+): select tipo + autocomplete
+7. Badge no `NavComponent`: count CRs pendentes do role; `interval(300_000).pipe(startWith(0), switchMap(() => countPendingForMe()), takeUntilDestroyed())`; `pendingCount = signal<number>(0)`
+8. `ChangeDetectionStrategy.OnPush`, standalone, signals
+9. Spec: (a) "Submeter" visível apenas para autor em DRAFT; (b) "Revisar" para SUPERVISOR em SUBMITTED; (c) "Aprovar" apenas para ADMIN em UNDER_REVIEW; (d) timeline exibe transições mockadas; (e) vínculo adicionado aparece sem reload completo
+
+---
+
+## Sprint 45 ⬜
+**Objetivo**: Reclamações de Clientes e Relatório MDR — registro, investigação, vínculo com NC/CAPA, relatório para ANVISA (MDR) e indicadores (ISO 13485 §8.2.1 / ANVISA RDC 665/2022)
+**ADR**: ADR-056
+**Status**: planejada
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-132 | Backend de reclamações — CRUD, investigação e vínculos com NC/CAPA | 5 | ⬜ planejado |
+| US-133 | Relatório MDR para ANVISA e indicadores de reclamação | 3 | ⬜ planejado |
+| US-134 | Frontend — registro, investigação e dashboard de reclamações | 4 | ⬜ planejado |
+
+**Total**: 12 pontos
+
+### Dependências
+- US-132 é base; US-133 e US-134 dependem de US-132
+- US-132 depende de Sprints 5 (NC) e 37 (CAPA) para vinculação
+
+---
+
+#### US-132 — Backend de reclamações: CRUD, investigação e vínculos (5 pts)
+
+**Contexto**: ISO 13485 §8.2.1 e ANVISA RDC 665/2022 exigem procedimento formal para receber, investigar e reportar reclamações de clientes. Eventos adversos graves devem ser notificados à ANVISA (MDR).
+
+**Backend — Entidade**
+1. Pacote `qms/complaints/domain/`; `CustomerComplaint` com campos: `id` (UUID), `code` (String, único, auto-gerado `"REC-{ANO}-{NNN}"`), `title` (String, max 200), `description` (TEXT), `source` (enum `ComplaintSource`: `CLIENT`, `DISTRIBUTOR`, `REGULATORY_BODY`, `INTERNAL`), `productCode` (String nullable), `batchNumber` (String nullable), `severity` (`NcSeverity` reutilizado), `status` (enum `ComplaintStatus`: `RECEIVED`, `UNDER_INVESTIGATION`, `INVESTIGATION_COMPLETED`, `CLOSED`), `reportedDate` (LocalDate), `reportedBy` (String), `assignedTo` (String), `investigationSummary` (TEXT nullable), `rootCause` (TEXT nullable), `correctiveAction` (TEXT nullable), `reportedToAnvisa` (boolean, default false), `anvisaReportDate` (LocalDate nullable), `anvisaReportNumber` (String nullable, max 50), `linkedNcId` (UUID nullable), `linkedCapaId` (UUID nullable), `createdBy`, `createdAt`, `closedAt` (LocalDateTime nullable)
+2. Migration: `V{N}__customer_complaint.sql`; índices em `status`, `reported_date`, `product_code`, `reported_to_anvisa`
+
+**Backend — Endpoints**
+3. `POST /api/v1/qms/complaints` (SUPERVISOR+): cria em `RECEIVED`; `201 ComplaintResponse`
+4. `GET /api/v1/qms/complaints` (SUPERVISOR+): paginado `@PageableDefault(size=20)`, ordenado `reportedDate DESC`; filtros `?status`, `?severity`, `?productCode`, `?reportedToAnvisa`, `?from`, `?to`
+5. `GET /api/v1/qms/complaints/{id}` (SUPERVISOR+): `404` se inexistente
+6. `PUT /api/v1/qms/complaints/{id}` (SUPERVISOR+): atualiza quando `status != CLOSED`; `422` se CLOSED
+7. `PUT /api/v1/qms/complaints/{id}/status` (SUPERVISOR+): `RECEIVED→UNDER_INVESTIGATION`, `UNDER_INVESTIGATION→INVESTIGATION_COMPLETED`, `INVESTIGATION_COMPLETED→CLOSED` (requer `investigationSummary` e `rootCause`); `closedAt = now()` ao fechar
+8. `PUT /api/v1/qms/complaints/{id}/link-nc` (SUPERVISOR+): `{ "ncId": UUID }`; NC inexistente → `404`; `200`
+9. `PUT /api/v1/qms/complaints/{id}/link-capa` (SUPERVISOR+): idem para `linkedCapaId`
+10. `PUT /api/v1/qms/complaints/{id}/anvisa-report` (ADMIN): SUPERVISOR → `403`; seta `reportedToAnvisa=true`; `200`
+11. `AuditAction` enum: `COMPLAINT_CREATED`, `COMPLAINT_STATUS_CHANGED`, `COMPLAINT_ANVISA_REPORTED`
+12. `ComplaintResponse` record: todos os campos; `linkedNcCode` (nullable); `linkedCapaDescription` (nullable)
+13. Testes: (a) `INVESTIGATION_COMPLETED→CLOSED` com dados: ok; (b) sem `investigationSummary`: 422; (c) ADMIN `anvisa-report`: ok; (d) SUPERVISOR `anvisa-report`: 403
+
+---
+
+#### US-133 — Relatório MDR para ANVISA e indicadores (3 pts)
+
+**Backend — Indicadores**
+1. `GET /api/v1/qms/complaints/indicators` (SUPERVISOR+): params `?from=&to=` (obrigatórios); `ComplaintIndicators` record: `totalReceived`, `byStatus Map<ComplaintStatus,Integer>`, `bySeverity Map<NcSeverity,Integer>`, `reportedToAnvisa` (count), `avgResolutionDays` (null se sem CLOSED), `byProduct List<{ productCode, count }>` (top 5), `bySource Map<ComplaintSource,Integer>`; calculado em Java com `Collectors`
+
+**Backend — PDF MDR**
+2. `POST /api/v1/qms/complaints/{id}/mdr-report` (ADMIN): PDF via iText 7; disponível quando `reportedToAnvisa=true && status=CLOSED` (`422` caso contrário); filename `"mdr-{code}-{date}.pdf"`
+3. Estrutura PDF: cabeçalho "NOTIFICAÇÃO ADVERSA — ANVISA MDR"; seções Identificação, Descrição, Investigação, Dados da Notificação; rodapé "Industrial Hub — MSB — Confidencial"
+4. `AuditAction.MDR_REPORT_GENERATED` registrado
+5. Testes: (a) elegível: `bytes.length > 0`, magic bytes `%PDF`; (b) `reportedToAnvisa=false`: 422; (c) `status != CLOSED`: 422
+
+---
+
+#### US-134 — Frontend: registro, investigação e dashboard de reclamações (4 pts)
+
+**Frontend**
+1. Rota `/qms/complaints` (SUPERVISOR+, lazy-loaded); link "Reclamações" no submenu QMS (SUPERVISOR+)
+2. `ComplaintService` em `qms/complaints.service.ts`: `listComplaints`, `getComplaint`, `createComplaint`, `updateComplaint`, `updateStatus`, `linkNc`, `linkCapa`, `reportAnvisa`, `getIndicators`, `generateMdrReport`
+
+**Lista e cadastro**
+3. Página `/qms/complaints`: cards resumo (Recebidas, Em Investigação, Não Reportadas ANVISA — vermelho se > 0, Reportadas ANVISA); tabela Código, Produto/Lote, Fonte (chip), Severidade (chip), Status (chip colorido), Responsável, Data; filtros: status, severidade, produto, toggle "Apenas não reportadas"; botão "Nova Reclamação" (SUPERVISOR+)
+4. Dialog "Nova Reclamação": `title`, `description`, select `source`, `productCode`, `batchNumber`, select `severity`, `assignedTo` (username), datepicker `reportedDate`, `reportedBy` (nome cliente)
+
+**Investigação**
+5. Rota `/qms/complaints/{id}`: detalhe; timeline de status; textareas editáveis `investigationSummary`, `rootCause`, `correctiveAction` (quando `status=UNDER_INVESTIGATION` ou posterior); botões de transição contextual
+6. Seção Vínculos: NC com chip + link; CAPA com link; botões "+ Vincular NC" e "+ Vincular CAPA" (autocompletes); seção ANVISA: chip verde quando `reportedToAnvisa=true`; botão "Registrar Notificação" (ADMIN) → dialog `reportNumber` + `reportDate`
+7. Botão "Gerar MDR" (ADMIN, quando elegível): download blob PDF; snackbar "Relatório MDR gerado"
+8. Rota `/qms/complaints/dashboard` (SUPERVISOR+): `MatDateRangePicker`; 6 cards; gráfico doughnut por fonte (`DoughnutChartComponent` existente)
+9. `ChangeDetectionStrategy.OnPush`, standalone, signals
+10. Spec: (a) "Registrar Notificação" visível apenas para ADMIN; (b) "Gerar MDR" oculto quando `reportedToAnvisa=false`; (c) transição correta por status; (d) NC vinculada exibe código e link
+
+---
+
+## Sprint 46 ⬜
+**Objetivo**: Análise Crítica pela Direção — dashboard consolidado ISO 13485 §5.6 com todos os indicadores do SGQ (NCs, CAPAs, treinamentos, calibrações, auditorias, reclamações, riscos, mudanças) e relatório PDF exportável para apresentação à direção
+**ADR**: ADR-057
+**Status**: planejada
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-135 | Backend — agregação de indicadores ISO 13485 §5.6 e geração de PDF para direção | 4 | ⬜ planejado |
+| US-136 | Frontend — dashboard executivo de análise crítica | 5 | ⬜ planejado |
+
+**Total**: 9 pontos
+
+### Dependências
+- US-135 e US-136 dependem de todos os Sprints 40–45 — consolida dados de todos os domínios do SGQ
+- US-135 deve ser entregue antes de US-136
+
+---
+
+#### US-135 — Backend: agregação de indicadores ISO 13485 §5.6 e PDF para direção (4 pts)
+
+**Contexto**: ISO 13485 §5.6 exige que a Alta Direção realize análise crítica do SGQ em intervalos planejados. Esta US consolida todos os indicadores do sistema e gera o relatório formal.
+
+**Backend — Endpoint de indicadores**
+1. `ManagementReviewController` em `common/presentation/` com `@RestController`, `@RequestMapping("/api/v1/management-review")`; `GetManagementReviewDataUseCase` em `common/application/usecase/`
+2. `GET /api/v1/management-review/indicators` (ADMIN): params `?from=<LocalDate>&to=<LocalDate>` (obrigatórios); período máximo 366 dias (`ChronoUnit.DAYS.between(from, to) > 366`) → `400 { "message": "Período máximo de 366 dias para análise crítica" }` — suporta anos bissextos; retorna `ManagementReviewData` record com:
+   - `ncSummary`: `{ totalReported, criticalOpen, avgResolutionDays, byStatus, bySeverity }`
+   - `capaSummary`: `{ totalOpen, overdueCount, effectivenessRate }` (% ações DONE com `EFFECTIVE`)
+   - `complaintSummary`: `{ totalReceived, reportedToAnvisa, avgResolutionDays }`
+   - `auditSummary`: `{ completed, plannedNotDone, overdueAudits, nonConformingFindings, conformityRate }`
+   - `calibrationSummary`: `{ overdueSchedules, outOfToleranceCount, complianceRate }`
+   - `trainingSummary`: `{ fullyCompliant, partiallyCompliant, nonCompliant, expiringIn30Days }`
+   - `riskSummary`: `{ totalRisks, criticalOpen, mitigatedInPeriod, avgRpn }`
+   - `changeSummary`: `{ submitted, approved, rejected, implemented, pending }`
+   - `kpiSummary`: reutiliza `GetKpiSummaryUseCase` (OEE 30 dias, NC abertas, OS abertas)
+3. Cache `@Cacheable(value = "management-review", key = "#from + '-' + #to")` TTL 30 minutos via Caffeine (mesmo `CacheConfig` do Sprint 35)
+
+**Backend — PDF de análise crítica**
+4. `GET /api/v1/management-review/indicators/export` (ADMIN): PDF via iText 7; filename `"management-review-{from}-to-{to}.pdf"`
+5. Estrutura PDF: capa (logo MSB, título "Análise Crítica pela Direção — ISO 13485 §5.6", período, data, gerado por); seções com tabela de indicadores + semáforo verde/âmbar/vermelho por thresholds:
+   - NCs: verde se `criticalOpen=0`, âmbar se 1–3, vermelho se > 3
+   - CAPAs: verde se `overdueCount=0`, âmbar se 1–5, vermelho se > 5
+   - Calibrações: verde se `overdueSchedules=0`, vermelho se > 0
+   - Treinamentos: verde se `fullyCompliant > 90%`, âmbar se 75–90%, vermelho se < 75%
+   - Riscos: verde se `criticalOpen=0`, vermelho se > 0
+   - OEE: verde se ≥ 65%, âmbar se 50–64%, vermelho se < 50%
+6. `AuditAction.MANAGEMENT_REVIEW_GENERATED` registrado após geração
+7. Testes: `GetManagementReviewDataUseCaseTest` — (a) todos os repositórios consultados (verify times(1) para cada); (b) período > 366 dias → 400; (c) cache: segunda chamada com mesmos parâmetros não acessa repositórios; `GenerateManagementReviewPdfUseCaseTest` — (d) `bytes.length > 0`, magic bytes `%PDF`; (e) auditoria registrada
+
+---
+
+#### US-136 — Frontend: dashboard executivo de análise crítica (5 pts)
+
+**Frontend**
+1. Rota `/management-review` (ADMIN, lazy-loaded); link "Análise Crítica" no nav em seção "Gestão" — ADMIN only
+2. `ManagementReviewService` em `common/management-review.service.ts`: `getIndicators(from, to): Observable<ManagementReviewData>`, `exportPdf(from, to): Observable<Blob>`; interfaces tipadas estritamente
+
+**Controles e carregamento**
+3. `MatDateRangePicker` no topo; default últimos 12 meses; botão "Carregar Dados"; `MatProgressBar` linear durante carregamento
+4. Botão "Exportar PDF" (desabilitado até dados carregados): `exportPdf()` com `responseType: 'blob'`; download via `URL.createObjectURL(blob)` + `<a>` temporário; snackbar "Relatório gerado"; spinner no botão
+
+**Dashboard por seção**
+5. Seção "Qualidade do Produto": 3 cards com chip semáforo — NCs (total, críticas, média resolução), CAPAs (abertas, vencidas, taxa eficácia), Reclamações (total, reportadas ANVISA, não reportadas em vermelho se > 0)
+6. Seção "Conformidade Operacional": Calibrações (vencidas, out-of-tolerance, `complianceRate`) + Treinamentos (% `fullyCompliant`, `expiringIn30Days`); Auditorias (concluídas, vencidas, achados)
+7. Seção "Risco e Mudanças": card Riscos (`criticalOpen` em vermelho se > 0, `avgRpn`); card Mudanças (pending, implemented)
+8. Seção "Produção (Snapshot)": card com `kpiSummary` — OEE 30 dias (chip semáforo), NC abertas, OS abertas
+9. `SemaphoreChipComponent` standalone `OnPush` reutilizável: `input() status: 'green' | 'amber' | 'red'`; ícone colorido correspondente; reutilizado em todos os cards
+10. `ChangeDetectionStrategy.OnPush`, standalone, signals; `data = signal<ManagementReviewData | null>(null)`, `isLoading = signal(false)`, `isExporting = signal(false)`
+11. Spec `management-review.component.spec.ts`: (a) seção "Qualidade" renderiza cards com dados mockados; (b) chip vermelho quando `criticalOpen > 3`; (c) "Exportar PDF" desabilitado antes de dados carregados; (d) `exportPdf()` chamado ao clicar; (e) `SemaphoreChipComponent` renderiza cor correta por status
