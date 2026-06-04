@@ -241,6 +241,86 @@
         }
       </div>
 
+      <!-- ── US-115: Documentos GED Vinculados ───────────────────────────────── -->
+      <div class="nc-ged-section" data-testid="nc-ged-section">
+        <div class="actions-header">
+          <h3>Documentos GED Vinculados</h3>
+          @if (isSupervisor) {
+            <button
+              type="button"
+              class="btn btn--primary btn--sm"
+              (click)="openLinkDocModal()"
+              data-testid="btn-link-document"
+            >
+              + Vincular Documento
+            </button>
+          }
+        </div>
+
+        @if (ncDocLinksError()) {
+          <p class="msg msg--error">{{ ncDocLinksError() }}</p>
+        }
+
+        @if (ncDocLinksLoading()) {
+          <p class="loading-msg">Carregando vínculos…</p>
+        } @else if (ncDocLinks().length === 0) {
+          <p class="empty-actions">Nenhum documento GED vinculado a esta NC.</p>
+        } @else {
+          <div class="table-wrapper">
+            <table class="ged-links-table" data-testid="nc-ged-links-table">
+              <thead>
+                <tr>
+                  <th>Código</th>
+                  <th>Título</th>
+                  <th>Categoria</th>
+                  <th>Status</th>
+                  <th>Tipo de Vínculo</th>
+                  <th>Vinculado em</th>
+                  @if (isSupervisor) {
+                    <th></th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @for (link of ncDocLinks(); track link.linkId) {
+                  <tr>
+                    <td class="monospace">
+                      <a [routerLink]="['/qms/ged', link.documentId]" class="doc-link">
+                        {{ link.documentCode }}
+                      </a>
+                    </td>
+                    <td>{{ link.documentTitle }}</td>
+                    <td>{{ link.documentCategory }}</td>
+                    <td>
+                      <span
+                        class="doc-status-badge"
+                        [style.background]="docStatusColors[link.documentStatus]"
+                      >
+                        {{ docStatusLabels[link.documentStatus] ?? link.documentStatus }}
+                      </span>
+                    </td>
+                    <td>{{ linkTypeLabels[link.linkType] }}</td>
+                    <td class="date-cell">{{ formatDate(link.linkedAt) }}</td>
+                    @if (isSupervisor) {
+                      <td>
+                        <button
+                          type="button"
+                          class="btn btn--danger btn--sm"
+                          (click)="unlinkDocument(link.documentId)"
+                          [attr.data-testid]="'btn-unlink-doc-' + link.documentId"
+                        >
+                          Desvincular
+                        </button>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
       <app-nc-rca [nc]="nc" [role]="role()" />
 
       <app-attachment-list
@@ -263,6 +343,87 @@
           <div class="modal-actions">
             <button type="button" class="btn btn--primary" (click)="confirmVerify(nc.id)" [disabled]="!effectivenessResult() || !effectivenessCheckedBy() || capaActionLoading()">Confirmar</button>
             <button type="button" class="btn btn--secondary" (click)="showVerifyModal.set(false)">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Modal Vincular Documento GED -->
+    @if (showLinkDocModal()) {
+      <div class="modal-overlay" (click)="closeLinkDocModal()">
+        <div class="modal-box modal-box--wide" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="link-doc-title">
+          <h3 id="link-doc-title">Vincular Documento GED</h3>
+
+          @if (linkDocError()) {
+            <p class="msg msg--error">{{ linkDocError() }}</p>
+          }
+
+          <div class="link-doc-search">
+            <label class="form-label">Pesquisar documento (código ou título)
+              <div class="search-input-row">
+                <input
+                  type="text"
+                  [ngModel]="linkDocSearch()"
+                  (ngModelChange)="linkDocSearch.set($event)"
+                  name="linkDocSearch"
+                  placeholder="Ex: SOP-001 ou Assepsia"
+                  class="search-input"
+                  data-testid="link-doc-search-input"
+                />
+                <button
+                  type="button"
+                  class="btn btn--secondary btn--sm"
+                  (click)="searchDocuments()"
+                  [disabled]="linkDocSearchLoading() || linkDocSearch().length < 2"
+                >
+                  {{ linkDocSearchLoading() ? '…' : 'Buscar' }}
+                </button>
+              </div>
+            </label>
+
+            @if (linkDocSearchResults().length > 0) {
+              <ul class="doc-search-results" data-testid="doc-search-results">
+                @for (doc of linkDocSearchResults(); track doc.id) {
+                  <li
+                    class="doc-search-result"
+                    [class.doc-search-result--selected]="linkDocSelectedId() === doc.id"
+                    (click)="selectLinkDoc(doc.id)"
+                    [attr.data-testid]="'doc-result-' + doc.id"
+                  >
+                    <span class="doc-search-result__code">{{ doc.code }}</span>
+                    <span class="doc-search-result__title">{{ doc.title }}</span>
+                    <span class="doc-search-result__cat">{{ doc.category }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+
+          <label class="form-field">
+            Tipo de Vínculo <span class="required">*</span>
+            <select
+              [ngModel]="linkDocLinkType()"
+              (ngModelChange)="linkDocLinkType.set($event)"
+              name="linkDocLinkType"
+              data-testid="link-type-select"
+            >
+              <option value="PROCEDURE_AT_OCCURRENCE">Procedimento na Ocorrência</option>
+              <option value="CORRECTIVE_REFERENCE">Referência Corretiva</option>
+              <option value="OTHER">Outro</option>
+            </select>
+          </label>
+
+          <div class="modal-actions">
+            <button
+              type="button"
+              class="btn btn--primary"
+              [disabled]="!linkDocSelectedId() || linkDocSubmitting()"
+              (click)="submitLinkDoc()"
+              data-testid="btn-confirm-link-doc"
+            >
+              {{ linkDocSubmitting() ? 'Vinculando…' : 'Vincular' }}
+            </button>
+            <button type="button" class="btn btn--secondary" (click)="closeLinkDocModal()">Cancelar</button>
           </div>
         </div>
       </div>

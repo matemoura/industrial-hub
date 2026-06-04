@@ -55,10 +55,12 @@ import com.industrialhub.backend.common.webhook.domain.WebhookInvalidUrlExceptio
 import com.industrialhub.backend.common.webhook.domain.WebhookNotFoundException;
 import com.industrialhub.backend.production.domain.ImportProductionBatchNotFoundException;
 import com.industrialhub.backend.production.domain.ProductNotFoundException;
+import com.industrialhub.backend.qms.domain.NcDocumentLinkAlreadyExistsException;
 import com.industrialhub.backend.qms.ged.domain.DocumentCodeAlreadyExistsException;
 import com.industrialhub.backend.qms.ged.domain.DocumentNotFoundException;
 import com.industrialhub.backend.qms.ged.domain.InvalidGedFileException;
 import com.industrialhub.backend.qms.ged.domain.InvalidGedTransitionException;
+import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -597,6 +599,24 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(DocumentCodeAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleDocumentCodeAlreadyExists(DocumentCodeAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // Sprint 39 / ADR-050 Decisão 2: NC↔GED link duplicate → 409
+    @ExceptionHandler(NcDocumentLinkAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleNcDocumentLinkAlreadyExists(NcDocumentLinkAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // Sprint 39: link NC↔GED não encontrado para DELETE semântico → 404
+    @ExceptionHandler(EntityNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleEntityNotFound(EntityNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));

@@ -135,6 +135,55 @@
         </div>
       }
     </div>
+
+    <!-- ── US-115: NCs que referenciam este documento ──────────────────────── -->
+    <div class="nc-links-section" data-testid="doc-nc-links-section">
+      <div class="section-title">NCs que referenciam este documento</div>
+
+      @if (ncLinksLoading()) {
+        <p class="no-revisions">Carregando…</p>
+      } @else if (ncLinks().length === 0) {
+        <p class="no-revisions">Nenhuma NC vinculada a este documento.</p>
+      } @else {
+        <div class="table-wrapper">
+          <table class="revisions-table" data-testid="doc-nc-links-table">
+            <thead>
+              <tr>
+                <th>Código NC</th>
+                <th>Título</th>
+                <th>Severidade</th>
+                <th>Status</th>
+                <th>Tipo de Vínculo</th>
+                <th>Data do Vínculo</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (link of ncLinks(); track link.linkId) {
+                <tr class="rev-row">
+                  <td class="monospace">
+                    <a [routerLink]="['/qms/non-conformances', link.ncId]" class="nc-link">
+                      {{ link.ncCode }}
+                    </a>
+                  </td>
+                  <td>{{ link.ncTitle }}</td>
+                  <td>
+                    <span
+                      class="severity-chip"
+                      [style.background]="ncSeverityColors[link.ncSeverity]"
+                    >
+                      {{ link.ncSeverity }}
+                    </span>
+                  </td>
+                  <td>{{ ncStatusLabels[link.ncStatus] ?? link.ncStatus }}</td>
+                  <td>{{ linkTypeLabels[link.linkType] }}</td>
+                  <td class="date-cell">{{ formatDate(link.linkedAt) }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
   }
 
 </div>

@@ -5,6 +5,8 @@ import com.industrialhub.backend.qms.application.dto.CAPAUpdateRequest;
 import com.industrialhub.backend.qms.application.dto.CreateActionRequest;
 import com.industrialhub.backend.qms.application.dto.CreateNcRequest;
 import com.industrialhub.backend.qms.application.dto.CreateRcaRequest;
+import com.industrialhub.backend.qms.application.dto.LinkNcToDocumentRequest;
+import com.industrialhub.backend.qms.application.dto.NcDocumentLinkResponse;
 import com.industrialhub.backend.qms.application.dto.NcKpiSummary;
 import com.industrialhub.backend.qms.application.dto.NcResponse;
 import com.industrialhub.backend.qms.application.dto.NcSummaryItem;
@@ -21,9 +23,12 @@ import com.industrialhub.backend.qms.application.usecase.GetNcDetailUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcKpiSummaryUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcListUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetRcaByNcUseCase;
+import com.industrialhub.backend.qms.application.usecase.LinkNcToDocumentUseCase;
 import com.industrialhub.backend.qms.application.usecase.ListCorrectiveActionsUseCase;
+import com.industrialhub.backend.qms.application.usecase.ListNcDocumentLinksUseCase;
 import com.industrialhub.backend.qms.application.usecase.SubmitForEffectivenessUseCase;
 import com.industrialhub.backend.qms.application.usecase.TransitionNcStatusUseCase;
+import com.industrialhub.backend.qms.application.usecase.UnlinkNcFromDocumentUseCase;
 import com.industrialhub.backend.qms.application.usecase.UpdateCAPAUseCase;
 import com.industrialhub.backend.qms.application.usecase.UpdateRcaUseCase;
 import com.industrialhub.backend.qms.application.usecase.VerifyEffectivenessUseCase;
@@ -65,6 +70,9 @@ public class QmsController {
     private final UpdateCAPAUseCase updateCapa;
     private final SubmitForEffectivenessUseCase submitForEffectiveness;
     private final VerifyEffectivenessUseCase verifyEffectiveness;
+    private final LinkNcToDocumentUseCase linkNcToDocument;
+    private final ListNcDocumentLinksUseCase listNcDocumentLinks;
+    private final UnlinkNcFromDocumentUseCase unlinkNcFromDocument;
 
     public QmsController(CreateNcUseCase createNc,
                          TransitionNcStatusUseCase transitionStatus,
@@ -81,7 +89,10 @@ public class QmsController {
                          GetRcaByNcUseCase getRca,
                          UpdateCAPAUseCase updateCapa,
                          SubmitForEffectivenessUseCase submitForEffectiveness,
-                         VerifyEffectivenessUseCase verifyEffectiveness) {
+                         VerifyEffectivenessUseCase verifyEffectiveness,
+                         LinkNcToDocumentUseCase linkNcToDocument,
+                         ListNcDocumentLinksUseCase listNcDocumentLinks,
+                         UnlinkNcFromDocumentUseCase unlinkNcFromDocument) {
         this.createNc = createNc;
         this.transitionStatus = transitionStatus;
         this.getNcList = getNcList;
@@ -98,6 +109,9 @@ public class QmsController {
         this.updateCapa = updateCapa;
         this.submitForEffectiveness = submitForEffectiveness;
         this.verifyEffectiveness = verifyEffectiveness;
+        this.linkNcToDocument = linkNcToDocument;
+        this.listNcDocumentLinks = listNcDocumentLinks;
+        this.unlinkNcFromDocument = unlinkNcFromDocument;
     }
 
     @PostMapping
@@ -224,5 +238,30 @@ public class QmsController {
                                  @Valid @RequestBody CreateRcaRequest request,
                                  Principal principal) {
         return updateRca.execute(ncId, request, principal.getName());
+    }
+
+    // Sprint 39 — US-115: NC↔GED Link endpoints
+
+    @PostMapping("/{ncId}/documents")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public NcDocumentLinkResponse linkDocument(@PathVariable UUID ncId,
+                                               @Valid @RequestBody LinkNcToDocumentRequest req,
+                                               Principal principal) {
+        return linkNcToDocument.execute(ncId, req, principal.getName());
+    }
+
+    @GetMapping("/{ncId}/documents")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public List<NcDocumentLinkResponse> listDocumentLinks(@PathVariable UUID ncId) {
+        return listNcDocumentLinks.execute(ncId);
+    }
+
+    @DeleteMapping("/{ncId}/documents/{documentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    public void unlinkDocument(@PathVariable UUID ncId, @PathVariable UUID documentId,
+                               java.security.Principal principal) {
+        unlinkNcFromDocument.execute(ncId, documentId, principal.getName());
     }
 }

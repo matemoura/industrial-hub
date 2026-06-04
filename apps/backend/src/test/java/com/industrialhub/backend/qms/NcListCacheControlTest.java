@@ -10,9 +10,12 @@ import com.industrialhub.backend.qms.application.usecase.GetNcDetailUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcKpiSummaryUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetNcListUseCase;
 import com.industrialhub.backend.qms.application.usecase.GetRcaByNcUseCase;
+import com.industrialhub.backend.qms.application.usecase.LinkNcToDocumentUseCase;
 import com.industrialhub.backend.qms.application.usecase.ListCorrectiveActionsUseCase;
+import com.industrialhub.backend.qms.application.usecase.ListNcDocumentLinksUseCase;
 import com.industrialhub.backend.qms.application.usecase.SubmitForEffectivenessUseCase;
 import com.industrialhub.backend.qms.application.usecase.TransitionNcStatusUseCase;
+import com.industrialhub.backend.qms.application.usecase.UnlinkNcFromDocumentUseCase;
 import com.industrialhub.backend.qms.application.usecase.UpdateCAPAUseCase;
 import com.industrialhub.backend.qms.application.usecase.UpdateRcaUseCase;
 import com.industrialhub.backend.qms.application.usecase.VerifyEffectivenessUseCase;
@@ -56,6 +59,9 @@ class NcListCacheControlTest {
     @Mock private UpdateCAPAUseCase updateCapa;
     @Mock private SubmitForEffectivenessUseCase submitForEffectiveness;
     @Mock private VerifyEffectivenessUseCase verifyEffectiveness;
+    @Mock private LinkNcToDocumentUseCase linkNcToDocument;
+    @Mock private ListNcDocumentLinksUseCase listNcDocumentLinks;
+    @Mock private UnlinkNcFromDocumentUseCase unlinkNcFromDocument;
 
     private QmsController controller;
     private MockHttpServletResponse response;
@@ -65,7 +71,8 @@ class NcListCacheControlTest {
         controller = new QmsController(
                 createNc, transitionStatus, getNcList, getNcDetail, getKpiSummary,
                 exportCsv, createAction, listActions, completeAction, deleteAction,
-                createRca, updateRca, getRca, updateCapa, submitForEffectiveness, verifyEffectiveness);
+                createRca, updateRca, getRca, updateCapa, submitForEffectiveness, verifyEffectiveness,
+                linkNcToDocument, listNcDocumentLinks, unlinkNcFromDocument);
         response = new MockHttpServletResponse();
     }
 

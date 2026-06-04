@@ -1,5 +1,6 @@
 package com.industrialhub.backend.qms.ged.application.usecase;
 
+import com.industrialhub.backend.qms.application.usecase.ListDocumentNonConformancesUseCase;
 import com.industrialhub.backend.qms.ged.application.dto.DownloadUrlResponse;
 import com.industrialhub.backend.qms.ged.presentation.GedController;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +25,7 @@ class GedControllerTest {
     @Mock private ListDocumentsUseCase listDocumentsUseCase;
     @Mock private GetDocumentUseCase getDocumentUseCase;
     @Mock private GedGetDownloadUrlUseCase getDownloadUrlUseCase;
+    @Mock private ListDocumentNonConformancesUseCase listDocumentNonConformancesUseCase;
 
     private GedController controller;
 
@@ -35,7 +37,8 @@ class GedControllerTest {
                 transitionDocumentStatusUseCase,
                 listDocumentsUseCase,
                 getDocumentUseCase,
-                getDownloadUrlUseCase);
+                getDownloadUrlUseCase,
+                listDocumentNonConformancesUseCase);
     }
 
     // (a) download endpoint retorna URL pré-assinada com TTL 900s (15 min)

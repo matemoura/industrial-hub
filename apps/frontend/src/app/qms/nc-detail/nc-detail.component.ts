@@ -1,7 +1,17 @@
 import { ChangeDetectionStrategy, Component, OnInit, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { ActionResponse, ActionStatus, ActionType, NcResponse, NcStatus, QmsService } from '../qms.service';
+import {
+  ActionResponse,
+  ActionStatus,
+  ActionType,
+  NcDocumentLinkResponse,
+  NcDocumentLinkType,
+  NcResponse,
+  NcStatus,
+  QmsService,
+} from '../qms.service';
+import { GedService, DocumentSummary } from '../ged.service';
 import { AuthService } from '../../auth/auth.service';
 import { NcRcaComponent } from './nc-rca/nc-rca.component';
 import { AttachmentListComponent } from '../../shared/attachment/attachment-list.component';
@@ -18,6 +28,7 @@ import { NetworkStatusService } from '../../shared/offline/network-status.servic
 })
 export class NcDetailComponent implements OnInit {
   private readonly qmsService = inject(QmsService);
+  private readonly gedService = inject(GedService);
   private readonly authService = inject(AuthService);
   private readonly route = inject(ActivatedRoute);
   private readonly networkStatus = inject(NetworkStatusService);
@@ -71,6 +82,39 @@ export class NcDetailComponent implements OnInit {
     DONE: 'Concluída',
   };
 
+  // ── US-115: NC↔GED Link ───────────────────────────────────────────────────
+
+  ncDocLinks = signal<NcDocumentLinkResponse[]>([]);
+  ncDocLinksLoading = signal(false);
+  ncDocLinksError = signal<string | null>(null);
+
+  showLinkDocModal = signal(false);
+  linkDocSearch = signal('');
+  linkDocSearchResults = signal<DocumentSummary[]>([]);
+  linkDocSearchLoading = signal(false);
+  linkDocSelectedId = signal<string | null>(null);
+  linkDocLinkType = signal<NcDocumentLinkType>('PROCEDURE_AT_OCCURRENCE');
+  linkDocSubmitting = signal(false);
+  linkDocError = signal<string | null>(null);
+
+  readonly linkTypeLabels: Record<NcDocumentLinkType, string> = {
+    PROCEDURE_AT_OCCURRENCE: 'Procedimento na Ocorrência',
+    CORRECTIVE_REFERENCE: 'Referência Corretiva',
+    OTHER: 'Outro',
+  };
+
+  readonly docStatusLabels: Record<string, string> = {
+    DRAFT: 'Rascunho',
+    PUBLISHED: 'Publicado',
+    OBSOLETE: 'Obsoleto',
+  };
+
+  readonly docStatusColors: Record<string, string> = {
+    DRAFT: '#E8A93C',
+    PUBLISHED: '#3FA66A',
+    OBSOLETE: '#818286',
+  };
+
   get isSupervisor(): boolean {
     return this.role() === 'SUPERVISOR' || this.role() === 'ADMIN';
   }
@@ -101,6 +145,7 @@ export class NcDetailComponent implements OnInit {
     const id = this.route.snapshot.paramMap.get('id')!;
     this.loadNc(id);
     this.loadActions(id);
+    this.loadNcDocLinks(id);
   }
 
   loadNc(id: string): void {
@@ -129,6 +174,99 @@ export class NcDetailComponent implements OnInit {
       },
     });
   }
+
+  // ── NC↔GED Link methods ──────────────────────────────────────────────────
+
+  loadNcDocLinks(ncId: string): void {
+    this.ncDocLinksLoading.set(true);
+    this.qmsService.listNcDocuments(ncId).subscribe({
+      next: (links) => {
+        this.ncDocLinks.set(links);
+        this.ncDocLinksLoading.set(false);
+      },
+      error: () => {
+        this.ncDocLinksLoading.set(false);
+      },
+    });
+  }
+
+  openLinkDocModal(): void {
+    this.showLinkDocModal.set(true);
+    this.linkDocSearch.set('');
+    this.linkDocSearchResults.set([]);
+    this.linkDocSelectedId.set(null);
+    this.linkDocLinkType.set('PROCEDURE_AT_OCCURRENCE');
+    this.linkDocError.set(null);
+  }
+
+  closeLinkDocModal(): void {
+    this.showLinkDocModal.set(false);
+  }
+
+  searchDocuments(): void {
+    const q = this.linkDocSearch().trim();
+    if (q.length < 2) return;
+    this.linkDocSearchLoading.set(true);
+    this.gedService.listDocuments({ status: 'PUBLISHED' }).subscribe({
+      next: (page) => {
+        const lower = q.toLowerCase();
+        this.linkDocSearchResults.set(
+          page.content.filter(d =>
+            d.code.toLowerCase().includes(lower) ||
+            d.title.toLowerCase().includes(lower)
+          ).slice(0, 10)
+        );
+        this.linkDocSearchLoading.set(false);
+      },
+      error: () => {
+        this.linkDocSearchLoading.set(false);
+      },
+    });
+  }
+
+  selectLinkDoc(docId: string): void {
+    this.linkDocSelectedId.set(docId);
+  }
+
+  submitLinkDoc(): void {
+    const nc = this.nc();
+    const docId = this.linkDocSelectedId();
+    if (!nc || !docId || this.linkDocSubmitting()) return;
+
+    this.linkDocSubmitting.set(true);
+    this.linkDocError.set(null);
+    this.qmsService.linkNcToDocument(nc.id, {
+      documentId: docId,
+      linkType: this.linkDocLinkType(),
+    }).subscribe({
+      next: (link) => {
+        this.ncDocLinks.update(list => [link, ...list]);
+        this.linkDocSubmitting.set(false);
+        this.closeLinkDocModal();
+      },
+      error: (err) => {
+        const msg = err?.error?.message ?? 'Erro ao vincular documento.';
+        this.linkDocError.set(msg);
+        this.linkDocSubmitting.set(false);
+      },
+    });
+  }
+
+  unlinkDocument(documentId: string): void {
+    const nc = this.nc();
+    if (!nc || !confirm('Desvincular este documento da NC?')) return;
+
+    this.qmsService.unlinkNcDocument(nc.id, documentId).subscribe({
+      next: () => {
+        this.ncDocLinks.update(list => list.filter(l => l.documentId !== documentId));
+      },
+      error: (err) => {
+        this.ncDocLinksError.set(err?.error?.message ?? 'Erro ao desvincular documento.');
+      },
+    });
+  }
+
+  // ── Shared helpers ────────────────────────────────────────────────────────
 
   transition(target: NcStatus): void {
     const nc = this.nc();

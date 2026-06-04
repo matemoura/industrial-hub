@@ -8,6 +8,80 @@ export type NcSeverity = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
 export type ActionStatus = 'PENDING' | 'PENDING_EFFECTIVENESS' | 'DONE';
 export type ActionType = 'CORRECTIVE' | 'PREVENTIVE';
 
+// ── US-115: NC↔GED Link ───────────────────────────────────────────────────────
+
+export type NcDocumentLinkType =
+  | 'PROCEDURE_AT_OCCURRENCE'
+  | 'CORRECTIVE_REFERENCE'
+  | 'OTHER';
+
+export interface NcDocumentLinkResponse {
+  linkId: string;
+  documentId: string;
+  documentCode: string;
+  documentTitle: string;
+  documentCategory: string;
+  documentStatus: string;
+  linkType: NcDocumentLinkType;
+  linkedAt: string;
+}
+
+export interface LinkNcToDocumentPayload {
+  documentId: string;
+  linkType: NcDocumentLinkType;
+}
+
+export interface DocumentNcLinkResponse {
+  linkId: string;
+  ncId: string;
+  ncCode: string;
+  ncTitle: string;
+  ncSeverity: string;
+  ncStatus: string;
+  linkType: NcDocumentLinkType;
+  linkedAt: string;
+}
+
+// ── US-116: CAPA Aging ────────────────────────────────────────────────────────
+
+export interface AgingBucket {
+  count: number;
+  label: string;
+}
+
+export interface AgingBucketOver30 extends AgingBucket {
+  overdueCount: number;
+}
+
+export interface OverdueBySeverity {
+  severity: string;
+  overdueCount: number;
+}
+
+export interface CapaAgingResponse {
+  totalOpen: number;
+  overdueCount: number;
+  avgResolutionDaysOpen: number;
+  noDueDateCount: number;
+  bucket0to7: AgingBucket;
+  bucket8to15: AgingBucket;
+  bucket16to30: AgingBucket;
+  bucketOver30: AgingBucketOver30;
+  overdueByNcSeverity: OverdueBySeverity[];
+}
+
+// ── US-117: Quality Report ────────────────────────────────────────────────────
+
+export type ReportFormat = 'PDF' | 'EXCEL';
+export type ReportSection = 'NCS' | 'CAPAS' | 'GED' | 'RCA';
+
+export interface QualityReportRequest {
+  from: string;
+  to: string;
+  format: ReportFormat;
+  sections: ReportSection[];
+}
+
 // ── Supplier ──────────────────────────────────────────────────────────────────
 
 export interface SupplierResponse {
@@ -251,6 +325,40 @@ export class QmsService {
 
   getRca(ncId: string): Observable<RcaResponse> {
     return this.http.get<RcaResponse>(`${this.baseUrl}/${ncId}/rca`);
+  }
+
+  // ── US-115: NC↔GED Link ────────────────────────────────────────────────────
+
+  linkNcToDocument(ncId: string, payload: LinkNcToDocumentPayload): Observable<NcDocumentLinkResponse> {
+    return this.http.post<NcDocumentLinkResponse>(`${this.baseUrl}/${ncId}/documents`, payload);
+  }
+
+  listNcDocuments(ncId: string): Observable<NcDocumentLinkResponse[]> {
+    return this.http.get<NcDocumentLinkResponse[]>(`${this.baseUrl}/${ncId}/documents`);
+  }
+
+  unlinkNcDocument(ncId: string, documentId: string): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/${ncId}/documents/${documentId}`);
+  }
+
+  // ── US-116: CAPA Aging ─────────────────────────────────────────────────────
+
+  getCapaAging(): Observable<CapaAgingResponse> {
+    return this.http.get<CapaAgingResponse>('/api/v1/qms/capas/aging');
+  }
+
+  exportCapaAgingCsv(): Observable<Blob> {
+    return this.http.get('/api/v1/qms/capas/aging/export', { responseType: 'blob' });
+  }
+
+  updateCapaDueDate(capaId: string, dueDate: string): Observable<void> {
+    return this.http.put<void>(`/api/v1/qms/capas/${capaId}/due-date`, { dueDate });
+  }
+
+  // ── US-117: Quality Report ─────────────────────────────────────────────────
+
+  generateQualityReport(req: QualityReportRequest): Observable<Blob> {
+    return this.http.post('/api/v1/qms/reports/quality', req, { responseType: 'blob' });
   }
 
   // ── Suppliers ───────────────────────────────────────────────────────────────

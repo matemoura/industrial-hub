@@ -7,6 +7,7 @@ import {
 } from '@angular/core';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { GedService, DocumentDetail, DocumentStatus } from '../ged.service';
+import { DocumentNcLinkResponse } from '../qms.service';
 import { AuthService } from '../../auth/auth.service';
 
 @Component({
@@ -32,6 +33,10 @@ export class GedDetailComponent implements OnInit {
   addRevisionError = signal<string | null>(null);
   newRevisionFile = signal<File | null>(null);
   newRevisionReason = signal('');
+
+  // ── US-115: NCs that reference this document ──────────────────────────────
+  ncLinks = signal<DocumentNcLinkResponse[]>([]);
+  ncLinksLoading = signal(false);
 
   readonly statusLabels: Record<DocumentStatus, string> = {
     DRAFT: 'Rascunho',
@@ -61,6 +66,25 @@ export class GedDetailComponent implements OnInit {
     RECORD: '#3FA66A',
   };
 
+  readonly ncSeverityColors: Record<string, string> = {
+    LOW: '#818286',
+    MEDIUM: '#E8A93C',
+    HIGH: '#D24A4A',
+    CRITICAL: '#7B0000',
+  };
+
+  readonly ncStatusLabels: Record<string, string> = {
+    OPEN: 'Aberta',
+    IN_ANALYSIS: 'Em análise',
+    CLOSED: 'Fechada',
+  };
+
+  readonly linkTypeLabels: Record<string, string> = {
+    PROCEDURE_AT_OCCURRENCE: 'Proc. na Ocorrência',
+    CORRECTIVE_REFERENCE: 'Ref. Corretiva',
+    OTHER: 'Outro',
+  };
+
   get isAdmin(): boolean {
     return this.role() === 'ADMIN';
   }
@@ -81,8 +105,22 @@ export class GedDetailComponent implements OnInit {
       next: (data) => {
         this.doc.set(data);
         this.loading.set(false);
+        this.loadNcLinks(id);
       },
       error: () => this.loading.set(false),
+    });
+  }
+
+  loadNcLinks(documentId: string): void {
+    this.ncLinksLoading.set(true);
+    this.gedService.listDocumentNcLinks(documentId).subscribe({
+      next: (links) => {
+        this.ncLinks.set(links);
+        this.ncLinksLoading.set(false);
+      },
+      error: () => {
+        this.ncLinksLoading.set(false);
+      },
     });
   }
 

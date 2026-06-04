@@ -92,4 +92,12 @@ export class GedService {
       `${this.BASE}/${id}/revisions/${revId}/download`
     );
   }
+
+  // ── US-115: NCs that reference this document ──────────────────────────────
+
+  listDocumentNcLinks(documentId: string): Observable<import('./qms.service').DocumentNcLinkResponse[]> {
+    return this.http.get<import('./qms.service').DocumentNcLinkResponse[]>(
+      `${this.BASE}/${documentId}/non-conformances`
+    );
+  }
 }

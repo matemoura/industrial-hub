@@ -1,5 +1,7 @@
 package com.industrialhub.backend.qms.ged.presentation;
 
+import com.industrialhub.backend.qms.application.dto.DocumentNcLinkResponse;
+import com.industrialhub.backend.qms.application.usecase.ListDocumentNonConformancesUseCase;
 import com.industrialhub.backend.qms.ged.application.dto.*;
 import com.industrialhub.backend.qms.ged.application.usecase.AddRevisionUseCase;
 import com.industrialhub.backend.qms.ged.application.usecase.GedGetDownloadUrlUseCase;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -40,19 +43,22 @@ public class GedController {
     private final ListDocumentsUseCase listDocumentsUseCase;
     private final GetDocumentUseCase getDocumentUseCase;
     private final GedGetDownloadUrlUseCase getDownloadUrlUseCase;
+    private final ListDocumentNonConformancesUseCase listDocumentNonConformances;
 
     public GedController(UploadDocumentUseCase uploadDocumentUseCase,
                          AddRevisionUseCase addRevisionUseCase,
                          TransitionDocumentStatusUseCase transitionDocumentStatusUseCase,
                          ListDocumentsUseCase listDocumentsUseCase,
                          GetDocumentUseCase getDocumentUseCase,
-                         GedGetDownloadUrlUseCase getDownloadUrlUseCase) {
+                         GedGetDownloadUrlUseCase getDownloadUrlUseCase,
+                         ListDocumentNonConformancesUseCase listDocumentNonConformances) {
         this.uploadDocumentUseCase = uploadDocumentUseCase;
         this.addRevisionUseCase = addRevisionUseCase;
         this.transitionDocumentStatusUseCase = transitionDocumentStatusUseCase;
         this.listDocumentsUseCase = listDocumentsUseCase;
         this.getDocumentUseCase = getDocumentUseCase;
         this.getDownloadUrlUseCase = getDownloadUrlUseCase;
+        this.listDocumentNonConformances = listDocumentNonConformances;
     }
 
     @PostMapping(value = "/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -109,5 +115,14 @@ public class GedController {
             @PathVariable UUID id,
             @PathVariable UUID revId) {
         return getDownloadUrlUseCase.execute(id, revId);
+    }
+
+    /**
+     * Sprint 39 / ADR-050 Decisão 3: visão inversa — lista NCs vinculadas a um documento.
+     */
+    @GetMapping("/documents/{documentId}/non-conformances")
+    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    public List<DocumentNcLinkResponse> listNonConformances(@PathVariable UUID documentId) {
+        return listDocumentNonConformances.execute(documentId);
     }
 }

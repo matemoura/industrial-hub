@@ -452,3 +452,29 @@
   color: #D24A4A;
   font-size: 0.85rem;
 }
+
+// ── US-115: NC links section ─────────────────────────────────────────────────
+
+.nc-links-section {
+  margin-top: 2rem;
+}
+
+.nc-link {
+  color: #56A4BB;
+  text-decoration: none;
+  font-family: ui-monospace, 'Cascadia Code', monospace;
+  font-weight: 600;
+  font-size: 0.82rem;
+  &:hover { text-decoration: underline; }
+}
+
+.severity-chip {
+  display: inline-block;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  letter-spacing: 0.02em;
+}
