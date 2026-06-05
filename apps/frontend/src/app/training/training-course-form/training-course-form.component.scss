@@ -1,0 +1,116 @@
+.page-header { margin-bottom: 1.5rem; }
+.page-title { font-size: 1.25rem; font-weight: 600; color: #1F3A4A; margin: 0; }
+
+.form-card {
+  background: #fff;
+  border: 1px solid #D9E4E8;
+  border-radius: 10px;
+  padding: 1.75rem;
+  max-width: 700px;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+}
+
+.form-group { display: flex; flex-direction: column; gap: .35rem; }
+
+.form-label {
+  font-size: .8125rem;
+  font-weight: 600;
+  color: #5F88A1;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+
+.required { color: #D24A4A; }
+
+.form-input,
+.form-select,
+.form-textarea {
+  padding: .5rem .75rem;
+  border: 1px solid #CBD5E1;
+  border-radius: 6px;
+  font-size: .9375rem;
+  color: #1F3A4A;
+  background: #fff;
+  transition: border-color .15s, box-shadow .15s;
+
+  &:focus {
+    outline: none;
+    border-color: #56A4BB;
+    box-shadow: 0 0 0 3px #56A4BB33;
+  }
+}
+
+.form-textarea { resize: vertical; min-height: 80px; }
+
+.form-hint { font-size: .75rem; color: #818286; }
+
+.role-chips { display: flex; gap: .5rem; flex-wrap: wrap; margin-top: .25rem; }
+
+.role-chip {
+  padding: .35rem .85rem;
+  border-radius: 20px;
+  border: 1.5px solid #CBD5E1;
+  background: #fff;
+  color: #5F88A1;
+  font-size: .8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all .15s;
+
+  &--selected {
+    background: #56A4BB;
+    border-color: #56A4BB;
+    color: #fff;
+  }
+
+  &:hover:not(.role-chip--selected) { border-color: #56A4BB; color: #56A4BB; }
+}
+
+.form-actions {
+  display: flex;
+  gap: .75rem;
+  justify-content: flex-end;
+  padding-top: .75rem;
+  border-top: 1px solid #F4F7F9;
+  flex-wrap: wrap;
+}
+
+.btn {
+  padding: .5rem 1.25rem;
+  border-radius: 6px;
+  font-size: .875rem;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: filter .15s;
+
+  &:disabled { opacity: .55; cursor: not-allowed; }
+  &--primary { background: #56A4BB; color: #fff; &:hover:not(:disabled) { filter: brightness(.92); } }
+  &--ghost { background: transparent; color: #5F88A1; border: 1px solid #CBD5E1; &:hover { background: #F4F7F9; } }
+  &--danger-outline { background: transparent; color: #D24A4A; border: 1px solid #D24A4A55; &:hover:not(:disabled) { background: #D24A4A11; } }
+}
+
+.alert {
+  padding: .75rem 1rem;
+  border-radius: 6px;
+  font-size: .875rem;
+  margin-bottom: .5rem;
+  &--error { background: #D24A4A11; color: #D24A4A; border: 1px solid #D24A4A33; }
+}
+
+.loading-state { display: flex; flex-direction: column; gap: .5rem; }
+.skeleton-row {
+  height: 48px; border-radius: 6px;
+  background: linear-gradient(90deg, #EEF5F8 25%, #D9E4E8 50%, #EEF5F8 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+}
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }

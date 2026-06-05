@@ -1,0 +1,213 @@
+@if (toast()) {
+  <div class="toast toast--success" role="status" aria-live="polite">{{ toast() }}</div>
+}
+
+<div class="page-header">
+  <div class="page-header__left">
+    <h1 class="page-title">Registros de Treinamentos</h1>
+  </div>
+  @if (isSupervisor()) {
+    <button class="btn btn--primary" type="button" (click)="showNewForm.set(!showNewForm())">
+      {{ showNewForm() ? 'Cancelar' : '+ Novo Registro' }}
+    </button>
+  }
+</div>
+
+@if (showNewForm()) {
+  <div class="form-card" role="region" aria-label="Novo registro de treinamento">
+    <h2 class="form-card__title">Novo Registro</h2>
+    @if (error()) {
+      <div class="alert alert--error" role="alert">{{ error() }}</div>
+    }
+    <form (ngSubmit)="submitRecord()" #f="ngForm">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="newCourse">Curso <span class="required">*</span></label>
+          <select id="newCourse" class="form-select"
+                  [ngModel]="newCourseId()" (ngModelChange)="newCourseId.set($event)"
+                  name="courseId" required>
+            <option value="">Selecione...</option>
+            @for (c of courses(); track c.id) {
+              <option [value]="c.id">{{ c.code }} – {{ c.title }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newUsername">Colaborador <span class="required">*</span></label>
+          <input id="newUsername" class="form-input" type="text"
+                 [ngModel]="newUsername()" (ngModelChange)="newUsername.set($event)"
+                 name="username" required placeholder="username" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newDate">Data de conclusão <span class="required">*</span></label>
+          <input id="newDate" class="form-input" type="date"
+                 [ngModel]="newCompletedAt()" (ngModelChange)="newCompletedAt.set($event)"
+                 name="completedAt" required />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="newInstructor">Instrutor</label>
+          <input id="newInstructor" class="form-input" type="text"
+                 [ngModel]="newInstructor()" (ngModelChange)="newInstructor.set($event)"
+                 name="instructorName" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newScore">Nota (0–100)</label>
+          <input id="newScore" class="form-input" type="number"
+                 [ngModel]="newScore()" (ngModelChange)="newScore.set($event !== '' ? +$event : null)"
+                 name="score" min="0" max="100" />
+        </div>
+        <div class="form-group form-group--checkbox">
+          <label class="form-label">Aprovado?</label>
+          <label class="toggle">
+            <input type="checkbox" [ngModel]="newPassed()" (ngModelChange)="newPassed.set($event)" name="passed" />
+            <span class="toggle__track"></span>
+            <span class="toggle__label">{{ newPassed() ? 'Sim' : 'Não' }}</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="cert">Certificado (PDF)</label>
+        <input id="cert" type="file" accept=".pdf" class="form-input" (change)="onCertificateChange($event)" />
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showNewForm.set(false); error.set(null)">Cancelar</button>
+        <button type="submit" class="btn btn--primary" [disabled]="saving() || f.invalid">
+          {{ saving() ? 'Salvando...' : 'Salvar' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+<!-- Effectiveness modal -->
+@if (showEffectivenessForm()) {
+  <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Avaliação de eficácia">
+    <div class="modal">
+      <h2 class="modal__title">Avaliação de Eficácia</h2>
+      @if (error()) {
+        <div class="alert alert--error" role="alert">{{ error() }}</div>
+      }
+      <form (ngSubmit)="submitEffectiveness()" #ef="ngForm">
+        <div class="form-group">
+          <label class="form-label" for="effResult">Resultado <span class="required">*</span></label>
+          <select id="effResult" class="form-select"
+                  [ngModel]="effResult()" (ngModelChange)="effResult.set($event)"
+                  name="result" required>
+            <option value="EFFECTIVE">Efetivo</option>
+            <option value="PARTIALLY_EFFECTIVE">Parcialmente efetivo</option>
+            <option value="NOT_EFFECTIVE">Não efetivo</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="effNotes">Observações</label>
+          <textarea id="effNotes" class="form-textarea" rows="3"
+                    [ngModel]="effNotes()" (ngModelChange)="effNotes.set($event)"
+                    name="notes"></textarea>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showEffectivenessForm.set(null); error.set(null)">Cancelar</button>
+          <button type="submit" class="btn btn--primary" [disabled]="saving()">
+            {{ saving() ? 'Salvando...' : 'Registrar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Filtros -->
+<div class="filters-bar">
+  <input class="filter-input" type="text" placeholder="Filtrar por colaborador"
+         [ngModel]="filterUsername()" (ngModelChange)="filterUsername.set($event)" />
+  <select class="filter-select" [ngModel]="filterCourseId()" (ngModelChange)="filterCourseId.set($event)">
+    <option value="">Todos os cursos</option>
+    @for (c of courses(); track c.id) {
+      <option [value]="c.id">{{ c.code }}</option>
+    }
+  </select>
+  <select class="filter-select" [ngModel]="filterPassed()" (ngModelChange)="filterPassed.set($event)">
+    <option value="">Aprovados e reprovados</option>
+    <option value="true">Aprovados</option>
+    <option value="false">Reprovados</option>
+  </select>
+  <button class="btn btn--ghost" type="button" (click)="loadRecords(0)">Buscar</button>
+</div>
+
+@if (loading()) {
+  <div class="loading-state">
+    @for (i of [1, 2, 3, 4]; track i) { <div class="skeleton-row"></div> }
+  </div>
+} @else if (records().length === 0) {
+  <div class="empty-state"><p>Nenhum registro encontrado.</p></div>
+} @else {
+  <div class="table-wrap">
+    <table class="data-table" aria-label="Registros de treinamento">
+      <thead>
+        <tr>
+          <th scope="col">Colaborador</th>
+          <th scope="col">Curso</th>
+          <th scope="col">Conclusão</th>
+          <th scope="col">Nota</th>
+          <th scope="col">Status</th>
+          <th scope="col">Vencimento</th>
+          <th scope="col">Cert.</th>
+          <th scope="col">Eficácia</th>
+          @if (isAdmin()) { <th scope="col">Ações</th> }
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of records(); track r.id) {
+          <tr class="data-row">
+            <td>{{ r.username }}</td>
+            <td><code class="course-code">{{ r.courseCode }}</code></td>
+            <td>{{ r.completedAt | slice:0:10 }}</td>
+            <td>{{ r.score !== null && r.score !== undefined ? r.score : '—' }}</td>
+            <td>
+              <span class="passed-chip" [class.passed-chip--ok]="r.passed" [class.passed-chip--fail]="!r.passed">
+                {{ r.passed ? 'Aprovado' : 'Reprovado' }}
+              </span>
+            </td>
+            <td>
+              @if (r.expiresAt) {
+                <span [class]="expiryClass(r)">{{ r.expiresAt | slice:0:10 }}</span>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td>
+              @if (r.hasCertificate) {
+                <button class="icon-btn" type="button" title="Baixar certificado"
+                        (click)="downloadCertificate(r)" aria-label="Baixar certificado">
+                  ↓
+                </button>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            <td>
+              @if (r.effectivenessResult) {
+                <span class="eff-chip eff-chip--{{ r.effectivenessResult.toLowerCase() }}">
+                  {{ r.effectivenessResult === 'EFFECTIVE' ? 'Efetivo' :
+                     r.effectivenessResult === 'PARTIALLY_EFFECTIVE' ? 'Parcial' : 'Não efetivo' }}
+                </span>
+              } @else if (r.passed && isSupervisor()) {
+                <button class="btn btn--ghost btn--sm" type="button"
+                        (click)="openEffectivenessForm(r.id)">Avaliar</button>
+              } @else {
+                <span class="text-muted">—</span>
+              }
+            </td>
+            @if (isAdmin()) {
+              <td>
+                <button class="icon-btn icon-btn--danger" type="button" title="Excluir"
+                        (click)="deleteRecord(r)" aria-label="Excluir registro">✕</button>
+              </td>
+            }
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

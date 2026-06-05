@@ -1,0 +1,100 @@
+@if (loading()) {
+  <div class="loading-state" aria-label="Carregando...">
+    @for (i of [1, 2, 3]; track i) { <div class="skeleton-row"></div> }
+  </div>
+} @else {
+  <div class="page-header">
+    <h1 class="page-title">{{ isEdit() ? 'Editar Curso' : 'Novo Curso' }}</h1>
+  </div>
+
+  @if (error()) {
+    <div class="alert alert--error" role="alert">{{ error() }}</div>
+  }
+
+  <form class="form-card" (ngSubmit)="save()" #f="ngForm">
+
+    @if (!isEdit()) {
+      <div class="form-group">
+        <label class="form-label" for="code">Código <span class="required">*</span></label>
+        <input id="code" class="form-input" type="text"
+               [ngModel]="code()" (ngModelChange)="code.set($event)"
+               name="code" required maxlength="30" placeholder="ex: GMP-001"
+               autocomplete="off" />
+        <span class="form-hint">Máx. 30 caracteres. Será convertido para maiúsculas.</span>
+      </div>
+    }
+
+    <div class="form-group">
+      <label class="form-label" for="title">Título <span class="required">*</span></label>
+      <input id="title" class="form-input" type="text"
+             [ngModel]="title()" (ngModelChange)="title.set($event)"
+             name="title" required maxlength="200" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label" for="description">Descrição</label>
+      <textarea id="description" class="form-textarea"
+                [ngModel]="description()" (ngModelChange)="description.set($event)"
+                name="description" rows="3"></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="category">Categoria <span class="required">*</span></label>
+        <select id="category" class="form-select"
+                [ngModel]="category()" (ngModelChange)="category.set($event)"
+                name="category" required>
+          @for (cat of categories; track cat) {
+            <option [value]="cat">{{ categoryLabels[cat] }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="duration">Duração (horas) <span class="required">*</span></label>
+        <input id="duration" class="form-input" type="number"
+               [ngModel]="durationHours()" (ngModelChange)="durationHours.set(+$event)"
+               name="durationHours" min="1" required />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="validity">Validade (meses)</label>
+        <input id="validity" class="form-input" type="number"
+               [ngModel]="validityMonths()" (ngModelChange)="validityMonths.set($event ? +$event : null)"
+               name="validityMonths" min="1" placeholder="Sem vencimento" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Papéis obrigatórios</label>
+      <div class="role-chips">
+        @for (role of allRoles; track role) {
+          <button type="button" class="role-chip"
+                  [class.role-chip--selected]="hasRole(role)"
+                  (click)="toggleRole(role)">
+            {{ role }}
+          </button>
+        }
+      </div>
+      <span class="form-hint">Selecione os papéis para os quais este curso é obrigatório.</span>
+    </div>
+
+    <div class="form-actions">
+      <button type="button" class="btn btn--ghost" (click)="cancel()">Cancelar</button>
+
+      @if (isEdit()) {
+        <button type="button" class="btn btn--danger-outline"
+                [disabled]="deactivating()"
+                (click)="deactivate()">
+          {{ deactivating() ? 'Desativando...' : 'Desativar' }}
+        </button>
+      }
+
+      <button type="submit" class="btn btn--primary"
+              [disabled]="saving() || f.invalid">
+        {{ saving() ? 'Salvando...' : (isEdit() ? 'Salvar alterações' : 'Criar curso') }}
+      </button>
+    </div>
+
+  </form>
+}

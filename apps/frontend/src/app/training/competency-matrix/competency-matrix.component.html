@@ -1,0 +1,71 @@
+<div class="page-header">
+  <div class="page-header__left">
+    <h1 class="page-title">Matriz de Competências</h1>
+    <p class="page-subtitle">Colaborador × curso obrigatório por papel</p>
+  </div>
+  <button class="btn btn--ghost" type="button" (click)="exportCsv()" [disabled]="loading()">
+    ↓ Exportar CSV
+  </button>
+</div>
+
+<div class="filters-bar">
+  <select class="filter-select" [ngModel]="filterRole()" (ngModelChange)="filterRole.set($event)">
+    <option value="">Todos os papéis</option>
+    @for (r of roles(); track r) { <option [value]="r">{{ r }}</option> }
+  </select>
+  <input class="filter-input" type="text" placeholder="Filtrar por colaborador"
+         [ngModel]="filterUsername()" (ngModelChange)="filterUsername.set($event)" />
+
+  <div class="legend">
+    @for (entry of [['VALID','Válido'],['EXPIRING','Vencendo'],['EXPIRED','Vencido'],['MISSING','Ausente']]; track entry[0]) {
+      <span class="legend-item">
+        <span class="legend-dot" [style.background]="statusColors[$any(entry[0])]"></span>
+        {{ entry[1] }}
+      </span>
+    }
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="loading-state">
+    @for (i of [1, 2, 3, 4, 5]; track i) { <div class="skeleton-row"></div> }
+  </div>
+} @else if (filtered().length === 0) {
+  <div class="empty-state"><p>Nenhum dado encontrado.</p></div>
+} @else {
+  <div class="table-wrap">
+    <table class="data-table" aria-label="Matriz de competências">
+      <thead>
+        <tr>
+          <th scope="col">Colaborador</th>
+          <th scope="col">Papel</th>
+          <th scope="col">Código</th>
+          <th scope="col">Curso</th>
+          <th scope="col">Status</th>
+          <th scope="col">Conclusão</th>
+          <th scope="col">Vencimento</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of filtered(); track row.username + row.courseId) {
+          <tr class="data-row">
+            <td>{{ row.username }}</td>
+            <td><span class="role-badge">{{ row.role }}</span></td>
+            <td><code class="course-code">{{ row.courseCode }}</code></td>
+            <td class="course-title">{{ row.courseTitle }}</td>
+            <td>
+              <span class="status-chip"
+                    [style.background-color]="statusColors[row.status] + '22'"
+                    [style.color]="statusColors[row.status]"
+                    [style.border-color]="statusColors[row.status] + '55'">
+                {{ statusLabels[row.status] }}
+              </span>
+            </td>
+            <td>{{ row.completedAt ? (row.completedAt | slice:0:10) : '—' }}</td>
+            <td>{{ row.expiresAt ? (row.expiresAt | slice:0:10) : '—' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

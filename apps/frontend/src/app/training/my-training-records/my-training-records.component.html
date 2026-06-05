@@ -1,0 +1,73 @@
+<div class="page-header">
+  <h1 class="page-title">Meus Treinamentos</h1>
+  <p class="page-subtitle">Histórico de treinamentos e status das suas certificações</p>
+</div>
+
+@if (loading()) {
+  <div class="loading-state">
+    @for (i of [1, 2, 3]; track i) { <div class="skeleton-row"></div> }
+  </div>
+} @else if (records().length === 0) {
+  <div class="empty-state">
+    <p>Você ainda não possui registros de treinamento.</p>
+  </div>
+} @else {
+
+  @if (expired().length > 0) {
+    <div class="section-banner section-banner--danger" role="alert">
+      <strong>⚠ {{ expired().length }} certificação(ões) vencida(s)</strong> — regularize o mais rápido possível.
+    </div>
+  }
+  @if (expiring().length > 0) {
+    <div class="section-banner section-banner--warn" role="status">
+      <strong>⏰ {{ expiring().length }} certificação(ões) vencendo em breve</strong> — renove antes do prazo.
+    </div>
+  }
+
+  <div class="records-grid">
+    @for (r of records(); track r.id) {
+      <div class="record-card" [class.record-card--expired]="statusOf(r) === 'expired'"
+           [class.record-card--expiring]="statusOf(r) === 'expiring'">
+        <div class="record-card__header">
+          <code class="course-code">{{ r.courseCode }}</code>
+          <span class="passed-chip" [class.passed-chip--ok]="r.passed" [class.passed-chip--fail]="!r.passed">
+            {{ r.passed ? 'Aprovado' : 'Reprovado' }}
+          </span>
+        </div>
+        <p class="record-card__title">{{ r.courseTitle }}</p>
+        <div class="record-card__meta">
+          <span>Conclusão: <strong>{{ r.completedAt | slice:0:10 }}</strong></span>
+          @if (r.score !== null && r.score !== undefined) {
+            <span>Nota: <strong>{{ r.score }}</strong></span>
+          }
+        </div>
+        @if (r.expiresAt) {
+          <div class="record-card__expiry" [class.expiry--expired]="statusOf(r) === 'expired'"
+               [class.expiry--expiring]="statusOf(r) === 'expiring'">
+            @switch (statusOf(r)) {
+              @case ('expired')  { ⚠ Venceu em {{ r.expiresAt | slice:0:10 }} }
+              @case ('expiring') { ⏰ Vence em {{ r.expiresAt | slice:0:10 }} }
+              @default           { Válido até {{ r.expiresAt | slice:0:10 }} }
+            }
+          </div>
+        } @else {
+          <div class="record-card__expiry expiry--valid">Sem data de vencimento</div>
+        }
+        @if (r.effectivenessResult) {
+          <div class="record-card__effectiveness">
+            Eficácia:
+            <span class="eff-chip eff-chip--{{ r.effectivenessResult.toLowerCase() }}">
+              {{ r.effectivenessResult === 'EFFECTIVE' ? 'Efetivo' :
+                 r.effectivenessResult === 'PARTIALLY_EFFECTIVE' ? 'Parcial' : 'Não efetivo' }}
+            </span>
+          </div>
+        }
+        @if (r.hasCertificate) {
+          <button class="cert-btn" type="button" (click)="downloadCertificate(r)">
+            ↓ Baixar certificado
+          </button>
+        }
+      </div>
+    }
+  </div>
+}

@@ -1,0 +1,76 @@
+@if (alertToast()) {
+  <div class="toast" role="status" aria-live="polite">{{ alertToast() }}</div>
+}
+
+<div class="page-header">
+  <div class="page-header__left">
+    <h1 class="page-title">Dashboard de Treinamentos</h1>
+    <p class="page-subtitle">Compliance ISO 13485 §6.2</p>
+  </div>
+  @if (isAdmin()) {
+    <button class="btn btn--secondary" type="button"
+            [disabled]="runningAlerts()" (click)="runAlerts()">
+      {{ runningAlerts() ? 'Enviando alertas...' : '🔔 Rodar Alertas Agora' }}
+    </button>
+  }
+</div>
+
+@if (loading()) {
+  <div class="loading-state">
+    @for (i of [1, 2, 3]; track i) { <div class="skeleton-card"></div> }
+  </div>
+} @else if (summary()) {
+  <div class="dashboard-layout">
+
+    <!-- Gauge de compliance -->
+    <div class="gauge-card">
+      <p class="gauge-card__label">Compliance Geral</p>
+      <div class="gauge-wrap" role="img" [attr.aria-label]="gaugePercent() + '% de compliance'">
+        <svg width="140" height="140" viewBox="0 0 140 140" aria-hidden="true">
+          <circle cx="70" cy="70" r="54" fill="none" stroke="#EEF5F8" stroke-width="14"/>
+          <circle cx="70" cy="70" r="54" fill="none"
+                  [attr.stroke]="gaugeColor()"
+                  stroke-width="14"
+                  stroke-linecap="round"
+                  [attr.stroke-dasharray]="gaugeDash()"
+                  stroke-dashoffset="0"
+                  transform="rotate(-90 70 70)"/>
+        </svg>
+        <div class="gauge-center">
+          <span class="gauge-percent" [style.color]="gaugeColor()">{{ gaugePercent() }}%</span>
+          <span class="gauge-sub">compliance</span>
+        </div>
+      </div>
+      <p class="gauge-users">{{ summary()!.totalUsers }} colaboradores · {{ summary()!.totalRequiredCompetencies }} competências mapeadas</p>
+    </div>
+
+    <!-- KPI cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card kpi-card--valid">
+        <span class="kpi-card__value">{{ summary()!.valid }}</span>
+        <span class="kpi-card__label">Válidas</span>
+      </div>
+      <div class="kpi-card kpi-card--expiring">
+        <span class="kpi-card__value">{{ summary()!.expiring }}</span>
+        <span class="kpi-card__label">Vencendo</span>
+      </div>
+      <div class="kpi-card kpi-card--expired">
+        <span class="kpi-card__value">{{ summary()!.expired }}</span>
+        <span class="kpi-card__label">Vencidas</span>
+      </div>
+      <div class="kpi-card kpi-card--missing">
+        <span class="kpi-card__value">{{ summary()!.missing }}</span>
+        <span class="kpi-card__label">Ausentes</span>
+      </div>
+    </div>
+
+  </div>
+
+  @if (summary()!.expired > 0 || summary()!.missing > 0) {
+    <div class="action-prompt">
+      <strong>Ação necessária:</strong>
+      {{ summary()!.expired }} certificação(ões) vencida(s) e {{ summary()!.missing }} ausente(s).
+      Acesse a <a routerLink="/training/competency-matrix">Matriz de Competências</a> para detalhes.
+    </div>
+  }
+}

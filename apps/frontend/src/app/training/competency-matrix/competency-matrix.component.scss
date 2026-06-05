@@ -1,0 +1,35 @@
+.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem;
+  &__left { flex: 1; } }
+.page-title { font-size: 1.25rem; font-weight: 600; color: #1F3A4A; margin: 0 0 .25rem; }
+.page-subtitle { font-size: .8125rem; color: #818286; margin: 0; }
+
+.filters-bar { display: flex; gap: .75rem; flex-wrap: wrap; align-items: center; margin-bottom: 1.25rem; }
+.filter-select, .filter-input { padding: .4rem .75rem; border: 1px solid #CBD5E1; border-radius: 6px; font-size: .875rem; color: #1F3A4A; background: #fff; min-width: 160px; }
+
+.legend { display: flex; gap: .75rem; flex-wrap: wrap; margin-left: auto; }
+.legend-item { display: flex; align-items: center; gap: .35rem; font-size: .8125rem; color: #5F88A1; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+.table-wrap { overflow-x: auto; }
+.data-table {
+  width: 100%; border-collapse: collapse; font-size: .875rem;
+  th { padding: .6rem 1rem; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #5F88A1; border-bottom: 2px solid #D9E4E8; background: #F4F7F9; text-align: left; }
+  td { padding: .7rem 1rem; border-bottom: 1px solid #F4F7F9; color: #1F3A4A; vertical-align: middle; }
+}
+.data-row:hover td { background: #EEF5F8; }
+
+.role-badge { display: inline-block; padding: .15rem .55rem; border-radius: 12px; font-size: .75rem; font-weight: 600; background: #EEF5F8; color: #5F88A1; }
+.course-code { font-family: monospace; font-size: .8125rem; background: #EEF5F8; padding: .1rem .4rem; border-radius: 4px; color: #5F88A1; }
+.course-title { max-width: 240px; }
+
+.status-chip { display: inline-block; padding: .2rem .65rem; border-radius: 12px; font-size: .75rem; font-weight: 600; border: 1px solid; white-space: nowrap; }
+
+.btn { padding: .5rem 1.25rem; border-radius: 6px; font-size: .875rem; font-weight: 500; cursor: pointer; border: none;
+  &:disabled { opacity: .55; cursor: not-allowed; }
+  &--ghost { background: transparent; color: #5F88A1; border: 1px solid #CBD5E1; &:hover:not(:disabled) { background: #F4F7F9; } }
+}
+
+.loading-state { display: flex; flex-direction: column; gap: .5rem; }
+.skeleton-row { height: 44px; border-radius: 6px; background: linear-gradient(90deg, #EEF5F8 25%, #D9E4E8 50%, #EEF5F8 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.empty-state { text-align: center; padding: 3rem 1rem; color: #818286; }

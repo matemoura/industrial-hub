@@ -64,4 +64,15 @@ public class GedFileValidator {
         String name = new File(original).getName();
         return name.isBlank() ? "upload" : name;
     }
+
+    /**
+     * Sanitizes a filename for safe storage. Public static for reuse across modules
+     * without injection (ADR-051 Decisão 3, ADR-049 Decisão 2).
+     */
+    public static String sanitizeFilename(String original) {
+        if (original == null || original.isBlank()) return "upload";
+        String name = new File(original).getName();
+        String sanitized = name.replaceAll("[^a-zA-Z0-9._\\-]", "_");
+        return sanitized.length() > 100 ? sanitized.substring(0, 100) : sanitized;
+    }
 }
