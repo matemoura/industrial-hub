@@ -1,0 +1,85 @@
+.page-header {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1.5rem;
+  &__left { flex: 1; }
+}
+.page-title { font-size: 1.25rem; font-weight: 600; color: #1F3A4A; margin: 0 0 .25rem; }
+.page-subtitle { font-size: .8125rem; color: #818286; margin: 0; }
+
+// ── KPI ───────────────────────────────────────────────────────────────────────
+.kpi-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.75rem;
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+  @media (max-width: 480px) { grid-template-columns: 1fr; }
+}
+.kpi-card {
+  background: #fff; border-radius: 10px; padding: 1.125rem 1rem;
+  box-shadow: 0 1px 4px rgba(31,58,74,.08);
+  display: flex; flex-direction: column; align-items: flex-start; gap: .3rem;
+  border-left: 4px solid #CBD5E1;
+  &--total  { border-left-color: #56A4BB; }
+  &--ok     { border-left-color: #3FA66A; }
+  &--warn   { border-left-color: #E8A93C; }
+  &--danger { border-left-color: #D24A4A; }
+  &__value { font-size: 2rem; font-weight: 700; color: #1F3A4A; line-height: 1; }
+  &__label { font-size: .8125rem; color: #818286; font-weight: 500; }
+}
+
+// ── Calendário ────────────────────────────────────────────────────────────────
+.calendar-section { margin-top: .5rem; }
+.section-title { font-size: 1rem; font-weight: 600; color: #1F3A4A; margin: 0 0 1rem; }
+
+.calendar-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem;
+}
+.month-card {
+  background: #fff; border-radius: 10px; padding: 1rem;
+  box-shadow: 0 1px 4px rgba(31,58,74,.08);
+  &__header {
+    font-size: .8125rem; font-weight: 700; text-transform: capitalize;
+    color: #5F88A1; letter-spacing: .04em; margin-bottom: .75rem;
+    padding-bottom: .5rem; border-bottom: 1px solid #EEF5F8;
+  }
+  &__list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: .5rem; }
+}
+.month-item {
+  display: flex; align-items: center; gap: .5rem; font-size: .8125rem; color: #1F3A4A;
+}
+.month-badge {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  &.chip--ok     { background: #3FA66A; }
+  &.chip--warn   { background: #E8A93C; }
+  &.chip--danger { background: #D24A4A; }
+}
+.month-equip { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.month-date { color: #818286; font-size: .75rem; flex-shrink: 0; }
+
+// ── Chips (usados via dueSoonClass) ───────────────────────────────────────────
+.chip {
+  display: inline-block; padding: .2rem .65rem; border-radius: 12px; font-size: .75rem; font-weight: 600;
+  &--ok     { background: #3FA66A22; color: #3FA66A; }
+  &--warn   { background: #E8A93C22; color: #E8A93C; }
+  &--danger { background: #D24A4A22; color: #D24A4A; }
+}
+
+// ── Botão ─────────────────────────────────────────────────────────────────────
+.btn {
+  padding: .5rem 1.25rem; border-radius: 6px; font-size: .875rem; font-weight: 500; cursor: pointer; border: none;
+  &:disabled { opacity: .55; cursor: not-allowed; }
+  &--secondary { background: #EEF5F8; color: #1F3A4A; border: 1px solid #CBD5E1; &:hover:not(:disabled) { background: #D9E4E8; } }
+}
+
+// ── Estados ───────────────────────────────────────────────────────────────────
+.loading-state { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem;
+  @media (max-width: 900px) { grid-template-columns: repeat(2, 1fr); }
+}
+.skeleton-card { height: 100px; border-radius: 10px; background: linear-gradient(90deg, #EEF5F8 25%, #D9E4E8 50%, #EEF5F8 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
+@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+.empty-state { text-align: center; padding: 3rem 1rem; color: #818286; }
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+.toast {
+  position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1F3A4A; color: #fff;
+  padding: .75rem 1.25rem; border-radius: 8px; font-size: .875rem; z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0,0,0,.18);
+}

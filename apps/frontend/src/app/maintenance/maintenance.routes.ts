@@ -86,4 +86,10 @@ export const MAINTENANCE_ROUTES: Routes = [
         (m) => m.MaintenanceDashboardComponent,
       ),
   },
+  {
+    path: 'calibration',
+    canActivate: [authGuard],
+    loadChildren: () =>
+      import('./calibration/calibration.routes').then((m) => m.CALIBRATION_ROUTES),
+  },
 ];

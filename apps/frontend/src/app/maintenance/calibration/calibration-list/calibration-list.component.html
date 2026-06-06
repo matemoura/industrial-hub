@@ -1,0 +1,305 @@
+@if (toast()) {
+  <div class="toast" role="status" aria-live="polite">{{ toast() }}</div>
+}
+
+<!-- Header -->
+<div class="page-header">
+  <div class="page-header__left">
+    <h1 class="page-title">Agenda de Calibrações</h1>
+    <p class="page-subtitle">ISO 13485 §7.6</p>
+  </div>
+  @if (isSupervisor()) {
+    <button class="btn btn--primary" type="button" data-testid="btn-new-plan" (click)="openNewPlanForm()">
+      + Novo Plano
+    </button>
+  }
+</div>
+
+<!-- KPI Summary -->
+@if (summary()) {
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-card--total">
+      <span class="kpi-card__value">{{ summary()!.totalSchedules }}</span>
+      <span class="kpi-card__label">Total Planos</span>
+    </div>
+    <div class="kpi-card" [class.kpi-card--danger]="summary()!.overdueCount > 0" [class.kpi-card--ok]="summary()!.overdueCount === 0">
+      <span class="kpi-card__value">{{ summary()!.overdueCount }}</span>
+      <span class="kpi-card__label">Vencidos</span>
+    </div>
+    <div class="kpi-card" [class.kpi-card--warn]="summary()!.dueSoon14Days > 0" [class.kpi-card--ok]="summary()!.dueSoon14Days === 0">
+      <span class="kpi-card__value">{{ summary()!.dueSoon14Days }}</span>
+      <span class="kpi-card__label">Vence em 14 dias</span>
+    </div>
+    <div class="kpi-card kpi-card--total">
+      <span class="kpi-card__value">{{ summary()!.outOfToleranceLastMonth }}</span>
+      <span class="kpi-card__label">OUT_OF_TOLERANCE/mês</span>
+    </div>
+  </div>
+}
+
+<!-- Filtro -->
+<div class="filters-bar">
+  <label class="toggle-label">
+    <input type="checkbox" [ngModel]="onlyOverdue()" (ngModelChange)="onlyOverdue.set($event)" />
+    <span class="toggle-text">Apenas vencidos</span>
+  </label>
+</div>
+
+<!-- Novo Plano -->
+@if (showNewPlanForm()) {
+  <div class="form-card" role="region" aria-label="Novo plano de calibração">
+    <h2 class="form-card__title">Novo Plano de Calibração</h2>
+    @if (planError()) {
+      <div class="alert alert--error" role="alert">{{ planError() }}</div>
+    }
+    <form (ngSubmit)="submitNewPlan()">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="planEquipment">Equipamento <span class="required">*</span></label>
+          <select id="planEquipment" class="form-select"
+                  [ngModel]="planEquipmentId()" (ngModelChange)="planEquipmentId.set($event)"
+                  name="equipmentId" required>
+            <option value="">Selecione...</option>
+            @for (eq of equipments(); track eq.id) {
+              <option [value]="eq.id">{{ eq.code }} – {{ eq.name }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="planInterval">Intervalo (dias) <span class="required">*</span></label>
+          <input id="planInterval" class="form-input" type="number"
+                 [ngModel]="planIntervalDays()" (ngModelChange)="planIntervalDays.set(+$event)"
+                 name="intervalDays" min="1" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="planProvider">Provedor Externo</label>
+          <input id="planProvider" class="form-input" type="text"
+                 [ngModel]="planExternalProvider()" (ngModelChange)="planExternalProvider.set($event)"
+                 name="externalProvider" placeholder="ex: LabCal" />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="showNewPlanForm.set(false)">Cancelar</button>
+        <button type="submit" class="btn btn--primary" [disabled]="savingPlan() || !planEquipmentId()">
+          {{ savingPlan() ? 'Salvando...' : 'Criar Plano' }}
+        </button>
+      </div>
+    </form>
+  </div>
+}
+
+<!-- Registrar Calibração -->
+@if (showRecordForm()) {
+  <div class="modal-backdrop" role="dialog" aria-modal="true" aria-label="Registrar calibração">
+    <div class="modal">
+      <h2 class="modal__title">Registrar Calibração</h2>
+      @if (recordError()) {
+        <div class="alert alert--error" role="alert">{{ recordError() }}</div>
+      }
+      @if (recordResult() === 'OUT_OF_TOLERANCE') {
+        <div class="alert alert--warn" role="alert" data-testid="oot-warning">
+          &#9888; Uma NC será criada automaticamente ao registrar resultado fora do tolerável.
+        </div>
+      }
+      <form (ngSubmit)="submitRecord()">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="recDate">Data da Calibração <span class="required">*</span></label>
+            <input id="recDate" class="form-input" type="date"
+                   [ngModel]="recordCalibratedAt()" (ngModelChange)="recordCalibratedAt.set($event)"
+                   name="calibratedAt" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="recResult">Resultado <span class="required">*</span></label>
+            <select id="recResult" class="form-select"
+                    [ngModel]="recordResult()" (ngModelChange)="recordResult.set($event)"
+                    name="result" required>
+              <option value="IN_TOLERANCE">Dentro do tolerável</option>
+              <option value="OUT_OF_TOLERANCE">Fora do tolerável</option>
+              <option value="ADJUSTED">Ajustado</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="recTechnician">Técnico <span class="required">*</span></label>
+          <input id="recTechnician" class="form-input" type="text"
+                 [ngModel]="recordTechnician()" (ngModelChange)="recordTechnician.set($event)"
+                 name="technician" required placeholder="Nome do técnico" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="recNotes">Observações</label>
+          <textarea id="recNotes" class="form-textarea" rows="2"
+                    [ngModel]="recordNotes()" (ngModelChange)="recordNotes.set($event)"
+                    name="notes"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Certificado</label>
+          <div class="radio-group">
+            <label class="radio-label">
+              <input type="radio" name="certMode" value="none"
+                     [ngModel]="recordCertMode()" (ngModelChange)="recordCertMode.set($event)" />
+              Nenhum
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="certMode" value="ged"
+                     [ngModel]="recordCertMode()" (ngModelChange)="recordCertMode.set($event)" />
+              GED (documentId)
+            </label>
+            <label class="radio-label">
+              <input type="radio" name="certMode" value="upload"
+                     [ngModel]="recordCertMode()" (ngModelChange)="recordCertMode.set($event)" />
+              Upload PDF
+            </label>
+          </div>
+          @if (recordCertMode() === 'ged') {
+            <input class="form-input" type="text" placeholder="UUID do documento"
+                   [ngModel]="recordCertDocumentId()" (ngModelChange)="recordCertDocumentId.set($event)"
+                   name="certDocId" style="margin-top:.5rem" />
+          }
+          @if (recordCertMode() === 'upload') {
+            <input class="form-input" type="file" accept=".pdf"
+                   (change)="onCertFileChange($event)" style="margin-top:.5rem" />
+          }
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn--ghost" (click)="showRecordForm.set(false)">Cancelar</button>
+          <button type="submit" class="btn btn--primary"
+                  [disabled]="savingRecord() || !recordCalibratedAt() || !recordTechnician()">
+            {{ savingRecord() ? 'Salvando...' : 'Registrar' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Layout principal -->
+<div class="main-layout">
+
+  <!-- Tabela de planos -->
+  @if (loading()) {
+    <div class="loading-state">
+      @for (i of [1, 2, 3, 4]; track i) { <div class="skeleton-row"></div> }
+    </div>
+  } @else if (filteredSchedules().length === 0) {
+    <div class="empty-state" data-testid="empty">
+      <p>Nenhum plano de calibração encontrado.</p>
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table" aria-label="Agenda de calibrações">
+        <thead>
+          <tr>
+            <th scope="col">Equipamento</th>
+            <th scope="col">Intervalo</th>
+            <th scope="col">Última Cal.</th>
+            <th scope="col">Próxima</th>
+            <th scope="col">Provedor</th>
+            <th scope="col">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (s of filteredSchedules(); track s.id) {
+            <tr class="data-row"
+                [class.data-row--selected]="selectedScheduleId() === s.id"
+                (click)="selectSchedule(s)"
+                style="cursor:pointer">
+              <td>
+                <div class="equip-name">{{ s.equipmentName }}</div>
+                <code class="equip-code">{{ s.equipmentCode }}</code>
+              </td>
+              <td>{{ s.intervalDays }} dias</td>
+              <td>
+                @if (s.lastCalibratedAt) {
+                  {{ s.lastCalibratedAt | slice:0:10 }}
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td>
+                <span [class]="dueSoonClass(s)">{{ s.nextDueAt | slice:0:10 }}</span>
+              </td>
+              <td>
+                @if (s.externalProvider) {
+                  {{ s.externalProvider }}
+                } @else {
+                  <span class="text-muted">Interno</span>
+                }
+              </td>
+              <td class="actions-cell" (click)="$event.stopPropagation()">
+                @if (isSupervisor()) {
+                  <button class="icon-btn" type="button" title="Registrar calibração"
+                          aria-label="Registrar calibração"
+                          (click)="openRecordForm(s)">+</button>
+                  <button class="icon-btn icon-btn--danger" type="button" title="Desativar plano"
+                          aria-label="Desativar plano"
+                          (click)="deactivate(s)">&#x2715;</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- Painel lateral: histórico de registros -->
+  @if (selectedScheduleId()) {
+    <div class="panel--records" role="region" aria-label="Histórico de calibrações">
+      <div class="panel-header">
+        <h2 class="panel-title">Histórico — {{ selectedSchedule()?.equipmentName }}</h2>
+        <button class="icon-btn" type="button" aria-label="Fechar painel"
+                (click)="selectedScheduleId.set(null); records.set([])">&#x2715;</button>
+      </div>
+
+      @if (loadingRecords()) {
+        <div class="loading-state">
+          @for (i of [1, 2, 3]; track i) { <div class="skeleton-row"></div> }
+        </div>
+      } @else if (records().length === 0) {
+        <div class="empty-state"><p>Nenhum registro encontrado.</p></div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table" aria-label="Registros de calibração">
+            <thead>
+              <tr>
+                <th scope="col">Data</th>
+                <th scope="col">Resultado</th>
+                <th scope="col">Técnico</th>
+                <th scope="col">Cert.</th>
+                <th scope="col">NC</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of records(); track r.id) {
+                <tr class="data-row">
+                  <td>{{ r.calibratedAt | slice:0:10 }}</td>
+                  <td><span [class]="resultClass(r.result)">{{ resultLabel(r.result) }}</span></td>
+                  <td>{{ r.technician }}</td>
+                  <td>
+                    @if (r.hasCertificate) {
+                      <button class="icon-btn" type="button" title="Baixar certificado"
+                              aria-label="Baixar certificado"
+                              (click)="downloadCertificate(r)">&#x2193;</button>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+                  <td>
+                    @if (r.autoNcId) {
+                      <a [routerLink]="['/qms/non-conformances', r.autoNcId]"
+                         class="nc-link" data-testid="nc-link">Ver NC</a>
+                    } @else {
+                      <span class="text-muted">—</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+  }
+
+</div>

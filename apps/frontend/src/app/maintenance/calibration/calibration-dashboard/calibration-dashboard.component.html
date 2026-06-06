@@ -1,0 +1,67 @@
+@if (alertToast()) {
+  <div class="toast" role="status" aria-live="polite">{{ alertToast() }}</div>
+}
+
+<div class="page-header">
+  <div class="page-header__left">
+    <h1 class="page-title">Dashboard de Calibração</h1>
+    <p class="page-subtitle">ISO 13485 §7.6 — Visão geral dos planos</p>
+  </div>
+  @if (isAdmin()) {
+    <button class="btn btn--secondary" type="button" data-testid="btn-run-alerts"
+            [disabled]="runningAlerts()" (click)="runAlerts()">
+      {{ runningAlerts() ? 'Enviando alertas...' : '&#128276; Rodar Alertas' }}
+    </button>
+  }
+</div>
+
+@if (loading()) {
+  <div class="loading-state">
+    @for (i of [1, 2, 3, 4]; track i) { <div class="skeleton-card"></div> }
+  </div>
+} @else if (summary()) {
+  <!-- KPI cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card kpi-card--total">
+      <span class="kpi-card__value">{{ summary()!.totalSchedules }}</span>
+      <span class="kpi-card__label">Total Planos</span>
+    </div>
+    <div class="kpi-card" [class.kpi-card--danger]="summary()!.overdueCount > 0" [class.kpi-card--ok]="summary()!.overdueCount === 0">
+      <span class="kpi-card__value">{{ summary()!.overdueCount }}</span>
+      <span class="kpi-card__label">Vencidos</span>
+    </div>
+    <div class="kpi-card" [class.kpi-card--warn]="summary()!.dueSoon14Days > 0" [class.kpi-card--ok]="summary()!.dueSoon14Days === 0">
+      <span class="kpi-card__value">{{ summary()!.dueSoon14Days }}</span>
+      <span class="kpi-card__label">Vence em 14 dias</span>
+    </div>
+    <div class="kpi-card kpi-card--total">
+      <span class="kpi-card__value">{{ summary()!.outOfToleranceLastMonth }}</span>
+      <span class="kpi-card__label">OUT_OF_TOLERANCE/mês</span>
+    </div>
+  </div>
+
+  <!-- Mini calendário: agrupamento por mês -->
+  @if (grouped().length > 0) {
+    <div class="calendar-section">
+      <h2 class="section-title">Calendário de Calibrações</h2>
+      <div class="calendar-grid">
+        @for (group of grouped(); track group.month) {
+          <div class="month-card">
+            <div class="month-card__header">{{ formatMonth(group.month) }}</div>
+            <ul class="month-card__list">
+              @for (s of group.schedules; track s.id) {
+                <li class="month-item">
+                  <span [class]="dueSoonClass(s)" class="month-badge"></span>
+                  <span class="month-equip">{{ s.equipmentCode }} — {{ s.equipmentName }}</span>
+                  <span class="month-date">{{ s.nextDueAt | slice:8:10 }}/{{ s.nextDueAt | slice:5:7 }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state"><p>Nenhum plano de calibração cadastrado.</p></div>
+  }
+}
