@@ -1,0 +1,217 @@
+<div class="audit-list-page">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header__title">
+      <p class="page-kicker">QMS · AUDITORIAS · ISO 13485 §8.2.4</p>
+      <h1 class="page-title">Auditorias Internas</h1>
+    </div>
+    @if (isSupervisor()) {
+      <button class="btn btn--primary" data-testid="btn-new-audit" (click)="openNewModal()">
+        + Nova Auditoria
+      </button>
+    }
+  </div>
+
+  <!-- ── Dashboard KPI Cards ─────────────────────────────────────────── -->
+  @if (dashboard(); as d) {
+    <div class="kpi-row" data-testid="compliance-dashboard">
+      <div class="kpi-card">
+        <span class="kpi-card__label">PLANEJADAS / ANO</span>
+        <span class="kpi-card__value">{{ d.plannedThisYear }}</span>
+      </div>
+      <div class="kpi-card kpi-card--ok">
+        <span class="kpi-card__label">CONCLUÍDAS</span>
+        <span class="kpi-card__value">{{ d.completedThisYear }}</span>
+      </div>
+      <div class="kpi-card kpi-card--warn">
+        <span class="kpi-card__label">VENCIDAS</span>
+        <span class="kpi-card__value">{{ d.overdueAudits }}</span>
+      </div>
+      <div class="kpi-card kpi-card--danger">
+        <span class="kpi-card__label">ACHADOS ABERTOS</span>
+        <span class="kpi-card__value">{{ d.openFindings }}</span>
+      </div>
+      <div class="kpi-card kpi-card--blue conformity-card">
+        <span class="kpi-card__label">TAXA DE CONFORMIDADE</span>
+        <span class="kpi-card__value" data-testid="conformity-rate">{{ d.conformityRate }}%</span>
+        <div class="conformity-bar">
+          <div class="conformity-bar__fill"
+               [style.width.%]="d.conformityRate"
+               [style.background-color]="d.conformityRate >= 80 ? '#3FA66A' : '#E8A93C'">
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ── Filters ──────────────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label class="filter-label" for="filterStatus">Status</label>
+      <select id="filterStatus" class="filter-select"
+              [(ngModel)]="statusFilter"
+              (ngModelChange)="onFilterChange()"
+              name="filterStatus">
+        <option value="">Todos</option>
+        <option value="PLANNED">Planejada</option>
+        <option value="IN_PROGRESS">Em Andamento</option>
+        <option value="COMPLETED">Concluída</option>
+        <option value="CANCELLED">Cancelada</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label" for="filterType">Tipo</label>
+      <select id="filterType" class="filter-select"
+              [(ngModel)]="typeFilter"
+              (ngModelChange)="onFilterChange()"
+              name="filterType">
+        <option value="">Todos</option>
+        <option value="INTERNAL">Interna</option>
+        <option value="SUPPLIER">Fornecedor</option>
+        <option value="PROCESS">Processo</option>
+        <option value="SYSTEM">Sistema</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── Table ────────────────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="skeleton-wrapper">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-row">
+          <span class="skeleton-cell skeleton-cell--sm"></span>
+          <span class="skeleton-cell skeleton-cell--lg"></span>
+          <span class="skeleton-cell skeleton-cell--md"></span>
+          <span class="skeleton-cell skeleton-cell--sm"></span>
+          <span class="skeleton-cell skeleton-cell--sm"></span>
+        </div>
+      }
+    </div>
+  } @else if (audits().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon" aria-hidden="true">📋</span>
+      <p>Nenhuma auditoria encontrada.</p>
+    </div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="audit-table" aria-label="Lista de auditorias">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Tipo</th>
+            <th>Status</th>
+            <th>Data Planejada</th>
+            <th>Auditor Líder</th>
+            <th>Achados</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of audits(); track a.id) {
+            <tr class="audit-row">
+              <td>
+                <a [routerLink]="['/qms/audits', a.id]" class="audit-code-link">{{ a.code }}</a>
+              </td>
+              <td class="cell-title">{{ a.title }}</td>
+              <td><span class="badge badge--type">{{ typeLabels[a.auditType] }}</span></td>
+              <td>
+                <span class="badge"
+                      [style.background-color]="statusColors[a.status]"
+                      [style.color]="'#fff'">
+                  {{ statusLabels[a.status] }}
+                </span>
+              </td>
+              <td>{{ formatDate(a.plannedDate) }}</td>
+              <td>{{ a.leadAuditor }}</td>
+              <td>
+                <span [style.color]="a.nonConformingItemsCount > 0 ? '#D24A4A' : 'inherit'">
+                  {{ a.findingsCount }}
+                  @if (a.nonConformingItemsCount > 0) {
+                    <span class="nc-badge">({{ a.nonConformingItemsCount }} NC)</span>
+                  }
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalElements() > pageSize()) {
+      <div class="pagination">
+        <button class="btn btn--outline btn--sm" [disabled]="page() === 0" (click)="prevPage()">‹ Anterior</button>
+        <span class="pagination__info">Página {{ page() + 1 }} · {{ totalElements() }} registros</span>
+        <button class="btn btn--outline btn--sm"
+                [disabled]="(page() + 1) * pageSize() >= totalElements()"
+                (click)="nextPage()">
+          Próxima ›
+        </button>
+      </div>
+    }
+  }
+
+</div>
+
+<!-- ── Modal Nova Auditoria ─────────────────────────────────────────── -->
+@if (showNewModal()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-new-audit-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 id="modal-new-audit-title">Nova Auditoria</h3>
+        <button class="modal__close" (click)="closeNewModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal__body">
+        @if (modalError()) {
+          <div class="form-error" role="alert">{{ modalError() }}</div>
+        }
+        <div class="form-group">
+          <label class="form-label" for="newTitle">Título *</label>
+          <input id="newTitle" class="form-input" type="text"
+                 [(ngModel)]="newAudit.title" name="newTitle" maxlength="200" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newScope">Escopo *</label>
+          <textarea id="newScope" class="form-input form-textarea"
+                    [(ngModel)]="newAudit.scope" name="newScope" rows="3"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="newType">Tipo *</label>
+            <select id="newType" class="form-input"
+                    [(ngModel)]="newAudit.auditType" name="newType">
+              <option value="INTERNAL">Interna</option>
+              <option value="SUPPLIER">Fornecedor</option>
+              <option value="PROCESS">Processo</option>
+              <option value="SYSTEM">Sistema</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="newDate">Data Planejada *</label>
+            <input id="newDate" class="form-input" type="date"
+                   [(ngModel)]="newAudit.plannedDate" name="newDate" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newLead">Auditor Líder *</label>
+          <input id="newLead" class="form-input" type="text"
+                 [(ngModel)]="newAudit.leadAuditor" name="newLead" maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="newAuditees">Auditados (separados por vírgula)</label>
+          <input id="newAuditees" class="form-input" type="text"
+                 [(ngModel)]="newAudit.auditees" name="newAuditees" />
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeNewModal()">Cancelar</button>
+        <button class="btn btn--primary"
+                [disabled]="modalLoading()"
+                (click)="submitNewAudit()">
+          @if (modalLoading()) { Criando… } @else { Criar Auditoria }
+        </button>
+      </div>
+    </div>
+  </div>
+}

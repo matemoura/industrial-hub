@@ -1,0 +1,259 @@
+<div class="audit-detail-page">
+
+  @if (loading()) {
+    <div class="loading-row">
+      <div class="spinner" aria-label="Carregando"></div>
+      <span>Carregando auditoria…</span>
+    </div>
+  }
+
+  @if (audit(); as a) {
+
+    <!-- ── Header ──────────────────────────────────────────────────────── -->
+    <div class="detail-header">
+      <div class="header-left">
+        <p class="audit-kicker">QMS · AUDITORIA · {{ a.code }}</p>
+        <h1 class="audit-title">{{ a.title }}</h1>
+        <div class="header-meta">
+          <span class="badge"
+                [style.background-color]="statusColors[a.status]"
+                [style.color]="'#fff'">
+            {{ statusLabels[a.status] }}
+          </span>
+          <span class="meta-item"><strong>Planejada:</strong> {{ formatDate(a.plannedDate) }}</span>
+          @if (a.completedDate) {
+            <span class="meta-item"><strong>Concluída:</strong> {{ formatDate(a.completedDate) }}</span>
+          }
+          <span class="meta-item"><strong>Auditor:</strong> {{ a.leadAuditor }}</span>
+        </div>
+        @if (a.auditees.length > 0) {
+          <div class="auditees-row">
+            @for (auditee of a.auditees; track auditee) {
+              <span class="badge badge--auditee">{{ auditee }}</span>
+            }
+          </div>
+        }
+      </div>
+
+      @if (isSupervisor()) {
+        <div class="header-actions">
+          @if (a.status === 'PLANNED') {
+            <button class="btn btn--primary" (click)="startAudit()">▶ Iniciar Auditoria</button>
+            <button class="btn btn--danger" data-testid="btn-cancel-audit" (click)="cancelAudit()">✕ Cancelar</button>
+          }
+          @if (a.status === 'IN_PROGRESS') {
+            <button class="btn btn--success" (click)="completeAudit()">✓ Concluir Auditoria</button>
+          }
+          @if (a.status === 'COMPLETED') {
+            <button class="btn btn--primary" data-testid="btn-generate-pdf" (click)="downloadReport()">
+              ↓ Gerar PDF
+            </button>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ── Scope ───────────────────────────────────────────────────────── -->
+    <section class="detail-section">
+      <h2 class="section-title">Escopo</h2>
+      <p class="scope-text">{{ a.scope }}</p>
+    </section>
+
+    <!-- ── Checklist ──────────────────────────────────────────────────── -->
+    <section class="detail-section">
+      <div class="section-header">
+        <h2 class="section-title">Checklist ({{ a.checklistItems.length }} itens)</h2>
+        @if (isSupervisor() && a.status === 'IN_PROGRESS') {
+          <button class="btn btn--outline btn--sm" (click)="openAddChecklistModal()">+ Item</button>
+        }
+      </div>
+
+      @if (isSavingChecklist()) {
+        <div class="saving-indicator" role="status">Salvando checklist…</div>
+      }
+
+      @if (a.checklistItems.length === 0) {
+        <p class="empty-msg">Nenhum item no checklist.</p>
+      } @else {
+        <div class="checklist-list">
+          @for (item of a.checklistItems; track item.id) {
+            <div class="checklist-item" [attr.data-testid]="'checklist-item-' + item.id">
+              <div class="checklist-item__header">
+                <span class="clause-badge">{{ item.isoClause }}</span>
+                <span class="process-label">{{ item.process }}</span>
+              </div>
+              <p class="checklist-question">{{ item.question }}</p>
+
+              @if (a.status === 'IN_PROGRESS') {
+                <div class="checklist-controls">
+                  <div class="form-group-inline">
+                    <label class="form-label" [for]="'resp-' + item.id">Resposta</label>
+                    <select [id]="'resp-' + item.id"
+                            class="filter-select"
+                            [value]="checklistResponses[item.id]"
+                            [attr.data-testid]="'select-response-' + item.id"
+                            (change)="onResponseChange(item, $any($event.target).value)">
+                      <option value="">— Selecionar —</option>
+                      <option value="CONFORMING">Conforme</option>
+                      <option value="NON_CONFORMING">Não-Conforme</option>
+                      <option value="OBSERVATION">Observação</option>
+                      <option value="NOT_APPLICABLE">N/A</option>
+                    </select>
+                  </div>
+                  <div class="form-group-inline evidence-group">
+                    <label class="form-label" [for]="'evi-' + item.id">Evidência</label>
+                    <textarea [id]="'evi-' + item.id"
+                              class="filter-select evidence-textarea"
+                              [value]="checklistEvidences[item.id]"
+                              rows="2"
+                              (input)="onEvidenceChange(item, $any($event.target).value)">
+                    </textarea>
+                  </div>
+                </div>
+              } @else {
+                @if (item.response) {
+                  <span class="badge"
+                        [style.background-color]="responseColors[item.response]"
+                        [style.color]="'#fff'">
+                    {{ responseLabels[item.response] }}
+                  </span>
+                }
+                @if (item.evidence) {
+                  <p class="evidence-text">{{ item.evidence }}</p>
+                }
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+    <!-- ── Findings ────────────────────────────────────────────────────── -->
+    <section class="detail-section">
+      <div class="section-header">
+        <h2 class="section-title">Achados ({{ a.findings.length }})</h2>
+        @if (isSupervisor() && a.status !== 'CANCELLED') {
+          <button class="btn btn--outline btn--sm" (click)="openAddFindingModal()">+ Achado</button>
+        }
+      </div>
+
+      @if (a.findings.length === 0) {
+        <p class="empty-msg">Nenhum achado registrado.</p>
+      } @else {
+        <div class="findings-list">
+          @for (f of a.findings; track f.id) {
+            <div class="finding-card">
+              <div class="finding-card__header">
+                <span class="badge"
+                      [style.background-color]="findingTypeColors[f.type]"
+                      [style.color]="'#fff'">
+                  {{ findingTypeLabels[f.type] }}
+                </span>
+                <span class="badge badge--sev">{{ severityLabels[f.severity] }}</span>
+                <span class="clause-badge">{{ f.isoClause }}</span>
+                @if (isSupervisor() && a.status !== 'COMPLETED') {
+                  <button class="btn-icon btn-icon--danger" (click)="deleteFinding(f)" aria-label="Excluir achado">✕</button>
+                }
+              </div>
+              <p class="finding-description">{{ f.description }}</p>
+              @if (f.linkedNcId) {
+                <a [routerLink]="['/qms/non-conformances', f.linkedNcId]"
+                   class="nc-link"
+                   [attr.data-testid]="'nc-link-' + f.id">
+                  ↗ NC vinculada
+                </a>
+              }
+            </div>
+          }
+        </div>
+      }
+    </section>
+
+  }
+
+</div>
+
+<!-- ── Modal: Adicionar Achado ─────────────────────────────────────────── -->
+@if (showAddFindingModal()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-finding-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 id="modal-finding-title">Novo Achado</h3>
+        <button class="modal__close" (click)="closeAddFindingModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal__body">
+        @if (findingError()) {
+          <div class="form-error" role="alert">{{ findingError() }}</div>
+        }
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" for="fType">Tipo *</label>
+            <select id="fType" class="form-input" [(ngModel)]="newFinding.type" name="fType">
+              <option value="NON_CONFORMANCE">Não-Conformidade</option>
+              <option value="OBSERVATION">Observação</option>
+              <option value="OPPORTUNITY_FOR_IMPROVEMENT">Oportunidade de Melhoria</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="fSev">Severidade *</label>
+            <select id="fSev" class="form-input" [(ngModel)]="newFinding.severity" name="fSev">
+              <option value="LOW">Baixa</option>
+              <option value="MEDIUM">Média</option>
+              <option value="HIGH">Alta</option>
+              <option value="CRITICAL">Crítica</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fClause">Cláusula ISO *</label>
+          <input id="fClause" class="form-input" type="text" [(ngModel)]="newFinding.isoClause" name="fClause" maxlength="20" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fDesc">Descrição *</label>
+          <textarea id="fDesc" class="form-input form-textarea" [(ngModel)]="newFinding.description" name="fDesc" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="fNcId">ID da NC Vinculada (opcional)</label>
+          <input id="fNcId" class="form-input" type="text" [(ngModel)]="newFinding.linkedNcId" name="fNcId" />
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeAddFindingModal()">Cancelar</button>
+        <button class="btn btn--primary" (click)="submitFinding()">Salvar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Modal: Adicionar Item ao Checklist ─────────────────────────────── -->
+@if (showAddChecklistModal()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-checklist-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 id="modal-checklist-title">Novo Item ao Checklist</h3>
+        <button class="modal__close" (click)="closeAddChecklistModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal__body">
+        @if (checklistItemError()) {
+          <div class="form-error" role="alert">{{ checklistItemError() }}</div>
+        }
+        <div class="form-group">
+          <label class="form-label" for="ciProcess">Processo *</label>
+          <input id="ciProcess" class="form-input" type="text" [(ngModel)]="newChecklistItem.process" name="ciProcess" maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ciClause">Cláusula ISO *</label>
+          <input id="ciClause" class="form-input" type="text" [(ngModel)]="newChecklistItem.isoClause" name="ciClause" maxlength="20" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ciQuestion">Questão *</label>
+          <textarea id="ciQuestion" class="form-input form-textarea" [(ngModel)]="newChecklistItem.question" name="ciQuestion" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeAddChecklistModal()">Cancelar</button>
+        <button class="btn btn--primary" (click)="submitChecklistItem()">Adicionar</button>
+      </div>
+    </div>
+  </div>
+}
