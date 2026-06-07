@@ -1,0 +1,73 @@
+<div class="matrix-page">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header__title">
+      <p class="page-kicker">QMS · FMEA · ISO 14971</p>
+      <h1 class="page-title">Matriz de Risco</h1>
+    </div>
+    <a routerLink="/qms/risks" class="btn btn--outline">← Voltar para lista</a>
+  </div>
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner" aria-label="Carregando..."></div>
+      <p>Carregando matriz...</p>
+    </div>
+  } @else {
+    <!-- ── Legend ────────────────────────────────────────────────────── -->
+    <div class="legend">
+      @for (entry of [
+        { level: 'CRITICAL', label: riskLevelLabels['CRITICAL'], color: riskLevelColors['CRITICAL'] },
+        { level: 'HIGH',     label: riskLevelLabels['HIGH'],     color: riskLevelColors['HIGH'] },
+        { level: 'MEDIUM',   label: riskLevelLabels['MEDIUM'],   color: riskLevelColors['MEDIUM'] },
+        { level: 'LOW',      label: riskLevelLabels['LOW'],      color: riskLevelColors['LOW'] }
+      ]; track entry.level) {
+        <div class="legend-item">
+          <span class="legend-dot" [style.background-color]="entry.color"></span>
+          <span class="legend-label">{{ entry.label }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- ── Matrix Grid ───────────────────────────────────────────────── -->
+    <div class="matrix-container">
+      <div class="axis-label axis-label--y" aria-hidden="true">Severidade (S) →</div>
+
+      <div class="matrix-wrap">
+        <div class="matrix-grid" role="grid" aria-label="Matriz de risco 10x10">
+
+          <!-- Top-left corner spacer -->
+          <div class="axis-cell"></div>
+
+          <!-- Occurrence headers (X axis) -->
+          @for (col of cols; track col) {
+            <div class="axis-cell axis-cell--header">{{ col }}</div>
+          }
+
+          <!-- Rows: severity (Y axis, top = 10 = high) -->
+          @for (row of rows; track row) {
+            <!-- Severity label -->
+            <div class="axis-cell axis-cell--header">{{ row }}</div>
+
+            <!-- Cells -->
+            @for (col of cols; track col) {
+              <div class="matrix-cell"
+                   role="gridcell"
+                   [attr.data-testid]="'cell-' + row + '-' + col"
+                   [attr.aria-label]="'S=' + row + ' O=' + col + ' RPN=' + (row * col) + ' count=' + getCellCount(row, col)"
+                   [style.background-color]="getCellColor(row, col)">
+                @if (getCellCount(row, col) > 0) {
+                  <span class="cell-count">{{ getCellCount(row, col) }}</span>
+                }
+              </div>
+            }
+          }
+        </div>
+
+        <div class="axis-label axis-label--x" aria-hidden="true">Ocorrência (O) →</div>
+      </div>
+    </div>
+  }
+
+</div>

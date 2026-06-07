@@ -1,0 +1,294 @@
+<div class="risk-detail-page">
+
+  @if (loading()) {
+    <div class="loading-state">
+      <div class="spinner" aria-label="Carregando..."></div>
+      <p>Carregando risco...</p>
+    </div>
+  } @else if (risk(); as r) {
+
+    <!-- ── Header ──────────────────────────────────────────────────── -->
+    <div class="page-header">
+      <div class="header-back">
+        <a routerLink="/qms/risks" class="back-link">← Gestão de Risco</a>
+      </div>
+      <div class="header-main">
+        <div class="header-info">
+          <p class="page-kicker">QMS · FMEA · ISO 14971</p>
+          <h1 class="page-title">{{ r.process }}</h1>
+          <div class="header-meta">
+            <span class="level-chip"
+                  [style.background-color]="riskLevelColors[r.riskLevel]"
+                  [style.color]="'#fff'">
+              {{ riskLevelLabels[r.riskLevel] }}
+            </span>
+            <span class="status-chip"
+                  [style.background-color]="statusColors[r.status]"
+                  [style.color]="'#fff'">
+              {{ statusLabels[r.status] }}
+            </span>
+            <span class="rpn-badge">RPN: {{ r.rpn }}</span>
+            <span class="owner-badge">Responsável: {{ r.owner }}</span>
+          </div>
+        </div>
+
+        <!-- Status transition buttons -->
+        @if (isSupervisor()) {
+          <div class="transition-actions">
+            @if (r.status === 'IDENTIFIED') {
+              <button class="btn btn--warn" [disabled]="statusLoading()" (click)="startMitigation()">
+                Iniciar Mitigação
+              </button>
+            } @else if (r.status === 'BEING_MITIGATED') {
+              <button class="btn btn--ok" [disabled]="statusLoading()" (click)="markMitigated()">
+                Marcar como Mitigado
+              </button>
+            } @else if (r.status === 'MITIGATED') {
+              <button class="btn btn--outline" [disabled]="statusLoading()" (click)="acceptRisk()">
+                Aceitar Risco
+              </button>
+            }
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- ── NC Link ─────────────────────────────────────────────────── -->
+    @if (r.linkedNcId) {
+      <div class="nc-link-bar">
+        <span class="nc-link-bar__label">NC Vinculada:</span>
+        <a [routerLink]="['/qms/non-conformances', r.linkedNcId]"
+           class="nc-link"
+           data-testid="nc-link">
+          Ver NC {{ r.linkedNcId }}
+        </a>
+      </div>
+    }
+
+    <!-- ── FMEA Section ────────────────────────────────────────────── -->
+    <div class="section-card">
+      <h2 class="section-title">Análise FMEA</h2>
+      <div class="table-wrapper">
+        <table class="fmea-table" aria-label="Análise FMEA">
+          <thead>
+            <tr>
+              <th>Modo de Falha</th>
+              <th>Efeito</th>
+              <th>Causa</th>
+              <th>S</th>
+              <th>O</th>
+              <th>D</th>
+              <th>RPN</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>{{ r.failureMode }}</td>
+              <td>{{ r.failureEffect }}</td>
+              <td>{{ r.failureCause }}</td>
+              <td class="cell-num">{{ r.severity }}</td>
+              <td class="cell-num">{{ r.occurrence }}</td>
+              <td class="cell-num">{{ r.detectability }}</td>
+              <td class="cell-num cell-rpn"
+                  [style.color]="r.rpn > 200 ? '#D24A4A' : 'inherit'"
+                  [style.font-weight]="r.rpn > 200 ? '700' : '400'">
+                {{ r.rpn }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ── Mitigation Actions ──────────────────────────────────────── -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">Ações de Mitigação</h2>
+        @if (isSupervisor()) {
+          <button class="btn btn--primary btn--sm" (click)="openAddActionModal()">
+            + Adicionar Ação
+          </button>
+        }
+      </div>
+
+      @if (r.mitigationActions.length === 0) {
+        <div class="empty-state">
+          <p>Nenhuma ação de mitigação registrada.</p>
+        </div>
+      } @else {
+        <div class="table-wrapper">
+          <table class="actions-table" aria-label="Ações de mitigação">
+            <thead>
+              <tr>
+                <th>Descrição</th>
+                <th>Responsável</th>
+                <th>Data Alvo</th>
+                <th>Status</th>
+                <th>RPN Residual</th>
+                @if (isSupervisor()) {
+                  <th>Ação</th>
+                }
+              </tr>
+            </thead>
+            <tbody>
+              @for (action of r.mitigationActions; track action.id) {
+                <tr>
+                  <td class="cell-description">{{ action.description }}</td>
+                  <td>{{ action.responsible }}</td>
+                  <td>{{ formatDate(action.targetDate) }}</td>
+                  <td>
+                    <span class="status-chip"
+                          [style.background-color]="mitigationStatusColors[action.status]"
+                          [style.color]="'#fff'">
+                      {{ mitigationStatusLabels[action.status] }}
+                    </span>
+                  </td>
+                  <td class="cell-num">
+                    @if (action.residualRpn !== undefined && action.residualRpn !== null) {
+                      <span [style.color]="action.residualRpn > 200 ? '#D24A4A' : '#3FA66A'"
+                            [style.font-weight]="'700'">
+                        {{ action.residualRpn }}
+                      </span>
+                    } @else {
+                      <span class="cell-empty">—</span>
+                    }
+                  </td>
+                  @if (isSupervisor()) {
+                    <td>
+                      @if (action.status === 'PLANNED' || action.status === 'IN_PROGRESS') {
+                        <button class="btn btn--ok btn--sm"
+                                [attr.data-testid]="'btn-complete-action-' + action.id"
+                                (click)="openCompleteModal(action)">
+                          ✓ Concluir
+                        </button>
+                      }
+                    </td>
+                  }
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </div>
+
+  } @else {
+    <div class="empty-state">
+      <p>Risco não encontrado.</p>
+      <a routerLink="/qms/risks" class="btn btn--outline">Voltar para lista</a>
+    </div>
+  }
+
+</div>
+
+<!-- ── Modal Adicionar Ação ─────────────────────────────────────────── -->
+@if (showAddActionModal()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-add-action-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 id="modal-add-action-title">Adicionar Ação de Mitigação</h3>
+        <button class="modal__close" (click)="closeAddActionModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal__body">
+        @if (addActionError()) {
+          <div class="form-error" role="alert">{{ addActionError() }}</div>
+        }
+        <div class="form-group">
+          <label class="form-label" for="actionDesc">Descrição *</label>
+          <textarea id="actionDesc" class="form-input form-textarea"
+                    [(ngModel)]="newAction.description" name="actionDesc" rows="3"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="actionResp">Responsável *</label>
+          <input id="actionResp" class="form-input" type="text"
+                 [(ngModel)]="newAction.responsible" name="actionResp" maxlength="100" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="actionDate">Data Alvo</label>
+          <input id="actionDate" class="form-input" type="date"
+                 [(ngModel)]="newAction.targetDate" name="actionDate" />
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeAddActionModal()">Cancelar</button>
+        <button class="btn btn--primary"
+                [disabled]="addActionLoading()"
+                (click)="submitAddAction()">
+          @if (addActionLoading()) { Salvando… } @else { Adicionar }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- ── Modal Concluir Ação ──────────────────────────────────────────── -->
+@if (showCompleteActionModal()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-complete-action-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 id="modal-complete-action-title">Concluir Ação de Mitigação</h3>
+        <button class="modal__close" (click)="closeCompleteModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal__body">
+        @if (completeActionError()) {
+          <div class="form-error" role="alert">{{ completeActionError() }}</div>
+        }
+        <p class="modal-hint">Informe os valores residuais de S, O, D após a aplicação da ação.</p>
+
+        <div class="slider-section">
+          <div class="slider-group">
+            <div class="slider-header">
+              <label class="form-label" for="resSeverity">Severidade Residual (S)</label>
+              <span class="slider-value">{{ residualSeverity() }}</span>
+            </div>
+            <input id="resSeverity" type="range" min="1" max="10"
+                   [value]="residualSeverity()"
+                   (input)="residualSeverity.set(+$any($event.target).value)"
+                   class="risk-slider" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label class="form-label" for="resOccurrence">Ocorrência Residual (O)</label>
+              <span class="slider-value">{{ residualOccurrence() }}</span>
+            </div>
+            <input id="resOccurrence" type="range" min="1" max="10"
+                   [value]="residualOccurrence()"
+                   (input)="residualOccurrence.set(+$any($event.target).value)"
+                   class="risk-slider" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label class="form-label" for="resDetectability">Detecção Residual (D)</label>
+              <span class="slider-value">{{ residualDetectability() }}</span>
+            </div>
+            <input id="resDetectability" type="range" min="1" max="10"
+                   [value]="residualDetectability()"
+                   (input)="residualDetectability.set(+$any($event.target).value)"
+                   class="risk-slider" />
+          </div>
+        </div>
+
+        <!-- Preview RPN Residual -->
+        <div class="rpn-preview">
+          <span class="rpn-preview__label">RPN Residual:</span>
+          <span class="rpn-preview__value">{{ residualRpnPreview() }}</span>
+          <span class="level-chip"
+                [style.background-color]="riskLevelColors[residualRiskLevelPreview()]"
+                [style.color]="'#fff'">
+            {{ riskLevelLabels[residualRiskLevelPreview()] }}
+          </span>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeCompleteModal()">Cancelar</button>
+        <button class="btn btn--ok"
+                [disabled]="completeActionLoading()"
+                (click)="submitCompleteAction()">
+          @if (completeActionLoading()) { Salvando… } @else { ✓ Concluir Ação }
+        </button>
+      </div>
+    </div>
+  </div>
+}

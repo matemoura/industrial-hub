@@ -1,0 +1,424 @@
+.risk-detail-page {
+  padding: 2rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+// ── Loading ────────────────────────────────────────────────────────────────
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 4rem 0;
+  color: #818286;
+}
+
+.spinner {
+  width: 36px;
+  height: 36px;
+  border: 3px solid #D9E4E8;
+  border-top-color: #56A4BB;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+// ── Header ─────────────────────────────────────────────────────────────────
+.page-header {
+  background: linear-gradient(135deg, #1F3A4A 0%, #5F88A1 70%, #56A4BB 100%);
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  color: #fff;
+}
+
+.header-back { margin-bottom: 0.75rem; }
+
+.back-link {
+  font-size: 0.8rem;
+  color: #9CE5EE;
+  text-decoration: none;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  &:hover { text-decoration: underline; }
+}
+
+.header-main {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.header-info { display: flex; flex-direction: column; gap: 0.5rem; }
+
+.page-kicker {
+  font-size: 0.72rem;
+  color: #9CE5EE;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0;
+}
+
+.page-title {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.rpn-badge {
+  font-size: 0.8rem;
+  font-weight: 700;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 2px 10px;
+  color: #fff;
+}
+
+.owner-badge {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.transition-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  flex-shrink: 0;
+}
+
+// ── NC Link Bar ────────────────────────────────────────────────────────────
+.nc-link-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1.25rem;
+  padding: 0.6rem 1rem;
+  background: #fff;
+  border: 1px solid #D9E4E8;
+  border-left: 4px solid #56A4BB;
+  border-radius: 6px;
+  font-size: 0.875rem;
+
+  &__label {
+    font-weight: 700;
+    color: #5F88A1;
+    font-size: 0.8rem;
+    text-transform: uppercase;
+  }
+}
+
+.nc-link {
+  color: #56A4BB;
+  font-weight: 600;
+  text-decoration: none;
+  &:hover { text-decoration: underline; }
+}
+
+// ── Section Cards ──────────────────────────────────────────────────────────
+.section-card {
+  background: #fff;
+  border: 1px solid #D9E4E8;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.section-title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1F3A4A;
+}
+
+// ── Tables ─────────────────────────────────────────────────────────────────
+.table-wrapper {
+  overflow: auto;
+}
+
+.fmea-table,
+.actions-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+
+  th {
+    padding: 0.6rem 0.75rem;
+    text-align: left;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #5F88A1;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    border-bottom: 2px solid #D9E4E8;
+    white-space: nowrap;
+    background: #F4F7F9;
+  }
+
+  td {
+    padding: 0.75rem;
+    color: #1F3A4A;
+    border-bottom: 1px solid #f0f4f7;
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+}
+
+.cell-num {
+  text-align: center;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.cell-rpn { font-size: 0.9rem; }
+
+.cell-description {
+  max-width: 300px;
+}
+
+.cell-empty { color: #818286; }
+
+// ── Chips ──────────────────────────────────────────────────────────────────
+.level-chip,
+.status-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+// ── Empty State ────────────────────────────────────────────────────────────
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 2rem 0;
+  color: #818286;
+  font-size: 0.9rem;
+}
+
+// ── Buttons ────────────────────────────────────────────────────────────────
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.5rem 1.1rem;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: opacity 0.15s;
+  text-decoration: none;
+
+  &--primary {
+    background: #56A4BB;
+    color: #fff;
+    &:hover { opacity: 0.9; }
+  }
+
+  &--outline {
+    background: transparent;
+    border: 1.5px solid #56A4BB;
+    color: #56A4BB;
+    &:hover { background: #f0f9fc; }
+  }
+
+  &--ok {
+    background: #3FA66A;
+    color: #fff;
+    &:hover { opacity: 0.9; }
+  }
+
+  &--warn {
+    background: #E8A93C;
+    color: #fff;
+    &:hover { opacity: 0.9; }
+  }
+
+  &--sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; }
+
+  &:disabled { opacity: 0.5; cursor: not-allowed; }
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 30, 45, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal {
+  background: #fff;
+  border-radius: 8px;
+  width: 100%;
+  max-width: 560px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(15, 30, 45, 0.18);
+
+  &__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid #e8eef2;
+
+    h3 { margin: 0; font-size: 1.1rem; font-weight: 700; color: #1F3A4A; }
+  }
+
+  &__close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #818286;
+    padding: 0.25rem;
+    &:hover { color: #1F3A4A; }
+  }
+
+  &__body { padding: 1.25rem 1.5rem; display: flex; flex-direction: column; gap: 0.75rem; }
+
+  &__footer {
+    display: flex;
+    gap: 0.75rem;
+    justify-content: flex-end;
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e8eef2;
+  }
+}
+
+.modal-hint {
+  font-size: 0.85rem;
+  color: #818286;
+  margin: 0;
+}
+
+// ── Forms ──────────────────────────────────────────────────────────────────
+.form-group { display: flex; flex-direction: column; gap: 0.3rem; }
+
+.form-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #5F88A1;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.form-input {
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #D9E4E8;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #1F3A4A;
+  background: #F4F7F9;
+  outline: none;
+  font-family: inherit;
+  width: 100%;
+  box-sizing: border-box;
+  &:focus { border-color: #56A4BB; background: #fff; }
+}
+
+.form-textarea { resize: vertical; min-height: 70px; }
+
+.form-error {
+  background: #fdf2f2;
+  border: 1px solid #f5c6cb;
+  color: #D24A4A;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+}
+
+// ── Sliders ────────────────────────────────────────────────────────────────
+.slider-section {
+  background: #F4F7F9;
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.slider-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.slider-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slider-value {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #1F3A4A;
+}
+
+.risk-slider {
+  width: 100%;
+  height: 6px;
+  accent-color: #56A4BB;
+  cursor: pointer;
+}
+
+// ── RPN Preview ────────────────────────────────────────────────────────────
+.rpn-preview {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fff;
+  border: 1px solid #D9E4E8;
+  border-radius: 6px;
+  padding: 0.6rem 1rem;
+
+  &__label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #818286;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  &__value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #1F3A4A;
+    font-variant-numeric: tabular-nums;
+  }
+}

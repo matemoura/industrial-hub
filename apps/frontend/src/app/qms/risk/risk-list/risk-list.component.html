@@ -1,0 +1,267 @@
+<div class="risk-list-page">
+
+  <!-- ── Header ──────────────────────────────────────────────────────── -->
+  <div class="page-header">
+    <div class="page-header__title">
+      <p class="page-kicker">QMS · FMEA · ISO 14971</p>
+      <h1 class="page-title">Gestão de Risco</h1>
+    </div>
+    <div class="header-actions">
+      <a routerLink="/qms/risks/matrix" class="btn btn--outline">Ver Matriz de Risco</a>
+      @if (isSupervisor()) {
+        <button class="btn btn--primary" data-testid="btn-new-risk" (click)="openNewModal()">
+          + Novo Risco FMEA
+        </button>
+      }
+    </div>
+  </div>
+
+  <!-- ── KPI Summary Cards ───────────────────────────────────────────── -->
+  @if (summary(); as s) {
+    <div class="kpi-row">
+      <div class="kpi-card kpi-card--critical">
+        <span class="kpi-card__label">CRÍTICO</span>
+        <span class="kpi-card__value">{{ s.criticalCount }}</span>
+      </div>
+      <div class="kpi-card kpi-card--high">
+        <span class="kpi-card__label">ALTO</span>
+        <span class="kpi-card__value">{{ s.highCount }}</span>
+      </div>
+      <div class="kpi-card kpi-card--medium">
+        <span class="kpi-card__label">MÉDIO</span>
+        <span class="kpi-card__value">{{ s.mediumCount }}</span>
+      </div>
+      <div class="kpi-card kpi-card--low">
+        <span class="kpi-card__label">BAIXO</span>
+        <span class="kpi-card__value">{{ s.lowCount }}</span>
+      </div>
+    </div>
+  }
+
+  <!-- ── Filters ──────────────────────────────────────────────────────── -->
+  <div class="filter-bar">
+    <div class="filter-group">
+      <label class="filter-label" for="filterLevel">Nível de Risco</label>
+      <select id="filterLevel" class="filter-select"
+              [ngModel]="riskLevelFilter()"
+              (ngModelChange)="riskLevelFilter.set($event); onFilterChange()"
+              name="filterLevel">
+        <option value="">Todos</option>
+        <option value="CRITICAL">Crítico</option>
+        <option value="HIGH">Alto</option>
+        <option value="MEDIUM">Médio</option>
+        <option value="LOW">Baixo</option>
+      </select>
+    </div>
+    <div class="filter-group">
+      <label class="filter-label" for="filterStatus">Status</label>
+      <select id="filterStatus" class="filter-select"
+              [ngModel]="statusFilter()"
+              (ngModelChange)="statusFilter.set($event); onFilterChange()"
+              name="filterStatus">
+        <option value="">Todos</option>
+        <option value="IDENTIFIED">Identificado</option>
+        <option value="BEING_MITIGATED">Em Mitigação</option>
+        <option value="MITIGATED">Mitigado</option>
+        <option value="ACCEPTED">Aceito</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ── Table ─────────────────────────────────────────────────────────── -->
+  @if (loading()) {
+    <div class="skeleton-wrapper">
+      @for (i of [1,2,3,4,5]; track i) {
+        <div class="skeleton-row">
+          <span class="skeleton-cell skeleton-cell--lg"></span>
+          <span class="skeleton-cell skeleton-cell--md"></span>
+          <span class="skeleton-cell skeleton-cell--sm"></span>
+          <span class="skeleton-cell skeleton-cell--sm"></span>
+          <span class="skeleton-cell skeleton-cell--sm"></span>
+          <span class="skeleton-cell skeleton-cell--sm"></span>
+          <span class="skeleton-cell skeleton-cell--md"></span>
+        </div>
+      }
+    </div>
+  } @else if (risks().length === 0) {
+    <div class="empty-state">
+      <span class="empty-icon" aria-hidden="true">⚠️</span>
+      <p>Nenhum risco encontrado.</p>
+    </div>
+  } @else {
+    <div class="table-wrapper">
+      <table class="risk-table" aria-label="Lista de riscos FMEA">
+        <thead>
+          <tr>
+            <th>Processo</th>
+            <th>Modo de Falha</th>
+            <th>S</th>
+            <th>O</th>
+            <th>D</th>
+            <th>RPN</th>
+            <th>Nível</th>
+            <th>Status</th>
+            <th>Responsável</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of risks(); track r.id) {
+            <tr class="risk-row">
+              <td>
+                <a [routerLink]="['/qms/risks', r.id]" class="risk-link">{{ r.process }}</a>
+              </td>
+              <td class="cell-failure-mode" [title]="r.failureMode">
+                {{ truncate(r.failureMode, 60) }}
+              </td>
+              <td class="cell-num">{{ r.severity }}</td>
+              <td class="cell-num">{{ r.occurrence }}</td>
+              <td class="cell-num">{{ r.detectability }}</td>
+              <td class="cell-num cell-rpn" [style.color]="rpnColor(r.rpn)" [style.font-weight]="r.rpn > 200 ? '700' : '400'">
+                {{ r.rpn }}
+              </td>
+              <td>
+                <span class="level-chip"
+                      [style.background-color]="riskLevelColors[r.riskLevel]"
+                      [style.color]="'#fff'">
+                  {{ riskLevelLabels[r.riskLevel] }}
+                </span>
+              </td>
+              <td>
+                <span class="status-chip"
+                      [style.background-color]="statusColors[r.status]"
+                      [style.color]="'#fff'">
+                  {{ statusLabels[r.status] }}
+                </span>
+              </td>
+              <td class="cell-owner">{{ r.owner }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalElements() > pageSize) {
+      <div class="pagination">
+        <button class="btn btn--outline btn--sm" [disabled]="page() === 0" (click)="prevPage()">‹ Anterior</button>
+        <span class="pagination__info">Página {{ page() + 1 }} · {{ totalElements() }} registros</span>
+        <button class="btn btn--outline btn--sm"
+                [disabled]="(page() + 1) * pageSize >= totalElements()"
+                (click)="nextPage()">
+          Próxima ›
+        </button>
+      </div>
+    }
+  }
+
+</div>
+
+<!-- ── Modal Novo Risco FMEA ─────────────────────────────────────────── -->
+@if (showNewModal()) {
+  <div class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-new-risk-title">
+    <div class="modal">
+      <div class="modal__header">
+        <h3 id="modal-new-risk-title">Novo Risco FMEA</h3>
+        <button class="modal__close" (click)="closeNewModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal__body">
+        @if (modalError()) {
+          <div class="form-error" role="alert">{{ modalError() }}</div>
+        }
+
+        <div class="form-group">
+          <label class="form-label" for="newProcess">Processo *</label>
+          <textarea id="newProcess" class="form-input form-textarea"
+                    [(ngModel)]="newRisk.process" name="newProcess" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="newFailureMode">Modo de Falha *</label>
+          <textarea id="newFailureMode" class="form-input form-textarea"
+                    [(ngModel)]="newRisk.failureMode" name="newFailureMode" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="newFailureEffect">Efeito da Falha *</label>
+          <textarea id="newFailureEffect" class="form-input form-textarea"
+                    [(ngModel)]="newRisk.failureEffect" name="newFailureEffect" rows="2"></textarea>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="newFailureCause">Causa da Falha *</label>
+          <textarea id="newFailureCause" class="form-input form-textarea"
+                    [(ngModel)]="newRisk.failureCause" name="newFailureCause" rows="2"></textarea>
+        </div>
+
+        <!-- Sliders SOD -->
+        <div class="slider-section">
+          <div class="slider-group">
+            <div class="slider-header">
+              <label class="form-label" for="sliderSeverity">Severidade (S)</label>
+              <span class="slider-value">{{ newSeverity() }}</span>
+            </div>
+            <input id="sliderSeverity" type="range" min="1" max="10"
+                   [value]="newSeverity()"
+                   (input)="newSeverity.set(+$any($event.target).value)"
+                   class="risk-slider" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label class="form-label" for="sliderOccurrence">Ocorrência (O)</label>
+              <span class="slider-value">{{ newOccurrence() }}</span>
+            </div>
+            <input id="sliderOccurrence" type="range" min="1" max="10"
+                   [value]="newOccurrence()"
+                   (input)="newOccurrence.set(+$any($event.target).value)"
+                   class="risk-slider" />
+          </div>
+
+          <div class="slider-group">
+            <div class="slider-header">
+              <label class="form-label" for="sliderDetectability">Detecção (D)</label>
+              <span class="slider-value">{{ newDetectability() }}</span>
+            </div>
+            <input id="sliderDetectability" type="range" min="1" max="10"
+                   [value]="newDetectability()"
+                   (input)="newDetectability.set(+$any($event.target).value)"
+                   class="risk-slider" />
+          </div>
+        </div>
+
+        <!-- Preview RPN -->
+        <div class="rpn-preview">
+          <span class="rpn-preview__label">RPN Calculado:</span>
+          <span class="rpn-preview__value" data-testid="preview-rpn">{{ previewRpn() }}</span>
+          <span class="level-chip"
+                data-testid="preview-risk-level"
+                [style.background-color]="riskLevelColors[previewRiskLevel()]"
+                [style.color]="'#fff'">
+            {{ riskLevelLabels[previewRiskLevel()] }}
+          </span>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="newOwner">Responsável *</label>
+          <input id="newOwner" class="form-input" type="text"
+                 [(ngModel)]="newRisk.owner" name="newOwner" maxlength="100" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="newLinkedNc">ID da NC (opcional)</label>
+          <input id="newLinkedNc" class="form-input" type="text"
+                 [(ngModel)]="newRisk.linkedNcId" name="newLinkedNc"
+                 placeholder="ID da NC (opcional)" />
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeNewModal()">Cancelar</button>
+        <button class="btn btn--primary"
+                [disabled]="modalLoading()"
+                (click)="submitNewRisk()">
+          @if (modalLoading()) { Criando… } @else { Criar Risco }
+        </button>
+      </div>
+    </div>
+  </div>
+}
