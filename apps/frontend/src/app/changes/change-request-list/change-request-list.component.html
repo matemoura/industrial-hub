@@ -1,0 +1,200 @@
+<div class="page-container">
+  <div class="page-header">
+    <div class="page-header__left">
+      <h1 class="page-title">Controle de Mudanças</h1>
+      <p class="page-subtitle">ISO 13485 §4.1 — Gestão de Mudanças</p>
+    </div>
+    <button
+      class="btn btn--primary"
+      data-testid="btn-new-change"
+      (click)="openNewModal()"
+    >
+      + Nova Solicitação
+    </button>
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="summary-cards">
+    <div class="summary-card summary-card--draft">
+      <span class="summary-card__count">{{ draftCount() }}</span>
+      <span class="summary-card__label">Rascunho</span>
+    </div>
+    <div class="summary-card summary-card--submitted">
+      <span class="summary-card__count">{{ submittedCount() }}</span>
+      <span class="summary-card__label">Aguardando Revisão</span>
+    </div>
+    <div class="summary-card summary-card--review">
+      <span class="summary-card__count">{{ underReviewCount() }}</span>
+      <span class="summary-card__label">Aguardando Aprovação</span>
+    </div>
+    <div class="summary-card summary-card--approved">
+      <span class="summary-card__count">{{ approvedCount() }}</span>
+      <span class="summary-card__label">Aprovadas</span>
+    </div>
+    <div class="summary-card summary-card--implemented">
+      <span class="summary-card__count">{{ implementedCount() }}</span>
+      <span class="summary-card__label">Implementadas</span>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <select
+      class="filter-select"
+      [(ngModel)]="statusFilter"
+      (change)="onFilterChange()"
+      aria-label="Filtrar por status"
+    >
+      <option value="">Todos os Status</option>
+      <option value="DRAFT">Rascunho</option>
+      <option value="SUBMITTED">Submetida</option>
+      <option value="UNDER_REVIEW">Em Revisão</option>
+      <option value="APPROVED">Aprovada</option>
+      <option value="REJECTED">Rejeitada</option>
+      <option value="IMPLEMENTED">Implementada</option>
+    </select>
+    <select
+      class="filter-select"
+      [(ngModel)]="typeFilter"
+      (change)="onFilterChange()"
+      aria-label="Filtrar por tipo"
+    >
+      <option value="">Todos os Tipos</option>
+      <option value="PROCESS">Processo</option>
+      <option value="DOCUMENT">Documento</option>
+      <option value="EQUIPMENT">Equipamento</option>
+      <option value="SOFTWARE">Software</option>
+      <option value="REGULATORY">Regulatório</option>
+      <option value="OTHER">Outro</option>
+    </select>
+  </div>
+
+  <!-- Table -->
+  <div class="table-wrapper">
+    @if (loading()) {
+      <div class="loading-state">Carregando...</div>
+    } @else if (changes().length === 0) {
+      <div class="empty-state">Nenhuma solicitação encontrada.</div>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Título</th>
+            <th>Tipo</th>
+            <th>Status</th>
+            <th>Solicitante</th>
+            <th>Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (cr of changes(); track cr.id) {
+            <tr class="data-row" [routerLink]="['/changes', cr.id]" tabindex="0">
+              <td class="cell-code">{{ cr.code }}</td>
+              <td class="cell-title">{{ cr.title }}</td>
+              <td>
+                <span class="chip chip--type">{{ typeLabels[cr.changeType] }}</span>
+              </td>
+              <td>
+                <span
+                  class="chip chip--status"
+                  [style.background-color]="statusColors[cr.status] + '22'"
+                  [style.color]="statusColors[cr.status]"
+                  [style.border-color]="statusColors[cr.status]"
+                >{{ statusLabels[cr.status] }}</span>
+              </td>
+              <td>{{ cr.requestedBy }}</td>
+              <td>{{ formatDate(cr.createdAt) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="pagination">
+        <button class="btn btn--outline" (click)="prevPage()" [disabled]="page() === 0">
+          ← Anterior
+        </button>
+        <span class="pagination__info">
+          Página {{ page() + 1 }} de {{ Math.ceil(totalElements() / pageSize()) || 1 }}
+          ({{ totalElements() }} registros)
+        </span>
+        <button
+          class="btn btn--outline"
+          (click)="nextPage()"
+          [disabled]="page() >= Math.ceil(totalElements() / pageSize()) - 1"
+        >
+          Próxima →
+        </button>
+      </div>
+    }
+  </div>
+</div>
+
+<!-- New Change Modal -->
+@if (showNewModal()) {
+  <div class="modal-overlay" (click)="closeNewModal()">
+    <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+      <div class="modal__header">
+        <h2 id="modal-title" class="modal__title">Nova Solicitação de Mudança</h2>
+        <button class="modal__close" (click)="closeNewModal()" aria-label="Fechar">✕</button>
+      </div>
+      <div class="modal__body">
+        @if (modalError()) {
+          <div class="alert alert--error">{{ modalError() }}</div>
+        }
+        <div class="form-field">
+          <label class="form-label" for="new-title">Título <span class="required">*</span></label>
+          <input
+            id="new-title"
+            class="form-input"
+            type="text"
+            [(ngModel)]="newChange.title"
+            placeholder="Título da solicitação"
+          />
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-type">Tipo de Mudança <span class="required">*</span></label>
+          <select id="new-type" class="form-select" [(ngModel)]="newChange.changeType">
+            <option value="PROCESS">Processo</option>
+            <option value="DOCUMENT">Documento</option>
+            <option value="EQUIPMENT">Equipamento</option>
+            <option value="SOFTWARE">Software</option>
+            <option value="REGULATORY">Regulatório</option>
+            <option value="OTHER">Outro</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-description">Descrição <span class="required">*</span></label>
+          <textarea
+            id="new-description"
+            class="form-textarea"
+            [(ngModel)]="newChange.description"
+            rows="3"
+            placeholder="Descreva a mudança proposta"
+          ></textarea>
+        </div>
+        <div class="form-field">
+          <label class="form-label" for="new-justification">Justificativa <span class="required">*</span></label>
+          <textarea
+            id="new-justification"
+            class="form-textarea"
+            [(ngModel)]="newChange.justification"
+            rows="3"
+            placeholder="Justifique a necessidade da mudança"
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeNewModal()">Cancelar</button>
+        <button
+          class="btn btn--primary"
+          (click)="submitNewChange()"
+          [disabled]="modalLoading()"
+        >
+          @if (modalLoading()) { Salvando... } @else { Criar Solicitação }
+        </button>
+      </div>
+    </div>
+  </div>
+}

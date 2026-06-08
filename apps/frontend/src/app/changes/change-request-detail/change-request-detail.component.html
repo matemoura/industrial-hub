@@ -1,0 +1,358 @@
+@if (loading()) {
+  <div class="loading-page">Carregando...</div>
+} @else if (!change()) {
+  <div class="loading-page">Solicitação não encontrada.</div>
+} @else {
+  <div class="detail-container">
+
+    <!-- Header -->
+    <div class="detail-header">
+      <div class="detail-header__left">
+        <div class="detail-header__code">{{ change()!.code }}</div>
+        <h1 class="detail-header__title">{{ change()!.title }}</h1>
+        <div class="detail-header__meta">
+          <span
+            class="chip chip--status"
+            [style.background-color]="statusColors[change()!.status] + '22'"
+            [style.color]="statusColors[change()!.status]"
+            [style.border-color]="statusColors[change()!.status]"
+          >{{ statusLabels[change()!.status] }}</span>
+          <span class="detail-header__info">Solicitante: <strong>{{ change()!.requestedBy }}</strong></span>
+          <span class="detail-header__info">Criado em: <strong>{{ formatDate(change()!.createdAt) }}</strong></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error -->
+    @if (actionError()) {
+      <div class="alert alert--error">{{ actionError() }}</div>
+    }
+
+    <!-- Contextual Actions -->
+    <div class="actions-bar">
+      @if (change()!.status === 'DRAFT' && change()!.requestedBy === currentUsername()) {
+        <button class="btn btn--outline" (click)="openEditModal()">&#9998; Editar</button>
+        <button
+          class="btn btn--primary"
+          data-testid="btn-submit"
+          (click)="submitForReview()"
+          [disabled]="actionLoading()"
+        >
+          &#x2192; Submeter para Revisão
+        </button>
+      }
+      @if (change()!.status === 'SUBMITTED' && isSupervisor()) {
+        <button
+          class="btn btn--primary"
+          data-testid="btn-review"
+          (click)="openReviewModal()"
+        >
+          &#x1F4CB; Revisar
+        </button>
+      }
+      @if (change()!.status === 'UNDER_REVIEW' && isAdmin()) {
+        <button
+          class="btn btn--success"
+          data-testid="btn-approve"
+          (click)="approveChange()"
+          [disabled]="actionLoading()"
+        >
+          &#x2713; Aprovar
+        </button>
+        <button
+          class="btn btn--danger"
+          data-testid="btn-reject"
+          (click)="openRejectModal()"
+        >
+          &#x2715; Rejeitar
+        </button>
+      }
+      @if (change()!.status === 'APPROVED' && isSupervisor()) {
+        <button
+          class="btn btn--primary"
+          data-testid="btn-implement"
+          (click)="implementChange()"
+          [disabled]="actionLoading()"
+        >
+          &#x2699; Marcar como Implementado
+        </button>
+      }
+    </div>
+
+    <div class="detail-body">
+
+      <!-- Timeline -->
+      <div class="detail-card">
+        <h2 class="card-title">Progresso</h2>
+        <div class="timeline">
+          @for (step of timelineSteps; track step) {
+            <div class="timeline-step" [class.timeline-step--done]="getStepState(step) === 'done'" [class.timeline-step--current]="getStepState(step) === 'current'" [class.timeline-step--future]="getStepState(step) === 'future'">
+              <div class="timeline-step__icon">
+                @if (getStepState(step) === 'done') { &#x2713; }
+                @else if (getStepState(step) === 'current') { &#x25CF; }
+                @else { &#x25CB; }
+              </div>
+              <div class="timeline-step__label">{{ statusLabels[step] }}</div>
+            </div>
+          }
+          @if (change()!.status === 'REJECTED') {
+            <div class="timeline-step timeline-step--rejected">
+              <div class="timeline-step__icon">&#x2715;</div>
+              <div class="timeline-step__label">
+                Rejeitada
+                @if (change()!.rejectionReason) {
+                  <span class="timeline-step__note">{{ change()!.rejectionReason }}</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Details -->
+      <div class="detail-card">
+        <h2 class="card-title">Detalhes</h2>
+        <dl class="detail-list">
+          <div class="detail-list__item">
+            <dt>Tipo de Mudança</dt>
+            <dd><span class="chip chip--type">{{ typeLabels[change()!.changeType] }}</span></dd>
+          </div>
+          <div class="detail-list__item">
+            <dt>Descrição</dt>
+            <dd class="detail-list__text">{{ change()!.description }}</dd>
+          </div>
+          <div class="detail-list__item">
+            <dt>Justificativa</dt>
+            <dd class="detail-list__text">{{ change()!.justification }}</dd>
+          </div>
+          @if (change()!.impactAssessment) {
+            <div class="detail-list__item">
+              <dt>Avaliação de Impacto</dt>
+              <dd class="detail-list__text">{{ change()!.impactAssessment }}</dd>
+            </div>
+          }
+        </dl>
+      </div>
+
+      <!-- Links -->
+      <div class="detail-card">
+        <div class="card-header-row">
+          <h2 class="card-title">Vínculos</h2>
+          @if (isSupervisor()) {
+            <button class="btn btn--outline btn--sm" (click)="openAddLinkModal()">+ Vínculo</button>
+          }
+        </div>
+        @if (change()!.links.length === 0) {
+          <p class="empty-state">Nenhum vínculo cadastrado.</p>
+        } @else {
+          @for (entityType of getEntityTypes(); track entityType) {
+            @if (getLinksByType(entityType).length > 0) {
+              <div class="link-group">
+                <h3 class="link-group__title">{{ entityTypeLabels[entityType] }}</h3>
+                <ul class="link-list">
+                  @for (link of getLinksByType(entityType); track link.id) {
+                    <li class="link-item">
+                      <a
+                        [routerLink]="getEntityLink(link.entityType, link.entityId)"
+                        [attr.data-testid]="'link-' + link.entityType + '-' + link.entityId"
+                        class="link-anchor"
+                      >{{ link.entityId }}</a>
+                      @if (link.linkNote) {
+                        <span class="link-note">{{ link.linkNote }}</span>
+                      }
+                      @if (isSupervisor()) {
+                        <button
+                          class="btn-icon btn-icon--danger"
+                          (click)="removeLink(link.id)"
+                          aria-label="Remover vínculo"
+                          title="Remover"
+                        >&#x2715;</button>
+                      }
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+          }
+        }
+      </div>
+
+      <!-- Audit Info -->
+      <div class="detail-card">
+        <h2 class="card-title">Informações de Auditoria</h2>
+        <dl class="detail-list">
+          @if (change()!.submittedAt) {
+            <div class="detail-list__item">
+              <dt>Submetido em</dt>
+              <dd>{{ formatDate(change()!.submittedAt) }}</dd>
+            </div>
+          }
+          @if (change()!.reviewedBy) {
+            <div class="detail-list__item">
+              <dt>Revisado por</dt>
+              <dd>{{ change()!.reviewedBy }} em {{ formatDate(change()!.reviewedAt) }}</dd>
+            </div>
+          }
+          @if (change()!.approvedBy) {
+            <div class="detail-list__item">
+              <dt>Aprovado/Rejeitado por</dt>
+              <dd>{{ change()!.approvedBy }} em {{ formatDate(change()!.approvedAt) }}</dd>
+            </div>
+          }
+          @if (change()!.implementedAt) {
+            <div class="detail-list__item">
+              <dt>Implementado em</dt>
+              <dd>{{ formatDate(change()!.implementedAt) }}</dd>
+            </div>
+          }
+        </dl>
+      </div>
+
+    </div><!-- /detail-body -->
+  </div><!-- /detail-container -->
+}
+
+<!-- Edit Modal -->
+@if (showEditModal()) {
+  <div class="modal-overlay" (click)="closeEditModal()">
+    <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="modal__header">
+        <h2 class="modal__title">Editar Solicitação</h2>
+        <button class="modal__close" (click)="closeEditModal()">&#x2715;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-field">
+          <label class="form-label">Título</label>
+          <input class="form-input" type="text" [(ngModel)]="editForm.title" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Tipo</label>
+          <select class="form-select" [(ngModel)]="editForm.changeType">
+            <option value="PROCESS">Processo</option>
+            <option value="DOCUMENT">Documento</option>
+            <option value="EQUIPMENT">Equipamento</option>
+            <option value="SOFTWARE">Software</option>
+            <option value="REGULATORY">Regulatório</option>
+            <option value="OTHER">Outro</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Descrição</label>
+          <textarea class="form-textarea" [(ngModel)]="editForm.description" rows="3"></textarea>
+        </div>
+        <div class="form-field">
+          <label class="form-label">Justificativa</label>
+          <textarea class="form-textarea" [(ngModel)]="editForm.justification" rows="3"></textarea>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeEditModal()">Cancelar</button>
+        <button class="btn btn--primary" (click)="saveEdit()" [disabled]="actionLoading()">Salvar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Review Modal -->
+@if (showReviewModal()) {
+  <div class="modal-overlay" (click)="closeReviewModal()">
+    <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="modal__header">
+        <h2 class="modal__title">Revisar Solicitação</h2>
+        <button class="modal__close" (click)="closeReviewModal()">&#x2715;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-field">
+          <label class="form-label">Avaliação de Impacto</label>
+          <textarea
+            class="form-textarea"
+            rows="4"
+            [value]="reviewImpact()"
+            (input)="reviewImpact.set($any($event.target).value)"
+            placeholder="Descreva o impacto da mudança proposta..."
+          ></textarea>
+        </div>
+        <div class="form-field form-field--inline">
+          <label class="form-label">Recomendar Aprovação?</label>
+          <div class="toggle-group">
+            <label class="toggle-option">
+              <input type="radio" name="recommend" [value]="true" [checked]="reviewRecommend()" (change)="reviewRecommend.set(true)" />
+              Sim
+            </label>
+            <label class="toggle-option">
+              <input type="radio" name="recommend" [value]="false" [checked]="!reviewRecommend()" (change)="reviewRecommend.set(false)" />
+              Não
+            </label>
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeReviewModal()">Cancelar</button>
+        <button class="btn btn--primary" (click)="submitReview()" [disabled]="actionLoading()">Enviar Revisão</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Reject Modal -->
+@if (showRejectModal()) {
+  <div class="modal-overlay" (click)="closeRejectModal()">
+    <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="modal__header">
+        <h2 class="modal__title">Rejeitar Solicitação</h2>
+        <button class="modal__close" (click)="closeRejectModal()">&#x2715;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-field">
+          <label class="form-label">Motivo da Rejeição</label>
+          <textarea
+            class="form-textarea"
+            rows="4"
+            [value]="rejectionReason()"
+            (input)="rejectionReason.set($any($event.target).value)"
+            placeholder="Informe o motivo da rejeição..."
+          ></textarea>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeRejectModal()">Cancelar</button>
+        <button class="btn btn--danger" (click)="submitRejection()" [disabled]="actionLoading()">Rejeitar</button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Add Link Modal -->
+@if (showAddLinkModal()) {
+  <div class="modal-overlay" (click)="closeAddLinkModal()">
+    <div class="modal" (click)="$event.stopPropagation()" role="dialog" aria-modal="true">
+      <div class="modal__header">
+        <h2 class="modal__title">Adicionar Vínculo</h2>
+        <button class="modal__close" (click)="closeAddLinkModal()">&#x2715;</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-field">
+          <label class="form-label">Tipo de Entidade</label>
+          <select class="form-select" [(ngModel)]="newLink.entityType">
+            <option value="NON_CONFORMANCE">Não-Conformidade</option>
+            <option value="DOCUMENT">Documento</option>
+            <option value="EQUIPMENT">Equipamento</option>
+            <option value="RISK_ITEM">Item de Risco</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label class="form-label">ID da Entidade (UUID)</label>
+          <input class="form-input" type="text" [(ngModel)]="newLink.entityId" placeholder="UUID da entidade" />
+        </div>
+        <div class="form-field">
+          <label class="form-label">Nota (opcional)</label>
+          <input class="form-input" type="text" [(ngModel)]="newLink.linkNote" placeholder="Observação sobre o vínculo" />
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--outline" (click)="closeAddLinkModal()">Cancelar</button>
+        <button class="btn btn--primary" (click)="addLink()" [disabled]="actionLoading() || !newLink.entityId">Adicionar</button>
+      </div>
+    </div>
+  </div>
+}
