@@ -20,6 +20,7 @@ import com.industrialhub.backend.qms.application.usecase.UpdateCAPAUseCase;
 import com.industrialhub.backend.qms.application.usecase.UpdateRcaUseCase;
 import com.industrialhub.backend.qms.application.usecase.VerifyEffectivenessUseCase;
 import com.industrialhub.backend.qms.presentation.QmsController;
+import com.industrialhub.backend.qms.risk.application.usecase.GetRisksByNcUseCase;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +63,7 @@ class NcListCacheControlTest {
     @Mock private LinkNcToDocumentUseCase linkNcToDocument;
     @Mock private ListNcDocumentLinksUseCase listNcDocumentLinks;
     @Mock private UnlinkNcFromDocumentUseCase unlinkNcFromDocument;
+    @Mock private GetRisksByNcUseCase getRisksByNc;
 
     private QmsController controller;
     private MockHttpServletResponse response;
@@ -72,7 +74,7 @@ class NcListCacheControlTest {
                 createNc, transitionStatus, getNcList, getNcDetail, getKpiSummary,
                 exportCsv, createAction, listActions, completeAction, deleteAction,
                 createRca, updateRca, getRca, updateCapa, submitForEffectiveness, verifyEffectiveness,
-                linkNcToDocument, listNcDocumentLinks, unlinkNcFromDocument);
+                linkNcToDocument, listNcDocumentLinks, unlinkNcFromDocument, getRisksByNc);
         response = new MockHttpServletResponse();
     }
 

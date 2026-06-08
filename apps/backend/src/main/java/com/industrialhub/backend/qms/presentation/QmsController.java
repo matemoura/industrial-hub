@@ -35,6 +35,8 @@ import com.industrialhub.backend.qms.application.usecase.VerifyEffectivenessUseC
 import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
 import com.industrialhub.backend.qms.domain.NcType;
+import com.industrialhub.backend.qms.risk.application.dto.RiskItemSummary;
+import com.industrialhub.backend.qms.risk.application.usecase.GetRisksByNcUseCase;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
@@ -73,6 +75,7 @@ public class QmsController {
     private final LinkNcToDocumentUseCase linkNcToDocument;
     private final ListNcDocumentLinksUseCase listNcDocumentLinks;
     private final UnlinkNcFromDocumentUseCase unlinkNcFromDocument;
+    private final GetRisksByNcUseCase getRisksByNc;
 
     public QmsController(CreateNcUseCase createNc,
                          TransitionNcStatusUseCase transitionStatus,
@@ -92,7 +95,8 @@ public class QmsController {
                          VerifyEffectivenessUseCase verifyEffectiveness,
                          LinkNcToDocumentUseCase linkNcToDocument,
                          ListNcDocumentLinksUseCase listNcDocumentLinks,
-                         UnlinkNcFromDocumentUseCase unlinkNcFromDocument) {
+                         UnlinkNcFromDocumentUseCase unlinkNcFromDocument,
+                         GetRisksByNcUseCase getRisksByNc) {
         this.createNc = createNc;
         this.transitionStatus = transitionStatus;
         this.getNcList = getNcList;
@@ -112,6 +116,7 @@ public class QmsController {
         this.linkNcToDocument = linkNcToDocument;
         this.listNcDocumentLinks = listNcDocumentLinks;
         this.unlinkNcFromDocument = unlinkNcFromDocument;
+        this.getRisksByNc = getRisksByNc;
     }
 
     @PostMapping
@@ -263,5 +268,12 @@ public class QmsController {
     public void unlinkDocument(@PathVariable UUID ncId, @PathVariable UUID documentId,
                                java.security.Principal principal) {
         unlinkNcFromDocument.execute(ncId, documentId, principal.getName());
+    }
+
+    // Sprint 43 — US-128: NC-Risco rastreabilidade
+    @GetMapping("/{ncId}/risks")
+    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    public List<RiskItemSummary> getRisksByNc(@PathVariable UUID ncId) {
+        return getRisksByNc.execute(ncId);
     }
 }
