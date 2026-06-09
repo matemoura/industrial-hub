@@ -1,0 +1,217 @@
+<section class="complaint-list">
+
+  <!-- ── Indicadores ── -->
+  <div class="kpi-cards" role="list">
+    <div class="kpi-card" role="listitem">
+      <span class="kpi-card__label">Recebidas</span>
+      <span class="kpi-card__value" data-testid="kpi-total">{{ indicators()?.totalReceived ?? 0 }}</span>
+    </div>
+    <div class="kpi-card" role="listitem">
+      <span class="kpi-card__label">Em Investigação</span>
+      <span class="kpi-card__value">{{ indicators()?.byStatus?.['UNDER_INVESTIGATION'] ?? 0 }}</span>
+    </div>
+    <div class="kpi-card" [class.kpi-card--danger]="notReportedCount() > 0" role="listitem" data-testid="card-not-reported">
+      <span class="kpi-card__label">Não Reportadas à ANVISA</span>
+      <span class="kpi-card__value" [class.kpi-card__value--danger]="notReportedCount() > 0">
+        {{ notReportedCount() }}
+      </span>
+    </div>
+    <div class="kpi-card" role="listitem">
+      <span class="kpi-card__label">Reportadas ANVISA</span>
+      <span class="kpi-card__value">{{ indicators()?.reportedToAnvisa ?? 0 }}</span>
+    </div>
+  </div>
+
+  <!-- ── Cabeçalho ── -->
+  <div class="list-header">
+    <h1 class="list-header__title">Reclamações de Clientes</h1>
+    <button class="btn btn--primary" data-testid="btn-new-complaint" (click)="openCreateModal()">
+      + Nova Reclamação
+    </button>
+  </div>
+
+  <!-- ── Filtros ── -->
+  <div class="filters">
+    <select class="filter-select" [ngModel]="statusFilter()" (ngModelChange)="statusFilter.set($event); onFilterChange()" aria-label="Filtrar por status">
+      <option value="">Todos os status</option>
+      <option value="RECEIVED">Recebida</option>
+      <option value="UNDER_INVESTIGATION">Em Investigação</option>
+      <option value="INVESTIGATION_COMPLETED">Investigação Concluída</option>
+      <option value="CLOSED">Encerrada</option>
+    </select>
+
+    <select class="filter-select" [ngModel]="severityFilter()" (ngModelChange)="severityFilter.set($event); onFilterChange()" aria-label="Filtrar por severidade">
+      <option value="">Todas as severidades</option>
+      <option value="LOW">Baixa</option>
+      <option value="MEDIUM">Média</option>
+      <option value="HIGH">Alta</option>
+      <option value="CRITICAL">Crítica</option>
+    </select>
+
+    <input
+      class="filter-input"
+      type="text"
+      placeholder="Código do produto..."
+      [ngModel]="productFilter()"
+      (ngModelChange)="productFilter.set($event)"
+      (keyup.enter)="onFilterChange()"
+      aria-label="Filtrar por produto"
+    />
+
+    <label class="filter-check">
+      <input
+        type="checkbox"
+        [ngModel]="onlyNotReported()"
+        (ngModelChange)="onlyNotReported.set($event); onFilterChange()"
+      />
+      Apenas não reportadas à ANVISA
+    </label>
+  </div>
+
+  <!-- ── Tabela ── -->
+  @if (loading()) {
+    <div class="loading-state" aria-busy="true">Carregando reclamações...</div>
+  } @else if (complaints().length === 0) {
+    <div class="empty-state">Nenhuma reclamação encontrada.</div>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table" aria-label="Lista de reclamações">
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Título</th>
+            <th scope="col">Produto / Lote</th>
+            <th scope="col">Fonte</th>
+            <th scope="col">Severidade</th>
+            <th scope="col">Status</th>
+            <th scope="col">Responsável</th>
+            <th scope="col">Data</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of complaints(); track c.id) {
+            <tr class="data-table__row" [routerLink]="['/qms/complaints', c.id]" style="cursor:pointer">
+              <td class="data-table__code">{{ c.code }}</td>
+              <td class="data-table__title">{{ c.title }}</td>
+              <td class="data-table__product">
+                @if (c.productCode) {
+                  <span>{{ c.productCode }}</span>
+                  @if (c.batchNumber) {
+                    <span class="batch-label"> / {{ c.batchNumber }}</span>
+                  }
+                } @else {
+                  <span class="text-muted">—</span>
+                }
+              </td>
+              <td>
+                <span class="chip chip--neutral">{{ sourceLabels[c.source] }}</span>
+              </td>
+              <td>
+                <span class="chip" [style.background-color]="severityColors[c.severity]" [style.color]="'#fff'">
+                  {{ c.severity }}
+                </span>
+              </td>
+              <td>
+                <span class="chip" [style.background-color]="statusColors[c.status]" [style.color]="'#fff'">
+                  {{ statusLabels[c.status] }}
+                </span>
+              </td>
+              <td>{{ c.assignedTo }}</td>
+              <td>{{ formatDate(c.reportedDate) }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── Paginação ── -->
+    <div class="pagination" role="navigation" aria-label="Paginação">
+      <button class="btn btn--ghost" [disabled]="page() === 0" (click)="prevPage()">← Anterior</button>
+      <span class="pagination__info">Página {{ page() + 1 }} de {{ totalPages() }}</span>
+      <button class="btn btn--ghost" [disabled]="page() >= totalPages() - 1" (click)="nextPage()">Próximo →</button>
+    </div>
+  }
+
+</section>
+
+<!-- ── Modal Nova Reclamação ── -->
+@if (showCreateModal()) {
+  <div class="modal-backdrop" (click)="closeCreateModal()" role="dialog" aria-modal="true" aria-label="Nova Reclamação">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2 class="modal__title">Nova Reclamação</h2>
+        <button class="modal__close" (click)="closeCreateModal()" aria-label="Fechar">×</button>
+      </div>
+
+      <div class="modal__body">
+        @if (createError()) {
+          <div class="alert alert--error" role="alert">{{ createError() }}</div>
+        }
+
+        <div class="form-grid">
+          <div class="form-field form-field--full">
+            <label class="form-label" for="c-title">Título *</label>
+            <input id="c-title" class="form-input" type="text" [(ngModel)]="newComplaint.title" placeholder="Título da reclamação" />
+          </div>
+
+          <div class="form-field form-field--full">
+            <label class="form-label" for="c-description">Descrição *</label>
+            <textarea id="c-description" class="form-textarea" [(ngModel)]="newComplaint.description" rows="3" placeholder="Descrição detalhada"></textarea>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="c-source">Fonte *</label>
+            <select id="c-source" class="form-select" [(ngModel)]="newComplaint.source">
+              <option value="CLIENT">Cliente</option>
+              <option value="DISTRIBUTOR">Distribuidor</option>
+              <option value="REGULATORY_BODY">Órgão Regulatório</option>
+              <option value="INTERNAL">Interna</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="c-severity">Severidade *</label>
+            <select id="c-severity" class="form-select" [(ngModel)]="newComplaint.severity">
+              <option value="LOW">Baixa</option>
+              <option value="MEDIUM">Média</option>
+              <option value="HIGH">Alta</option>
+              <option value="CRITICAL">Crítica</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="c-product">Código do Produto</label>
+            <input id="c-product" class="form-input" type="text" [(ngModel)]="newComplaint.productCode" placeholder="Ex: PROD-001" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="c-batch">Número do Lote</label>
+            <input id="c-batch" class="form-input" type="text" [(ngModel)]="newComplaint.batchNumber" placeholder="Ex: LOTE-2026-01" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="c-date">Data do Evento *</label>
+            <input id="c-date" class="form-input" type="date" [(ngModel)]="newComplaint.reportedDate" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="c-reported-by">Reportado por *</label>
+            <input id="c-reported-by" class="form-input" type="text" [(ngModel)]="newComplaint.reportedBy" placeholder="Ex: Hospital São Lucas" />
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="c-assigned">Responsável *</label>
+            <input id="c-assigned" class="form-input" type="text" [(ngModel)]="newComplaint.assignedTo" placeholder="Ex: qualidade" />
+          </div>
+        </div>
+      </div>
+
+      <div class="modal__footer">
+        <button class="btn btn--ghost" (click)="closeCreateModal()">Cancelar</button>
+        <button class="btn btn--primary" [disabled]="createLoading()" (click)="submitCreate()">
+          @if (createLoading()) { Salvando... } @else { Registrar }
+        </button>
+      </div>
+    </div>
+  </div>
+}

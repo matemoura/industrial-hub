@@ -1,5 +1,108 @@
 # Log Aisha
 
+## [2026-06-04] Sincronização Sprints 40–46 — ADRs 051–057
+
+Fontes lidas:
+  - CLAUDE.md (raiz)
+  - docs/adr/ADR-051-sprint40-training-competency.md
+  - docs/adr/ADR-052-sprint41-calibration-msa.md
+  - docs/adr/ADR-053-sprint42-internal-audits.md
+  - docs/adr/ADR-054-sprint43-risk-fmea.md
+  - docs/adr/ADR-055-sprint44-change-control.md
+  - docs/adr/ADR-056-sprint45-customer-complaints-mdr.md
+  - docs/adr/ADR-057-sprint46-management-review.md
+  - .claude/sprint-atual.md (seções Sprint 40–46 e tabela de roadmap)
+  - .claude/logs/log-aisha.md (histórico)
+
+Mudanças feitas:
+  - CLAUDE.md: Domain Modules — Sprint 46: pacote corrigido de `common/` para `common/presentation/`, `common/application/` (conforme ADR-057 Decisão 1 — `ManagementReviewController` em `common/presentation/`)
+  - CLAUDE.md: Key Conventions — 14 novas convenções dos ADRs 051–057 adicionadas:
+    - `training/` como pacote top-level; referência leve `username: String` em `TrainingRecord`; `expiresAt` calculado no use case
+    - `GedFileValidator` reutilizado em `training/` para certificados PDF
+    - `TrainingExpiryAlertJob` — job semanal com debounce; notificação pessoal (não broadcast)
+    - Calibração em `maintenance/domain/` — sem novo pacote; `certificateDocumentId` vs `certificateStoragePath` mutuamente exclusivos
+    - NC automática `OUT_OF_TOLERANCE` com `recordedBy = "system"` na mesma `@Transactional`
+    - `qms/audit/` sub-pacote; `InternalAudit` (nome explícito); `AuditController` dedicado; `NcSeverity` reutilizado em `AuditFinding`
+    - Padrão de código sequencial `AUD-/CR-/REC-{ANO}-{NNN}` com unique constraint
+    - `qms/risk/`; RPN calculado e persistido via `recalculateRpn()`; `RiskLevel.fromRpn()` factory; `CRITICAL→ACCEPTED` bloqueado
+    - `common/changes/` transversal; regra de identidade `requestedBy == principal` no use case
+    - `qms/complaints/`; notificação ANVISA exclusiva ADMIN; MDR disponível apenas quando `reportedToAnvisa=true AND CLOSED`
+    - `ManagementReviewData` como DTO record (sem entidade JPA); cache 30 min; `SemaphoreChipComponent` em `shared/`
+  - sprint-atual.md: US-135 AC#2 — período máximo corrigido de "365 dias" para "366 dias" (`ChronoUnit.DAYS.between(from, to) > 366`) — ADR-057 especifica `> 366` para suportar anos bissextos; mensagem de erro também corrigida
+  - sprint-atual.md: US-135 AC#7 — teste "(b) período > 365 dias" corrigido para "período > 366 dias" — alinhado ao ADR-057
+
+Inconsistências encontradas (ADR prevalece):
+  1. CLAUDE.md Sprint 46: pacote `common/` genérico demais — ADR-057 especifica `common/presentation/` e `common/application/`; corrigido
+  2. sprint-atual.md US-135 AC#2: "período máximo 365 dias" — ADR-057 usa `> 366` (equivalente a máximo 366 dias, comportamento diferente); corrigido
+  3. sprint-atual.md US-135 AC#7: teste referenciava "365 dias" consistente com AC#2 incorreto; corrigido
+
+Verificações sem inconsistência:
+  - Emojis dos headers Sprints 40–46: todos `⬜` (correto para planejado)
+  - ADRs referenciados: ADR-051 a ADR-057 linkados corretamente em cada sprint
+  - Tabela de roadmap: linhas Sprints 40–46 presentes com emojis `⬜` e ADRs corretos
+  - Sprint 40: pacote `training/` e US-118/119/120 alinhados com ADR-051
+  - Sprint 41: entidades em `maintenance/domain/` e US-121/122/123 alinhados com ADR-052
+  - Sprint 42: sub-pacote `qms/audit/`, `AuditController`, `InternalAudit` alinhados com ADR-053; transição `IN_PROGRESS→CANCELLED` bloqueada (422) correta
+  - Sprint 43: sub-pacote `qms/risk/`, RPN calculado, `CRITICAL→ACCEPTED` sem mitigação=422 alinhados com ADR-054
+  - Sprint 44: pacote `common/changes/`, 6 estados, segregação de papéis alinhados com ADR-055
+  - Sprint 45: `qms/complaints/`, `ComplaintController`, notificação ANVISA ADMIN-only alinhados com ADR-056
+  - Sprint 46: `ManagementReviewController` em `common/presentation/`, cache 30 min, `SemaphoreChipComponent` alinhados com ADR-057 (exceto período já corrigido)
+
+---
+
+## [2026-06-04] Sincronização Sprint 39 — ADR-050 vs sprint-atual.md
+Fontes lidas:
+  - CLAUDE.md (raiz)
+  - docs/adr/ADR-050-sprint39-nc-ged-link-capa-aging-quality-report.md
+  - .claude/sprint-atual.md (seção Sprint 39)
+  - .claude/logs/log-aisha.md (histórico)
+
+Mudanças feitas:
+  - CLAUDE.md: Domain Modules — nova linha Sprint 39 (`NC↔GED Link + CAPA Aging Dashboard + Relatório Executivo de Qualidade (iText 7) | qms/, qms/ged/ | 39 | 🚧 em andamento`)
+  - CLAUDE.md: Key Conventions — 4 novas convenções: `NcDocumentLink` em `qms/domain/`, DELETE semântico `{documentId}`, iText 7 Community (não iText 2.1.7), `QmsReportController` dedicado
+  - sprint-atual.md: `ADR-050 (a criar)` → `ADR-050` (ADR já aprovado desde 2026-06-04)
+  - sprint-atual.md US-115 AC#4: removido `linkedBy` (não exposto via API — padrão ADR-049 §4) e `documentRevisionNumber`; adicionados `documentCategory`, `documentStatus` conforme ADR-050 §3
+  - sprint-atual.md US-115 AC#6: URL corrigida de `{linkId}` para `{documentId}` — URL semântica conforme ADR-050 §2
+  - sprint-atual.md US-115 AC#7: auth level corrigido de SUPERVISOR+ para OPERATOR+ conforme ADR-050 §3 (tabela de contratos)
+  - sprint-atual.md US-116 AC#1: corrigido — dueDate já existe na entidade (ADR-007/ADR-048); nenhuma migration necessária conforme ADR-050 §4
+  - sprint-atual.md US-116 AC#4: shape do `CapaAgingResponse` reescrito — campos `totalOpen`, `overdueCount`, `noDueDateCount`, buckets nomeados (`bucket0to7`, `bucket8to15`, `bucket16to30`, `bucketOver30`) conforme ADR-050 §4/§5
+  - sprint-atual.md US-117 AC#1: dependência corrigida de `com.lowagie:itext:2.1.7` para `com.itextpdf:itext7-core:7.2.6` (iText 7 Community AGPL) conforme ADR-050 §6
+  - sprint-atual.md sequência de desenvolvimento item 5: removida referência a JasperReports (descartado no ADR-050 §6)
+
+Inconsistências encontradas (ADR-050 prevalece):
+  1. ADR referenciado como "(a criar)" — ADR já existia e estava aprovado
+  2. `linkedBy` indevidamente exposto no response (violava padrão ADR-049 §4) — removido
+  3. `documentRevisionNumber` incluído no response sem previsão no ADR — removido
+  4. DELETE URL usava `{linkId}` (UUID interno) — corrigido para `{documentId}` (semântica de URL, conforme ADR-050 §2 UnlinkNcFromDocumentUseCase)
+  5. GET inverso `/ged/.../non-conformances` com auth SUPERVISOR+ — corrigido para OPERATOR+ (ADR-050 §3 tabela)
+  6. US-116: migration de `dueDate` prevista quando campo já existe — AC corrigido
+  7. US-116: `CapaAgingResponse` com shape divergente (totalPending/totalDone/avgResolutionDays) — alinhado ao record Java do ADR-050 §4
+  8. US-117: iText 2.1.7 (obsoleto, MPL) especificado em vez de iText 7 Community 7.2.6 (AGPL) — ADR-050 §6 descarta explicitamente a versão antiga
+  9. US-117: JasperReports listado como opção — descartado no ADR-050 §6
+
+---
+
+## [2026-06-04] Sincronização pós-Sprint 38
+Fontes lidas:
+  - CLAUDE.md
+  - ADR-049 (Sprint 38 — GED & CAPAS Security Hardening)
+  - sprint-atual.md (seção Sprint 38)
+  - log-mateus.md, log-tadeu.md, log-maiana.md, log-beatriz.md, log-maite.md, log-athos.md, log-atlas.md
+
+Mudanças feitas:
+  - CLAUDE.md: Domain Modules — nova linha Sprint 38 (`GED & CAPAS Security Hardening | qms/ged/, qms/ | 38 | ✅ done`)
+  - CLAUDE.md: Key Conventions — 4 novas notas: `GedFileValidator` pattern, PII masking em `DocumentRevisionResponse`, `DataIntegrityViolationException` → domain exception 409, TOCTOU fix via `@Lock(LockModeType.PESSIMISTIC_WRITE)` + `findByIdForUpdate`
+  - sprint-atual.md: header `## Sprint 38 🔄` → `## Sprint 38 ✅` (inconsistência com `Status: concluída`)
+  - sprint-atual.md: roadmap — adicionada linha `✅ Sprint 38 | GED & CAPAS Security Hardening | US-113, US-114 | ADR-049` (ausente)
+
+Inconsistências encontradas:
+  - Sprint 38 tinha `🔄` no header mas `Status: concluída` no corpo — corrigido para `✅`
+  - Linha do Sprint 38 ausente da tabela de roadmap — adicionada
+
+Tech debt pendente: nenhum — todos os itens SEC-125 a SEC-139 encerrados pelo Sprint 38 (confirmado por Beatriz)
+
+---
+
 ## [2026-06-04] Sincronização pós-Sprint 36 e 37
 Fontes lidas:
   - CLAUDE.md

@@ -240,5 +240,15 @@ export const routes: Routes = [
       },
     ],
   },
+  {
+    path: 'training',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadChildren: () => import('./training/training.routes').then((m) => m.TRAINING_ROUTES),
+  },
+  {
+    path: 'changes',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadChildren: () => import('./changes/changes.routes').then((m) => m.CHANGES_ROUTES),
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];

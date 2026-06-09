@@ -2,6 +2,25 @@ import { Routes } from '@angular/router';
 import { authGuard } from '../auth/auth.guard';
 
 export const QMS_ROUTES: Routes = [
+  // ── Reclamações de Clientes (Sprint 45 — US-134) ── estáticas antes de /:id
+  {
+    path: 'complaints',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./complaints/complaint-list/complaint-list.component').then((m) => m.ComplaintListComponent),
+  },
+  {
+    path: 'complaints/dashboard',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./complaints/complaint-dashboard/complaint-dashboard.component').then((m) => m.ComplaintDashboardComponent),
+  },
+  {
+    path: 'complaints/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./complaints/complaint-detail/complaint-detail.component').then((m) => m.ComplaintDetailComponent),
+  },
   // ── CAPAS — lista cross-NC de ações corretivas/preventivas
   {
     path: 'capas',
@@ -53,6 +72,38 @@ export const QMS_ROUTES: Routes = [
     canActivate: [authGuard],
     loadComponent: () =>
       import('./quality-report/quality-report.component').then((m) => m.QualityReportComponent),
+  },
+  // ── Gestão de Risco / FMEA (Sprint 43 — US-129) ── estáticas antes de /:id
+  {
+    path: 'risks',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./risk/risk-list/risk-list.component').then((m) => m.RiskListComponent),
+  },
+  {
+    path: 'risks/matrix',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./risk/risk-matrix/risk-matrix.component').then((m) => m.RiskMatrixComponent),
+  },
+  {
+    path: 'risks/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./risk/risk-detail/risk-detail.component').then((m) => m.RiskDetailComponent),
+  },
+  // ── Auditorias Internas (Sprint 42 — US-126) ── estáticas antes de /:id
+  {
+    path: 'audits',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./audit/audit-list/audit-list.component').then((m) => m.AuditListComponent),
+  },
+  {
+    path: 'audits/:id',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./audit/audit-detail/audit-detail.component').then((m) => m.AuditDetailComponent),
   },
   // ── Suppliers ── rotas estáticas ANTES de /:id para evitar conflito
   {

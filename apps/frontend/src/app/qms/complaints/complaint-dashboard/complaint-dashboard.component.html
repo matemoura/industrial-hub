@@ -1,0 +1,127 @@
+<section class="complaint-dashboard">
+
+  <div class="dashboard-header">
+    <h1 class="dashboard-title">Dashboard — Reclamações de Clientes</h1>
+  </div>
+
+  <!-- ── Seletor de período ── -->
+  <div class="period-selector card">
+    <span class="period-selector__label">Período</span>
+    <input class="form-input" type="date" [(ngModel)]="fromDate" aria-label="Data início" />
+    <span class="period-separator">até</span>
+    <input class="form-input" type="date" [(ngModel)]="toDate" aria-label="Data fim" />
+    <button class="btn btn--primary" [disabled]="loading()" (click)="loadIndicators()">
+      @if (loading()) { Carregando... } @else { Carregar }
+    </button>
+  </div>
+
+  @if (loading() && !indicators()) {
+    <div class="loading-state" aria-busy="true">Carregando indicadores...</div>
+  } @else if (indicators()) {
+
+    <!-- ── 6 KPI Cards ── -->
+    <div class="kpi-grid" data-testid="kpi-grid">
+      <div class="kpi-card" data-testid="kpi-total-received">
+        <span class="kpi-card__label">Total Recebidas</span>
+        <span class="kpi-card__value">{{ indicators()!.totalReceived }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__label">Em Investigação</span>
+        <span class="kpi-card__value">{{ underInvestigation() }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__label">Reportadas à ANVISA</span>
+        <span class="kpi-card__value">{{ indicators()!.reportedToAnvisa }}</span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__label">Média de Resolução</span>
+        <span class="kpi-card__value">
+          @if (indicators()!.avgResolutionDays != null) {
+            {{ indicators()!.avgResolutionDays! | number: '1.1-1' }} dias
+          } @else {
+            —
+          }
+        </span>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__label">Encerradas</span>
+        <span class="kpi-card__value" style="color:#3FA66A">{{ closedCount() }}</span>
+      </div>
+      <div class="kpi-card" [class.kpi-card--danger]="notReported() > 0">
+        <span class="kpi-card__label">Não Reportadas</span>
+        <span class="kpi-card__value" [style.color]="notReported() > 0 ? '#D24A4A' : '#1F3A4A'">
+          {{ notReported() }}
+        </span>
+      </div>
+    </div>
+
+    <!-- ── Detalhes ── -->
+    <div class="details-grid">
+
+      <!-- Top 5 Produtos -->
+      <div class="card">
+        <h2 class="section-title">Top 5 Produtos</h2>
+        @if ((indicators()!.byProduct ?? []).length === 0) {
+          <p class="text-muted">Sem dados.</p>
+        } @else {
+          <ol class="product-list">
+            @for (p of indicators()!.byProduct; track p.productCode) {
+              <li class="product-list__item">
+                <span class="product-list__code">{{ p.productCode }}</span>
+                <span class="product-list__count">{{ p.count }}</span>
+              </li>
+            }
+          </ol>
+        }
+      </div>
+
+      <!-- Por Fonte -->
+      <div class="card">
+        <h2 class="section-title">Por Fonte</h2>
+        <div class="source-list">
+          @for (entry of sourceEntries(); track entry[0]) {
+            <div class="source-item">
+              <span class="source-item__label">{{ sourceLabels[entry[0]] }}</span>
+              <span class="source-item__count">{{ entry[1] }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Por Severidade -->
+      <div class="card">
+        <h2 class="section-title">Por Severidade</h2>
+        <div class="severity-list">
+          @for (entry of severityEntries(); track entry[0]) {
+            <div class="severity-item">
+              <span class="chip" [style.background-color]="severityColors[entry[0]]" [style.color]="'#fff'">
+                {{ entry[0] }}
+              </span>
+              <span class="severity-item__count">{{ entry[1] }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- Por Status -->
+      <div class="card">
+        <h2 class="section-title">Por Status</h2>
+        <div class="status-list">
+          @for (entry of statusEntries(); track entry[0]) {
+            <div class="status-item">
+              <span class="chip" [style.background-color]="statusColors[entry[0]]" [style.color]="'#fff'">
+                {{ statusLabels[entry[0]] }}
+              </span>
+              <span class="status-item__count">{{ entry[1] }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+    </div>
+
+  } @else {
+    <div class="empty-state">Selecione um período e clique em Carregar.</div>
+  }
+
+</section>

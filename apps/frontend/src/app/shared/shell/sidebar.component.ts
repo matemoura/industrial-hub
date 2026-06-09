@@ -10,6 +10,7 @@ import { AuthService } from '../../auth/auth.service';
 import { MaintenanceService } from '../../maintenance/maintenance.service';
 import { OfflineQueueService } from '../offline/offline-queue.service';
 import { ShellStateService } from './shell-state.service';
+import { ChangeRequestService } from '../../changes/change-request.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -22,6 +23,7 @@ import { ShellStateService } from './shell-state.service';
 export class SidebarComponent implements OnInit {
   private readonly authService = inject(AuthService);
   private readonly maintenanceService = inject(MaintenanceService);
+  private readonly changeRequestService = inject(ChangeRequestService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   readonly offlineQueue = inject(OfflineQueueService);
@@ -38,6 +40,7 @@ export class SidebarComponent implements OnInit {
   });
 
   readonly belowMinCount = signal<number>(0);
+  readonly pendingChangesCount = signal<number>(0);
 
   ngOnInit(): void {
     // Fechar sidebar mobile ao navegar
@@ -54,5 +57,14 @@ export class SidebarComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({ next: (c) => this.belowMinCount.set(c), error: () => {} });
+
+    interval(300_000)
+      .pipe(
+        startWith(0),
+        filter(() => this.authService.isAuthenticated()),
+        switchMap(() => this.changeRequestService.countPendingForMe()),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({ next: ({ count }) => this.pendingChangesCount.set(count), error: () => {} });
   }
 }

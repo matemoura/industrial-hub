@@ -227,6 +227,14 @@ export class NavComponent implements OnInit {
       '/change-password': 'Alterar Senha',
       '/privacy/export': 'Exportar meus dados',
       '/notifications': 'Notificações',
+      '/training/courses': 'Catálogo de Cursos',
+      '/training/records/me': 'Meus Treinamentos',
+      '/training/records': 'Registros de Treinamentos',
+      '/training/competency-matrix': 'Matriz de Competências',
+      '/training/dashboard': 'Dashboard de Treinamentos',
+      '/maintenance/calibration/dashboard': 'Dashboard de Calibração',
+      '/maintenance/calibration': 'Agenda de Calibrações',
+      '/changes': 'Controle de Mudanças',
     };
     const normalized = url.split('?')[0];
     const match = Object.keys(map)

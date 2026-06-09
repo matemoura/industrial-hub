@@ -1,0 +1,239 @@
+@if (loading()) {
+  <div class="loading-state" aria-busy="true">Carregando...</div>
+} @else if (!complaint()) {
+  <div class="empty-state">Reclamação não encontrada.</div>
+} @else {
+  <section class="complaint-detail">
+
+    <!-- ── Header ── -->
+    <div class="detail-header">
+      <div class="detail-header__meta">
+        <a routerLink="/qms/complaints" class="back-link">← Reclamações</a>
+        <h1 class="detail-header__title">{{ complaint()!.code }} — {{ complaint()!.title }}</h1>
+        <div class="detail-header__info">
+          <span class="chip" [style.background-color]="statusColors[complaint()!.status]" [style.color]="'#fff'">
+            {{ statusLabels[complaint()!.status] }}
+          </span>
+          <span class="detail-meta-item">
+            <span class="detail-meta-label">Produto</span>
+            {{ complaint()!.productCode ?? '—' }}
+            @if (complaint()!.batchNumber) {
+              / {{ complaint()!.batchNumber }}
+            }
+          </span>
+          <span class="detail-meta-item">
+            <span class="detail-meta-label">Reportado por</span>
+            {{ complaint()!.reportedBy }}
+          </span>
+          <span class="detail-meta-item">
+            <span class="detail-meta-label">Responsável</span>
+            {{ complaint()!.assignedTo }}
+          </span>
+          <span class="detail-meta-item">
+            <span class="detail-meta-label">Data</span>
+            {{ formatDate(complaint()!.reportedDate) }}
+          </span>
+          <span class="detail-meta-item">
+            <span class="detail-meta-label">Fonte</span>
+            {{ sourceLabels[complaint()!.source] }}
+          </span>
+        </div>
+      </div>
+
+      <!-- ── Botões de ação ── -->
+      <div class="detail-actions">
+        @if (canGenerateMdr()) {
+          <button
+            class="btn btn--primary"
+            [disabled]="isGeneratingMdr()"
+            (click)="generateMdr()"
+            data-testid="btn-generate-mdr"
+          >
+            @if (isGeneratingMdr()) { Gerando... } @else { Gerar MDR }
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- ── Timeline ── -->
+    <div class="timeline-section card">
+      <h2 class="section-title">Progresso</h2>
+      <div class="status-timeline" role="list">
+        @for (step of statusSteps; track step) {
+          <div class="timeline-step" [class.timeline-step--done]="isStepDone(step)" role="listitem">
+            <div class="timeline-step__dot"></div>
+            <span class="timeline-step__label">{{ statusLabels[step] }}</span>
+          </div>
+          @if (step !== 'CLOSED') {
+            <div class="timeline-connector" [class.timeline-connector--done]="isStepDone(step)"></div>
+          }
+        }
+      </div>
+
+      @if (nextStatus()) {
+        <div class="transition-action">
+          <button class="btn btn--primary" (click)="transition()" data-testid="btn-transition">
+            {{ transitionLabel() }}
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- ── Investigação ── -->
+    <div class="card">
+      <h2 class="section-title">Investigação</h2>
+      @if (complaint()!.status !== 'CLOSED') {
+        <div class="form-grid">
+          <div class="form-field form-field--full">
+            <label class="form-label" for="inv-summary">Resumo da Investigação</label>
+            <textarea id="inv-summary" class="form-textarea" [(ngModel)]="editInvestigationSummary" rows="4" placeholder="Descreva o resumo da investigação..."></textarea>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="inv-root-cause">Causa Raiz</label>
+            <textarea id="inv-root-cause" class="form-textarea" [(ngModel)]="editRootCause" rows="3" placeholder="Causa raiz identificada..."></textarea>
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="inv-corrective">Ação Corretiva</label>
+            <textarea id="inv-corrective" class="form-textarea" [(ngModel)]="editCorrectiveAction" rows="3" placeholder="Ações corretivas tomadas..."></textarea>
+          </div>
+        </div>
+        @if (saveError()) {
+          <div class="alert alert--error" role="alert">{{ saveError() }}</div>
+        }
+        <div class="card-footer">
+          <button class="btn btn--primary" [disabled]="isSaving()" (click)="saveInvestigation()">
+            @if (isSaving()) { Salvando... } @else { Salvar }
+          </button>
+        </div>
+      } @else {
+        <dl class="definition-list">
+          <dt>Resumo</dt>
+          <dd>{{ complaint()!.investigationSummary ?? '—' }}</dd>
+          <dt>Causa Raiz</dt>
+          <dd>{{ complaint()!.rootCause ?? '—' }}</dd>
+          <dt>Ação Corretiva</dt>
+          <dd>{{ complaint()!.correctiveAction ?? '—' }}</dd>
+        </dl>
+      }
+    </div>
+
+    <!-- ── Vínculos ── -->
+    <div class="card">
+      <h2 class="section-title">Vínculos</h2>
+
+      <div class="links-section">
+        <div class="link-group">
+          <span class="link-group__label">Não-Conformidade</span>
+          @if (complaint()!.linkedNcId) {
+            <a
+              [routerLink]="['/qms/non-conformances', complaint()!.linkedNcId]"
+              class="chip chip--link"
+              data-testid="nc-link"
+            >
+              {{ complaint()!.linkedNcCode ?? 'Ver NC' }}
+            </a>
+          } @else {
+            <span class="text-muted">Não vinculada</span>
+          }
+          @if (!showLinkNcInput()) {
+            <button class="btn btn--ghost btn--sm" (click)="showLinkNcInput.set(true)">+ Vincular NC</button>
+          } @else {
+            <div class="link-input-group">
+              <input class="form-input form-input--sm" type="text" [(ngModel)]="linkNcId" placeholder="UUID da NC..." />
+              <button class="btn btn--primary btn--sm" (click)="submitLinkNc()">Salvar</button>
+              <button class="btn btn--ghost btn--sm" (click)="showLinkNcInput.set(false)">Cancelar</button>
+            </div>
+          }
+        </div>
+
+        <div class="link-group">
+          <span class="link-group__label">CAPA</span>
+          @if (complaint()!.linkedCapaId) {
+            <a
+              routerLink="/qms/capas"
+              class="chip chip--link"
+              data-testid="capa-link"
+            >
+              {{ complaint()!.linkedCapaDescription ?? 'Ver CAPA' }}
+            </a>
+          } @else {
+            <span class="text-muted">Não vinculada</span>
+          }
+          @if (!showLinkCapaInput()) {
+            <button class="btn btn--ghost btn--sm" (click)="showLinkCapaInput.set(true)">+ Vincular CAPA</button>
+          } @else {
+            <div class="link-input-group">
+              <input class="form-input form-input--sm" type="text" [(ngModel)]="linkCapaId" placeholder="UUID da CAPA..." />
+              <button class="btn btn--primary btn--sm" (click)="submitLinkCapa()">Salvar</button>
+              <button class="btn btn--ghost btn--sm" (click)="showLinkCapaInput.set(false)">Cancelar</button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ANVISA ── -->
+    <div class="card">
+      <h2 class="section-title">Notificação ANVISA</h2>
+      <div class="anvisa-section">
+        @if (complaint()!.reportedToAnvisa) {
+          <span class="chip chip--success" data-testid="chip-anvisa-reported">Reportado à ANVISA</span>
+          <dl class="definition-list definition-list--inline">
+            <dt>Número</dt>
+            <dd>{{ complaint()!.anvisaReportNumber }}</dd>
+            <dt>Data</dt>
+            <dd>{{ complaint()!.anvisaReportDate ? formatDate(complaint()!.anvisaReportDate!) : '—' }}</dd>
+          </dl>
+        } @else {
+          <span class="chip chip--neutral" data-testid="chip-anvisa-not-reported">Não reportado</span>
+        }
+
+        @if (isAdmin()) {
+          <button
+            class="btn btn--ghost"
+            (click)="openAnvisaModal()"
+            data-testid="btn-anvisa-report"
+          >
+            Registrar Notificação
+          </button>
+        }
+      </div>
+    </div>
+
+    <!-- ── Snackbar ── -->
+    @if (snackbarVisible()) {
+      <div class="snackbar" role="status" aria-live="polite">
+        Relatório MDR gerado com sucesso.
+      </div>
+    }
+
+  </section>
+}
+
+<!-- ── Modal ANVISA ── -->
+@if (showAnvisaModal()) {
+  <div class="modal-backdrop" (click)="closeAnvisaModal()" role="dialog" aria-modal="true" aria-label="Registrar Notificação ANVISA">
+    <div class="modal" (click)="$event.stopPropagation()">
+      <div class="modal__header">
+        <h2 class="modal__title">Registrar Notificação ANVISA</h2>
+        <button class="modal__close" (click)="closeAnvisaModal()" aria-label="Fechar">×</button>
+      </div>
+      <div class="modal__body">
+        <div class="form-grid form-grid--1col">
+          <div class="form-field">
+            <label class="form-label" for="anvisa-number">Número do Relatório *</label>
+            <input id="anvisa-number" class="form-input" type="text" [(ngModel)]="anvisaReportNumber" placeholder="Ex: ANVISA-MDR-2026-001" />
+          </div>
+          <div class="form-field">
+            <label class="form-label" for="anvisa-date">Data do Relatório *</label>
+            <input id="anvisa-date" class="form-input" type="date" [(ngModel)]="anvisaReportDate" />
+          </div>
+        </div>
+      </div>
+      <div class="modal__footer">
+        <button class="btn btn--ghost" (click)="closeAnvisaModal()">Cancelar</button>
+        <button class="btn btn--primary" (click)="submitAnvisaReport()">Registrar</button>
+      </div>
+    </div>
+  </div>
+}

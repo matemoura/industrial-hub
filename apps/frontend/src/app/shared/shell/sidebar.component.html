@@ -50,10 +50,13 @@
           </a>
         </li>
         @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/qms/complaints" routerLinkActive="active" class="nav-item">Reclamações</a></li>
           <li><a routerLink="/qms/capas" routerLinkActive="active" class="nav-item">CAPAs</a></li>
           <li><a routerLink="/qms/capas/aging" routerLinkActive="active" class="nav-item nav-item--sub">Aging de CAPAs</a></li>
           <li><a routerLink="/qms/reports/quality" routerLinkActive="active" class="nav-item nav-item--sub">Relatório Executivo</a></li>
+          <li><a routerLink="/qms/audits" routerLinkActive="active" class="nav-item">Auditorias</a></li>
         }
+        <li><a routerLink="/qms/risks" routerLinkActive="active" class="nav-item">Gestão de Risco</a></li>
         <li>
           <a routerLink="/qms/ged" routerLinkActive="active" class="nav-item">
             Documentos
@@ -70,6 +73,20 @@
         </li>
         @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
           <li><a routerLink="/maintenance/dashboard" routerLinkActive="active" class="nav-item">Dashboard Manutenção</a></li>
+          <li><a routerLink="/maintenance/calibration" routerLinkActive="active" class="nav-item">Calibração</a></li>
+        }
+      </ul>
+    </div>
+
+    <div class="nav-section">
+      <span class="nav-section__title">TREINAMENTOS</span>
+      <ul class="nav-list">
+        <li><a routerLink="/training/courses"          routerLinkActive="active" class="nav-item">Catálogo de Cursos</a></li>
+        <li><a routerLink="/training/records/me"       routerLinkActive="active" class="nav-item">Meus Treinamentos</a></li>
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/training/records"          routerLinkActive="active" class="nav-item">Registros</a></li>
+          <li><a routerLink="/training/competency-matrix" routerLinkActive="active" class="nav-item">Matriz de Competências</a></li>
+          <li><a routerLink="/training/dashboard"        routerLinkActive="active" class="nav-item">Dashboard Compliance</a></li>
         }
       </ul>
     </div>
@@ -108,6 +125,21 @@
         </ul>
       </div>
     }
+
+    <div class="nav-section">
+      <span class="nav-section__title">MUDANÇAS</span>
+      <ul class="nav-list">
+        <li>
+          <a routerLink="/changes" routerLinkActive="active" class="nav-item">
+            Mudanças
+            @if (pendingChangesCount() > 0) {
+              <span class="nav-badge nav-badge--warn"
+                    aria-label="{{ pendingChangesCount() }} mudanças pendentes">{{ pendingChangesCount() }}</span>
+            }
+          </a>
+        </li>
+      </ul>
+    </div>
 
     <div class="nav-section">
       <span class="nav-section__title">CONTA</span>

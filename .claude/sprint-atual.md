@@ -3697,10 +3697,12 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 44 ⬜
+## Sprint 44 ✅
 **Objetivo**: Controle de Mudanças — change requests formais, avaliação de impacto, aprovação multi-nível (SUPERVISOR revisa, ADMIN aprova) e rastreabilidade com GED, NC, Equipamentos e Riscos (ISO 13485 §4.1)
 **ADR**: ADR-055
-**Status**: planejada
+**Status**: concluída
+**Pipeline**: 652 backend ✅ / 782 frontend ✅
+**Hotfixes pós-review**: SEC-177 (PUT), SEC-178 (URL count-pending), SEC-179 (countPendingForRole)
 
 ### User Stories
 | ID | Título | Pontos | Status |

@@ -53,6 +53,11 @@ import com.industrialhub.backend.qms.domain.SupplierRequiredForNcException;
 import com.industrialhub.backend.common.domain.EvaluateNowCooldownException;
 import com.industrialhub.backend.common.webhook.domain.WebhookInvalidUrlException;
 import com.industrialhub.backend.common.webhook.domain.WebhookNotFoundException;
+import com.industrialhub.backend.maintenance.domain.CalibrationScheduleNotFoundException;
+import com.industrialhub.backend.maintenance.domain.EquipmentDecommissionedException;
+import com.industrialhub.backend.training.domain.TrainingCourseCodeAlreadyExistsException;
+import com.industrialhub.backend.training.domain.TrainingCourseNotFoundException;
+import com.industrialhub.backend.training.domain.TrainingRecordNotFoundException;
 import com.industrialhub.backend.production.domain.ImportProductionBatchNotFoundException;
 import com.industrialhub.backend.production.domain.ProductNotFoundException;
 import com.industrialhub.backend.qms.domain.NcDocumentLinkAlreadyExistsException;
@@ -339,8 +344,11 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<Map<String, Object>> handleIllegalArgument(IllegalArgumentException ex) {
+        String message = "certificate-conflict".equals(ex.getMessage())
+            ? "Informe certificateDocumentId ou faça upload, não ambos."
+            : ex.getMessage();
         return ResponseEntity.badRequest().body(Map.of(
-                "message", ex.getMessage(),
+                "message", message,
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -622,6 +630,50 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    // Sprint 41 — Calibração (ISO 13485 §7.6)
+    @ExceptionHandler(CalibrationScheduleNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleCalibrationScheduleNotFound(
+            CalibrationScheduleNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(EquipmentDecommissionedException.class)
+    public ResponseEntity<Map<String, Object>> handleEquipmentDecommissioned(
+            EquipmentDecommissionedException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // Sprint 40 — Training module (ISO 13485 §6.2)
+    @ExceptionHandler(TrainingCourseNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleTrainingCourseNotFound(TrainingCourseNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(TrainingCourseCodeAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleTrainingCourseCodeAlreadyExists(TrainingCourseCodeAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(TrainingRecordNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleTrainingRecordNotFound(TrainingRecordNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
     @ExceptionHandler(ImportProductionBatchNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleImportProductionBatchNotFound(ImportProductionBatchNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
@@ -688,6 +740,163 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleNoMrpRun(
             com.industrialhub.backend.production.domain.NoMrpRunException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // Sprint 42 — Auditorias Internas (ISO 13485 §8.2.4)
+    @ExceptionHandler(com.industrialhub.backend.qms.audit.domain.InternalAuditNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleInternalAuditNotFound(
+            com.industrialhub.backend.qms.audit.domain.InternalAuditNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.audit.domain.AuditChecklistItemNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleAuditChecklistItemNotFound(
+            com.industrialhub.backend.qms.audit.domain.AuditChecklistItemNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.audit.domain.AuditFindingNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleAuditFindingNotFound(
+            com.industrialhub.backend.qms.audit.domain.AuditFindingNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.audit.domain.InvalidAuditStatusTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidAuditStatusTransition(
+            com.industrialhub.backend.qms.audit.domain.InvalidAuditStatusTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.audit.domain.AuditCodeAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleAuditCodeAlreadyExists(
+            com.industrialhub.backend.qms.audit.domain.AuditCodeAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // Sprint 43 — Gestão de Risco / FMEA (ISO 14971)
+    @ExceptionHandler(com.industrialhub.backend.qms.risk.domain.RiskItemNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleRiskItemNotFound(
+            com.industrialhub.backend.qms.risk.domain.RiskItemNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.risk.domain.RiskMitigationActionNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleRiskMitigationActionNotFound(
+            com.industrialhub.backend.qms.risk.domain.RiskMitigationActionNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.risk.domain.InvalidRiskStatusTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidRiskStatusTransition(
+            com.industrialhub.backend.qms.risk.domain.InvalidRiskStatusTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // Sprint 44 — Controle de Mudanças (ISO 13485 §4.1)
+    @ExceptionHandler(com.industrialhub.backend.common.changes.domain.ChangeRequestNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleChangeRequestNotFound(
+            com.industrialhub.backend.common.changes.domain.ChangeRequestNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.common.changes.domain.ChangeRequestLinkNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleChangeRequestLinkNotFound(
+            com.industrialhub.backend.common.changes.domain.ChangeRequestLinkNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.common.changes.domain.InvalidChangeStatusTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidChangeStatusTransition(
+            com.industrialhub.backend.common.changes.domain.InvalidChangeStatusTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.common.changes.domain.ChangeRequestForbiddenException.class)
+    public ResponseEntity<Map<String, Object>> handleChangeRequestForbidden(
+            com.industrialhub.backend.common.changes.domain.ChangeRequestForbiddenException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.common.changes.domain.ChangeRequestCodeConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleChangeRequestCodeConflict(
+            com.industrialhub.backend.common.changes.domain.ChangeRequestCodeConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    // Sprint 45 — Reclamações de Clientes + MDR (ISO 13485 §8.2.1)
+    @ExceptionHandler(com.industrialhub.backend.qms.complaints.domain.CustomerComplaintNotFoundException.class)
+    public ResponseEntity<Map<String, Object>> handleComplaintNotFound(
+            com.industrialhub.backend.qms.complaints.domain.CustomerComplaintNotFoundException ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.complaints.domain.InvalidComplaintStatusTransitionException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidComplaintStatusTransition(
+            com.industrialhub.backend.qms.complaints.domain.InvalidComplaintStatusTransitionException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.complaints.domain.ComplaintCodeConflictException.class)
+    public ResponseEntity<Map<String, Object>> handleComplaintCodeConflict(
+            com.industrialhub.backend.qms.complaints.domain.ComplaintCodeConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
+    @ExceptionHandler(com.industrialhub.backend.qms.complaints.domain.ComplaintClosedException.class)
+    public ResponseEntity<Map<String, Object>> handleComplaintClosed(
+            com.industrialhub.backend.qms.complaints.domain.ComplaintClosedException ex) {
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
                 "message", ex.getMessage(),
                 "timestamp", Instant.now().toString()
         ));
