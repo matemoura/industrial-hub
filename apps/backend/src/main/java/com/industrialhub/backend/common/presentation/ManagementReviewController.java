@@ -36,7 +36,7 @@ public class ManagementReviewController {
     }
 
     @GetMapping("/indicators")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MANAGEMENT_REVIEW)")
     public ResponseEntity<ManagementReviewData> getIndicators(
         @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
         @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
@@ -46,7 +46,7 @@ public class ManagementReviewController {
     }
 
     @GetMapping("/indicators/export")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MANAGEMENT_REVIEW)")
     public ResponseEntity<byte[]> exportPdf(
         @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
         @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,

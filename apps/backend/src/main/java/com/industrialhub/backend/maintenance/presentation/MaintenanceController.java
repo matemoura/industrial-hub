@@ -140,7 +140,7 @@ public class MaintenanceController {
     }
 
     @GetMapping("/equipment")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public List<EquipmentResponse> listEquipment(
             @RequestParam(required = false) EquipmentType type,
             @RequestParam(required = false) EquipmentStatus status) {
@@ -148,7 +148,7 @@ public class MaintenanceController {
     }
 
     @GetMapping("/equipment/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public EquipmentResponse getEquipment(@PathVariable UUID id) {
         return getEquipmentDetail.execute(id);
     }
@@ -171,14 +171,14 @@ public class MaintenanceController {
 
     @PostMapping("/work-orders")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public WorkOrderResponse createWorkOrder(@Valid @RequestBody CreateWorkOrderRequest request,
                                               Principal principal) {
         return createWorkOrder.execute(request, principal.getName());
     }
 
     @GetMapping("/work-orders")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public Page<WorkOrderResponse> listWorkOrders(
             @RequestParam(required = false) UUID equipmentId,
             @RequestParam(required = false) WorkOrderType type,
@@ -191,19 +191,19 @@ public class MaintenanceController {
     }
 
     @GetMapping("/work-orders/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public WorkOrderResponse getWorkOrder(@PathVariable UUID id) {
         return getWorkOrderDetail.execute(id);
     }
 
     @GetMapping("/work-orders/metrics")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public WorkOrderMetricsResponse getMetrics(@RequestParam(required = false) UUID equipmentId) {
         return getWorkOrderMetrics.execute(equipmentId);
     }
 
     @PutMapping("/work-orders/{id}/status")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public WorkOrderResponse transitionStatus(@PathVariable UUID id,
                                                @Valid @RequestBody TransitionWorkOrderStatusRequest request,
                                                Principal principal) {
@@ -213,14 +213,14 @@ public class MaintenanceController {
     // --- Work order parts endpoints (US-050) ---
 
     @GetMapping("/work-orders/{id}/parts")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public List<WorkOrderPartResponse> listWorkOrderParts(@PathVariable UUID id) {
         return getWorkOrderParts.execute(id);
     }
 
     @PostMapping("/work-orders/{id}/parts")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public WorkOrderPartResponse addWorkOrderPart(@PathVariable UUID id,
                                                    @Valid @RequestBody AddWorkOrderPartRequest request,
                                                    Principal principal) {
@@ -230,7 +230,7 @@ public class MaintenanceController {
 
     @DeleteMapping("/work-orders/{workOrderId}/parts/{partId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canDelete(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public void removeWorkOrderPart(@PathVariable UUID workOrderId,
                                      @PathVariable UUID partId,
                                      Principal principal) {
@@ -242,26 +242,26 @@ public class MaintenanceController {
 
     @PostMapping("/schedules")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ScheduleResponse createSchedule(@Valid @RequestBody CreateScheduleRequest request,
                                             Principal principal) {
         return createSchedule.execute(request, principal.getName());
     }
 
     @GetMapping("/schedules")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public List<ScheduleResponse> listSchedules(@RequestParam(required = false) UUID equipmentId) {
         return getScheduleList.execute(equipmentId);
     }
 
     @GetMapping("/schedules/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ScheduleResponse getSchedule(@PathVariable UUID id) {
         return getScheduleDetail.execute(id);
     }
 
     @PutMapping("/schedules/{id}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ScheduleResponse updateSchedule(@PathVariable UUID id,
                                             @Valid @RequestBody UpdateScheduleRequest request,
                                             Principal principal) {
@@ -270,7 +270,7 @@ public class MaintenanceController {
 
     @PutMapping("/schedules/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public void deactivateSchedule(@PathVariable UUID id, Principal principal) {
         deactivateSchedule.execute(id, principal.getName());
     }
@@ -287,7 +287,7 @@ public class MaintenanceController {
     }
 
     @GetMapping("/spare-parts")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public List<SparePartResponse> listSpareParts(
             @RequestParam(required = false) String category,
             @RequestParam(defaultValue = "false") boolean belowMin) {
@@ -295,7 +295,7 @@ public class MaintenanceController {
     }
 
     @GetMapping("/spare-parts/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public SparePartResponse getSparePart(@PathVariable UUID id) {
         return getSparePartList.executeById(id);
     }

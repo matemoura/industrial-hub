@@ -55,19 +55,19 @@ public class SupplierController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public List<SupplierResponse> list() {
         return list.execute();
     }
 
     @GetMapping("/quality-ranking")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public List<SupplierQualityScore> ranking(@RequestParam(defaultValue = "90") @Min(1) @Max(730) int days) {
         return quality.executeRanking(days);
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public SupplierResponse getById(@PathVariable UUID id) {
         return detail.execute(id);
     }
@@ -87,7 +87,7 @@ public class SupplierController {
     }
 
     @GetMapping("/{id}/quality-score")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public SupplierQualityScore qualityScore(@PathVariable UUID id,
                                              @RequestParam(defaultValue = "90") @Min(1) @Max(730) int days) {
         return quality.executeForSupplier(id, days);

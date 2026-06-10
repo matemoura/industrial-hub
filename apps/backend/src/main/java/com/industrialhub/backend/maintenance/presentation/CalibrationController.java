@@ -68,7 +68,7 @@ public class CalibrationController {
     // ── Calibration Schedules ────────────────────────────────────────────────
 
     @PostMapping("/calibration-schedules")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ResponseEntity<CalibrationScheduleResponse> createSchedule(
             @RequestBody @Valid CreateCalibrationScheduleRequest request,
             Principal principal) {
@@ -78,7 +78,7 @@ public class CalibrationController {
     }
 
     @GetMapping("/calibration-schedules")
-    @PreAuthorize("hasRole('OPERATOR')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ResponseEntity<List<CalibrationScheduleResponse>> listSchedules(
             @RequestParam(required = false) UUID equipmentId,
             @RequestParam(required = false) Boolean overdue) {
@@ -86,13 +86,13 @@ public class CalibrationController {
     }
 
     @GetMapping("/calibration-schedules/summary")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ResponseEntity<CalibrationSummary> getSummary() {
         return ResponseEntity.ok(getSummaryUseCase.execute());
     }
 
     @PutMapping("/calibration-schedules/{id}")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ResponseEntity<CalibrationScheduleResponse> updateSchedule(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateCalibrationScheduleRequest request,
@@ -101,7 +101,7 @@ public class CalibrationController {
     }
 
     @PutMapping("/calibration-schedules/{id}/deactivate")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ResponseEntity<Void> deactivateSchedule(
             @PathVariable UUID id,
             Principal principal) {
@@ -112,7 +112,7 @@ public class CalibrationController {
     // ── Calibration Records ──────────────────────────────────────────────────
 
     @PostMapping(value = "/calibration-records", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ResponseEntity<CalibrationRecordResponse> createRecord(
             @RequestPart("request") @Valid CreateCalibrationRecordRequest request,
             @RequestPart(value = "certificate", required = false) MultipartFile certificate,
@@ -123,14 +123,14 @@ public class CalibrationController {
     }
 
     @GetMapping("/calibration-records")
-    @PreAuthorize("hasRole('OPERATOR')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ResponseEntity<List<CalibrationRecordResponse>> listRecords(
             @RequestParam UUID scheduleId) {
         return ResponseEntity.ok(getRecordsUseCase.execute(scheduleId));
     }
 
     @GetMapping("/calibration-records/{id}/certificate")
-    @PreAuthorize("hasRole('OPERATOR')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).MAINTENANCE)")
     public ResponseEntity<Map<String, Object>> getCertificateUrl(@PathVariable UUID id) {
         CalibrationGetCertificateUrlUseCase.DownloadUrlResult result =
             getCertificateUrlUseCase.execute(id);

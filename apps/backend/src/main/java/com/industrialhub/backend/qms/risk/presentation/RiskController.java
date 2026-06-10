@@ -70,7 +70,7 @@ public class RiskController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<RiskItemResponse> create(
             @RequestBody @Valid CreateRiskItemRequest request,
             Principal principal) {
@@ -79,7 +79,7 @@ public class RiskController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<Page<RiskItemResponse>> list(
             @RequestParam(required = false) RiskStatus status,
             @RequestParam(required = false) RiskLevel riskLevel,
@@ -91,25 +91,25 @@ public class RiskController {
     }
 
     @GetMapping("/matrix")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<RiskMatrixResponse> getMatrix() {
         return ResponseEntity.ok(getRiskMatrix.execute());
     }
 
     @GetMapping("/summary")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<RiskSummary> getSummary() {
         return ResponseEntity.ok(getRiskSummary.execute());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<RiskItemDetailResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(getRiskItemDetail.execute(id));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<RiskItemResponse> update(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateRiskItemRequest request) {
@@ -117,7 +117,7 @@ public class RiskController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<RiskItemResponse> transitionStatus(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateRiskStatusRequest request,
@@ -126,7 +126,7 @@ public class RiskController {
     }
 
     @PostMapping("/{id}/mitigation-actions")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<MitigationActionResponse> createMitigationAction(
             @PathVariable UUID id,
             @RequestBody @Valid CreateMitigationActionRequest request,
@@ -136,7 +136,7 @@ public class RiskController {
     }
 
     @PutMapping("/{id}/mitigation-actions/{actionId}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<MitigationActionResponse> updateMitigationAction(
             @PathVariable UUID id,
             @PathVariable UUID actionId,

@@ -128,6 +128,9 @@ Shell: topbar gradient `#1F3A4A → #5F88A1 → #56A4BB` (60px) + dark sidebar `
 | Controle de Mudanças (ISO 13485 §4.1) | `common/changes/` | 44 | ✅ done |
 | Reclamações de Clientes + MDR (ISO 13485 §8.2.1 / ANVISA RDC 665/2022) | `qms/complaints/` | 45 | ✅ done |
 | Análise Crítica pela Direção (ISO 13485 §5.6) | `common/presentation/`, `common/application/` | 46 | ✅ done |
+| Email Auth + Module Permissions + Enhanced Audit Trail | `common/auth/`, `common/presentation/` | 47 | ✅ done |
+| Internacionalização (i18n) — 4 idiomas + auto-detecção | `common/config/`, `apps/frontend/` | 48 | ✅ done |
+| Security Hardening + PermissionService migration | `common/`, todos os controllers | 49 | ✅ done |
 
 ## Key Conventions
 
@@ -160,4 +163,6 @@ Shell: topbar gradient `#1F3A4A → #5F88A1 → #56A4BB` (60px) + dark sidebar `
 - **`common/changes/` pacote transversal** (Sprint 44, ADR-055 Decisão 1): controle de mudanças é cross-cutting (afeta Manutenção, QMS, Produção) — não pertence a `qms/`; `ChangeRequestController` em `/api/v1/changes`; regra de identidade `requestedBy == principal` verificada no use case (não em SpEL).
 - **`qms/complaints/` sub-pacote** (Sprint 45, ADR-056 Decisão 1): reclamações de clientes em `qms/complaints/`; `ComplaintController` dedicado; notificação ANVISA (`PUT /complaints/{id}/anvisa-report`) exclusiva para ADMIN; relatório MDR disponível apenas quando `reportedToAnvisa=true AND status=CLOSED` (`422` caso contrário).
 - **`ManagementReviewController` em `common/presentation/`** (Sprint 46, ADR-057 Decisão 1): análise crítica é transversal — sem nova entidade JPA; `ManagementReviewData` é DTO record calculado sob demanda; cache Caffeine TTL 30 min adicionado ao `CacheConfig` existente (`maximumSize=10`); `SemaphoreChipComponent` standalone `OnPush` em `shared/semaphore-chip/` — reutilizável em outros dashboards.
+- **`PermissionService` bean `"perm"`** (Sprint 47, ADR-058): todos os controllers de features (OEE, QMS, MAINTENANCE, PRODUCTION, TRAINING, CHANGES, MANAGEMENT_REVIEW) usam `@PreAuthorize("@perm.canView/canCreate/canEdit/canDelete(authentication.name, T(...AppModule).X)")`. Controllers cross-cutting (AuthController, UserController, AuditTrailController) mantêm `hasRole('ADMIN')`. ADMIN bypassa automaticamente todas as verificações.
+- **i18n** (Sprint 48): backend usa `AcceptHeaderLocaleResolver` + `MessageSource` com `classpath:i18n/messages_XX.properties`; frontend usa `I18nService` (signals), `TranslatePipe` (pure:false), `LanguageSelectorComponent` no topbar, interceptor `Accept-Language`. Idiomas: pt-BR (padrão), en-US, es-ES, fr-FR.
 - **No CLAUDE/agent references** in committed code or docs

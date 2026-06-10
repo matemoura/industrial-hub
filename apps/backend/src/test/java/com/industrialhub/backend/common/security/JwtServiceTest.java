@@ -21,6 +21,7 @@ class JwtServiceTest {
         jwtService = new JwtService();
         ReflectionTestUtils.setField(jwtService, "secret", TEST_SECRET);
         ReflectionTestUtils.setField(jwtService, "expirationMs", 3600000L); // 1h
+        ReflectionTestUtils.setField(jwtService, "validateSecretOnStartup", false); // SEC-036
     }
 
     @Test

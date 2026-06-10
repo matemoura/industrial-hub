@@ -18,8 +18,9 @@ public class JwtService {
 
     private static final Logger log = LoggerFactory.getLogger(JwtService.class);
 
+    // SEC-036: base64 of "industrialhub-msb-secret-key-for-development-only"
     private static final String DEV_SECRET_PLACEHOLDER =
-            "dGVzdFNlY3JldEtleUZvckRldlVzZU9ubHlOb3RGb3JQcm9kdWN0aW9u";
+            "aW5kdXN0cmlhbGh1Yi1tc2Itc2VjcmV0LWtleS1mb3ItZGV2ZWxvcG1lbnQtb25seQ==";
 
     @Value("${app.jwt.secret}")
     private String secret;
@@ -27,9 +28,18 @@ public class JwtService {
     @Value("${app.jwt.expiration-ms:28800000}")
     private long expirationMs;
 
+    @Value("${app.jwt.validate-secret:true}")
+    private boolean validateSecretOnStartup;
+
     @PostConstruct
     void validateSecret() {
-        if (secret.equals(DEV_SECRET_PLACEHOLDER)) {
+        if (DEV_SECRET_PLACEHOLDER.equals(secret)) {
+            if (validateSecretOnStartup) {
+                throw new IllegalStateException(
+                    "JWT_SECRET está com o valor placeholder de desenvolvimento. " +
+                    "Defina a variável de ambiente JWT_SECRET antes de iniciar em produção. " +
+                    "Para desabilitar esta validação em testes, use app.jwt.validate-secret=false.");
+            }
             log.warn("SECURITY: JWT secret is using the dev placeholder. " +
                      "Set JWT_SECRET environment variable in production.");
         }

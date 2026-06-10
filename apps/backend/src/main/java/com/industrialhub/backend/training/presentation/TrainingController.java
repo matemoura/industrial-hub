@@ -100,14 +100,14 @@ public class TrainingController {
     }
 
     @GetMapping("/courses")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).TRAINING)")
     public Page<TrainingCourseResponse> listCourses(
             @PageableDefault(size = 20) Pageable pageable) {
         return listCourses.execute(pageable);
     }
 
     @GetMapping("/courses/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).TRAINING)")
     public TrainingCourseResponse getCourse(@PathVariable UUID id) {
         return getCourse.execute(id);
     }
@@ -137,7 +137,7 @@ public class TrainingController {
     // ── Records ──────────────────────────────────────────────────────────────
 
     @PostMapping(value = "/records", consumes = "multipart/form-data")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).TRAINING)")
     public ResponseEntity<TrainingRecordResponse> createRecord(
             @RequestParam @NotNull UUID courseId,
             @RequestParam @NotBlank String username,
@@ -155,7 +155,7 @@ public class TrainingController {
     }
 
     @GetMapping("/records")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).TRAINING)")
     public Page<TrainingRecordResponse> listRecords(
             @RequestParam(required = false) String username,
             @RequestParam(required = false) UUID courseId,
@@ -171,7 +171,7 @@ public class TrainingController {
     }
 
     @GetMapping("/records/{id}/certificate")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).TRAINING)")
     public Map<String, String> getCertificateUrl(@PathVariable UUID id) {
         return Map.of("url", getCertificateUrl.execute(id));
     }
@@ -187,13 +187,13 @@ public class TrainingController {
     // ── Analysis ─────────────────────────────────────────────────────────────
 
     @GetMapping("/competency-matrix")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).TRAINING)")
     public List<CompetencyMatrixRow> competencyMatrix() {
         return competencyMatrix.execute();
     }
 
     @PostMapping("/records/{id}/effectiveness")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).TRAINING)")
     public TrainingRecordResponse assessEffectiveness(
             @PathVariable UUID id,
             @RequestBody @Valid EffectivenessBody body,
@@ -204,7 +204,7 @@ public class TrainingController {
     }
 
     @GetMapping("/compliance-summary")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).TRAINING)")
     public TrainingComplianceSummary complianceSummary() {
         return complianceSummary.execute();
     }

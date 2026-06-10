@@ -63,7 +63,7 @@ public class GedController {
 
     @PostMapping(value = "/documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public DocumentResponse createDocument(
             @RequestPart("data") @Valid CreateDocumentRequest request,
             @RequestPart("file") MultipartFile file,
@@ -77,7 +77,7 @@ public class GedController {
      */
     @PostMapping(value = "/documents/{id}/revisions", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public DocumentRevisionResponse addRevision(
             @PathVariable UUID id,
             @RequestParam @NotBlank @Size(max = 1000) String changeReason,
@@ -95,7 +95,7 @@ public class GedController {
     }
 
     @GetMapping("/documents")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public Page<DocumentSummaryResponse> listDocuments(
             @RequestParam(required = false) DocumentCategory category,
             @RequestParam(required = false) DocumentStatus status,
@@ -104,13 +104,13 @@ public class GedController {
     }
 
     @GetMapping("/documents/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public DocumentResponse getDocument(@PathVariable UUID id) {
         return getDocumentUseCase.execute(id);
     }
 
     @GetMapping("/documents/{id}/revisions/{revId}/download")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public DownloadUrlResponse getDownloadUrl(
             @PathVariable UUID id,
             @PathVariable UUID revId) {
@@ -121,7 +121,7 @@ public class GedController {
      * Sprint 39 / ADR-050 Decisão 3: visão inversa — lista NCs vinculadas a um documento.
      */
     @GetMapping("/documents/{documentId}/non-conformances")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public List<DocumentNcLinkResponse> listNonConformances(@PathVariable UUID documentId) {
         return listDocumentNonConformances.execute(documentId);
     }

@@ -3910,4 +3910,59 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 8. Seção "Produção (Snapshot)": card com `kpiSummary` — OEE 30 dias (chip semáforo), NC abertas, OS abertas
 9. `SemaphoreChipComponent` standalone `OnPush` reutilizável: `input() status: 'green' | 'amber' | 'red'`; ícone colorido correspondente; reutilizado em todos os cards
 10. `ChangeDetectionStrategy.OnPush`, standalone, signals; `data = signal<ManagementReviewData | null>(null)`, `isLoading = signal(false)`, `isExporting = signal(false)`
+
+---
+
+## Sprint 47 ✅
+**Objetivo**: Email Auth + Permissões Granulares por Módulo + Trilha de Auditoria Aprimorada
+**ADR**: ADR-058
+**Status**: concluída
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-137 | Backend — Login por e-mail (troca de username→email no JWT flow) | 3 | ✅ concluído |
+| US-138 | Frontend — Formulário de login e user management com campo email | 2 | ✅ concluído |
+| US-139 | Backend — Permissões granulares por módulo (`UserModulePermission`, `PermissionService`) | 5 | ✅ concluído |
+| US-140 | Frontend — UI de matriz de permissões por módulo | 3 | ✅ concluído |
+| US-141 | Backend — Audit trail aprimorado (module, beforeState, afterState, retenção configurável) | 4 | ✅ concluído |
+| US-142 | Frontend — Página `/admin/audit` com filtros, diff antes/depois, export CSV, configuração de retenção | 3 | ✅ concluído |
+
+**Total**: 20 pontos
+
+---
+
+## Sprint 48 ✅
+**Objetivo**: Internacionalização (i18n) — 4 idiomas com auto-detecção via browser
+**ADR**: ADR-059
+**Status**: concluída
+
+### User Stories
+| ID | Título | Pontos | Status |
+|----|--------|--------|--------|
+| US-143 | Backend — MessageSource + AcceptHeaderLocaleResolver + properties para pt-BR/en-US/es-ES/fr-FR | 3 | ✅ concluído |
+| US-144 | Frontend — I18nService (signals), TranslatePipe, LanguageSelectorComponent, interceptor Accept-Language | 5 | ✅ concluído |
+
+**Total**: 8 pontos
+
+---
+
+## Sprint 49 ✅
+**Objetivo**: Security Hardening (SECs diferidos) + Migração PermissionService para todos os controllers
+**Status**: concluída
+
+### Correções de Segurança
+| SEC | Severidade | Descrição | Status |
+|-----|-----------|-----------|--------|
+| SEC-026 | MEDIUM | CSV Injection em ExportNcCsvUseCase — escapeCsv() aplicado | ✅ corrigido |
+| SEC-036 | MEDIUM | JWT secret sem validação de startup — @PostConstruct fail-fast adicionado | ✅ corrigido |
+| SEC-047 | LOW | DataInitializer seeds com mustChangePassword=false → true | ✅ corrigido |
+| SEC-063 | MEDIUM | Race condition evaluateNow AtomicReference → compareAndSet() | ✅ corrigido |
+| SEC-186 | LOW | ManagementReviewController sem validação from>to | ✅ corrigido |
+
+### Migração @PreAuthorize
+- Todos os controllers de features migrados para `@perm.canView/canCreate/canEdit/canDelete`
+- Controllers cross-cutting mantêm `hasRole('ADMIN')`
+
+---
 11. Spec `management-review.component.spec.ts`: (a) seção "Qualidade" renderiza cards com dados mockados; (b) chip vermelho quando `criticalOpen > 3`; (c) "Exportar PDF" desabilitado antes de dados carregados; (d) `exportPdf()` chamado ao clicar; (e) `SemaphoreChipComponent` renderiza cor correta por status

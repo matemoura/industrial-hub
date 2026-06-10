@@ -83,7 +83,7 @@ public class ChangeRequestController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<Page<ChangeRequestResponse>> list(
             @RequestParam(required = false) ChangeStatus status,
             @RequestParam(required = false) ChangeType changeType,
@@ -104,7 +104,7 @@ public class ChangeRequestController {
     }
 
     @GetMapping("/count-pending")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<Map<String, Long>> countPending(Principal principal) {
         String role = resolveHighestRole(principal);
         long count = getChangeRequests.countPendingForRole(role, principal.getName());
@@ -112,13 +112,13 @@ public class ChangeRequestController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<ChangeRequestDetailResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(getChangeRequestDetail.execute(id));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<ChangeRequestResponse> update(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateChangeRequestRequest request,
@@ -127,7 +127,7 @@ public class ChangeRequestController {
     }
 
     @PostMapping("/{id}/submit")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<ChangeRequestResponse> submit(
             @PathVariable UUID id,
             Principal principal) {
@@ -135,7 +135,7 @@ public class ChangeRequestController {
     }
 
     @PutMapping("/{id}/review")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<ChangeRequestResponse> review(
             @PathVariable UUID id,
             @RequestBody @Valid ReviewChangeRequestRequest request,
@@ -153,7 +153,7 @@ public class ChangeRequestController {
     }
 
     @PutMapping("/{id}/implement")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<ChangeRequestResponse> implement(
             @PathVariable UUID id,
             Principal principal) {
@@ -161,7 +161,7 @@ public class ChangeRequestController {
     }
 
     @PostMapping("/{id}/links")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<ChangeRequestLinkResponse> addLink(
             @PathVariable UUID id,
             @RequestBody @Valid ChangeRequestLinkRequest request,
@@ -171,7 +171,7 @@ public class ChangeRequestController {
     }
 
     @DeleteMapping("/{id}/links/{linkId}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canDelete(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).CHANGES)")
     public ResponseEntity<Void> deleteLink(
             @PathVariable UUID id,
             @PathVariable UUID linkId) {

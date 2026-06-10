@@ -77,7 +77,7 @@ public class ComplaintController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<ComplaintResponse> create(
             @RequestBody @Valid CreateComplaintRequest request,
             Principal principal) {
@@ -86,7 +86,7 @@ public class ComplaintController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<Page<ComplaintResponse>> list(
             @RequestParam(required = false) ComplaintStatus status,
             @RequestParam(required = false) NcSeverity severity,
@@ -99,13 +99,13 @@ public class ComplaintController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<ComplaintResponse> getById(@PathVariable UUID id) {
         return ResponseEntity.ok(getComplaintDetail.execute(id));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<ComplaintResponse> update(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateComplaintRequest request) {
@@ -113,7 +113,7 @@ public class ComplaintController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<ComplaintResponse> transitionStatus(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateComplaintStatusRequest request,
@@ -122,7 +122,7 @@ public class ComplaintController {
     }
 
     @PutMapping("/{id}/link-nc")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<ComplaintResponse> linkNc(
             @PathVariable UUID id,
             @RequestBody @Valid LinkNcRequest request) {
@@ -130,7 +130,7 @@ public class ComplaintController {
     }
 
     @PutMapping("/{id}/link-capa")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<ComplaintResponse> linkCapa(
             @PathVariable UUID id,
             @RequestBody @Valid LinkCapaRequest request) {
@@ -147,7 +147,7 @@ public class ComplaintController {
     }
 
     @GetMapping("/indicators")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<ComplaintIndicators> indicators(
             @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
             @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {

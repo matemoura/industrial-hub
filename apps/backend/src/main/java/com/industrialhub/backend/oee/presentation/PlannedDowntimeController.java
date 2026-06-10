@@ -39,7 +39,7 @@ public class PlannedDowntimeController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).OEE)")
     public ResponseEntity<PlannedDowntimeResponse> create(
             @Valid @RequestBody CreatePlannedDowntimeRequest request,
             Principal principal) {
@@ -49,7 +49,7 @@ public class PlannedDowntimeController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).OEE)")
     public ResponseEntity<List<PlannedDowntimeResponse>> list(
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
             @RequestParam(required = false) UUID equipmentId) {
@@ -57,7 +57,7 @@ public class PlannedDowntimeController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).OEE)")
     public ResponseEntity<PlannedDowntimeResponse> update(
             @PathVariable UUID id,
             @Valid @RequestBody UpdatePlannedDowntimeRequest request,
@@ -67,7 +67,7 @@ public class PlannedDowntimeController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canDelete(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).OEE)")
     public ResponseEntity<Void> delete(@PathVariable UUID id, Principal principal) {
         deleteUseCase.execute(id, principal.getName());
         return ResponseEntity.noContent().build();

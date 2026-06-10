@@ -121,13 +121,13 @@ public class QmsController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public NcResponse create(@Valid @RequestBody CreateNcRequest request, Principal principal) {
         return createNc.execute(request, principal.getName());
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public Page<NcSummaryItem> list(
             @RequestParam(required = false) NcStatus status,
             @RequestParam(required = false) NcSeverity severity,
@@ -140,13 +140,13 @@ public class QmsController {
     }
 
     @GetMapping("/summary")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public NcKpiSummary getSummary() {
         return getKpiSummary.execute();
     }
 
     @GetMapping("/export")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public void export(HttpServletResponse response) throws IOException {
         response.setContentType("text/csv; charset=utf-8");
         response.setHeader("Content-Disposition", "attachment; filename=\"ncs-export.csv\"");
@@ -154,13 +154,13 @@ public class QmsController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public NcResponse getById(@PathVariable UUID id) {
         return getNcDetail.execute(id);
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public NcResponse transition(@PathVariable UUID id,
                                   @Valid @RequestBody TransitionStatusRequest request,
                                   Principal principal) {
@@ -169,7 +169,7 @@ public class QmsController {
 
     @PostMapping("/{id}/actions")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ActionResponse createAction(@PathVariable UUID id,
                                        @Valid @RequestBody CreateActionRequest request,
                                        Principal principal) {
@@ -177,13 +177,13 @@ public class QmsController {
     }
 
     @GetMapping("/{id}/actions")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public List<ActionResponse> listActions(@PathVariable UUID id) {
         return listActions.execute(id);
     }
 
     @PutMapping("/{id}/actions/{aid}/complete")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ActionResponse completeAction(@PathVariable UUID id,
                                           @PathVariable UUID aid,
                                           Principal principal) {
@@ -192,13 +192,13 @@ public class QmsController {
 
     @DeleteMapping("/{id}/actions/{aid}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canDelete(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public void deleteAction(@PathVariable UUID id, @PathVariable UUID aid) {
         deleteAction.execute(id, aid);
     }
 
     @PutMapping("/{ncId}/corrective-actions/{actionId}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ActionResponse updateCapa(@PathVariable UUID ncId,
                                       @PathVariable UUID actionId,
                                       @RequestBody @Valid CAPAUpdateRequest req) {
@@ -206,7 +206,7 @@ public class QmsController {
     }
 
     @PostMapping("/{id}/actions/{actionId}/submit-for-effectiveness")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ActionResponse submitForEffectiveness(@PathVariable UUID id,
                                                   @PathVariable UUID actionId,
                                                   Principal principal) {
@@ -214,7 +214,7 @@ public class QmsController {
     }
 
     @PostMapping("/{id}/actions/{actionId}/verify-effectiveness")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ActionResponse verifyEffectiveness(@PathVariable UUID id,
                                                @PathVariable UUID actionId,
                                                @RequestBody @Valid VerifyEffectivenessRequest req,
@@ -224,7 +224,7 @@ public class QmsController {
 
     @PostMapping("/{ncId}/rca")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public RcaResponse createRca(@PathVariable UUID ncId,
                                  @Valid @RequestBody CreateRcaRequest request,
                                  Principal principal) {
@@ -232,13 +232,13 @@ public class QmsController {
     }
 
     @GetMapping("/{ncId}/rca")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public RcaResponse getRca(@PathVariable UUID ncId) {
         return getRca.execute(ncId);
     }
 
     @PutMapping("/{ncId}/rca")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public RcaResponse updateRca(@PathVariable UUID ncId,
                                  @Valid @RequestBody CreateRcaRequest request,
                                  Principal principal) {
@@ -249,7 +249,7 @@ public class QmsController {
 
     @PostMapping("/{ncId}/documents")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public NcDocumentLinkResponse linkDocument(@PathVariable UUID ncId,
                                                @Valid @RequestBody LinkNcToDocumentRequest req,
                                                Principal principal) {
@@ -257,14 +257,14 @@ public class QmsController {
     }
 
     @GetMapping("/{ncId}/documents")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public List<NcDocumentLinkResponse> listDocumentLinks(@PathVariable UUID ncId) {
         return listNcDocumentLinks.execute(ncId);
     }
 
     @DeleteMapping("/{ncId}/documents/{documentId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canDelete(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public void unlinkDocument(@PathVariable UUID ncId, @PathVariable UUID documentId,
                                java.security.Principal principal) {
         unlinkNcFromDocument.execute(ncId, documentId, principal.getName());
@@ -272,7 +272,7 @@ public class QmsController {
 
     // Sprint 43 — US-128: NC-Risco rastreabilidade
     @GetMapping("/{ncId}/risks")
-    @PreAuthorize("hasAnyRole('OPERATOR', 'SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public List<RiskItemSummary> getRisksByNc(@PathVariable UUID ncId) {
         return getRisksByNc.execute(ncId);
     }

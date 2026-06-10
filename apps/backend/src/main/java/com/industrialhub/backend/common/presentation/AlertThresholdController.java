@@ -95,12 +95,17 @@ public class AlertThresholdController {
             throw new EvaluateNowCooldownException(remaining);
         }
 
+        // SEC-063: use compareAndSet to atomically claim the slot — prevents two concurrent
+        // requests both passing the cooldown check and both executing the evaluation.
         if (!lastManualEvaluation.compareAndSet(last, now)) {
+            // Another thread updated the reference concurrently; re-read and enforce cooldown.
             Instant updatedLast = lastManualEvaluation.get();
             long remaining = EVALUATE_NOW_COOLDOWN.toSeconds() - Duration.between(updatedLast, now).toSeconds();
             if (remaining > 0) {
                 throw new EvaluateNowCooldownException(remaining);
             }
+            // Cooldown already expired for the concurrent winner — reject to avoid duplicate run.
+            throw new EvaluateNowCooldownException(0);
         }
 
         int evaluated = alertEvaluatorUseCase.execute();

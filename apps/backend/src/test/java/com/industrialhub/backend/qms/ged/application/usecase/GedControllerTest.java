@@ -57,9 +57,9 @@ class GedControllerTest {
         assertThat(result.expiresInSeconds()).isEqualTo(900L);
     }
 
-    // (b) método createDocument exige SUPERVISOR ou ADMIN — verificado via @PreAuthorize
+    // (b) método createDocument exige permissão canCreate no módulo QMS — verificado via @PreAuthorize
     @Test
-    void createDocument_requiresSupervisorOrAdminRole() throws NoSuchMethodException {
+    void createDocument_requiresCanCreateQmsPermission() throws NoSuchMethodException {
         Method createMethod = GedController.class.getMethod(
                 "createDocument",
                 com.industrialhub.backend.qms.ged.application.dto.CreateDocumentRequest.class,
@@ -69,9 +69,7 @@ class GedControllerTest {
         PreAuthorize preAuthorize = createMethod.getAnnotation(PreAuthorize.class);
         assertThat(preAuthorize).isNotNull();
         assertThat(preAuthorize.value())
-                .contains("SUPERVISOR")
-                .contains("ADMIN");
-        // OPERATOR não está incluído → Spring Security retorna 403 em runtime
-        assertThat(preAuthorize.value()).doesNotContain("OPERATOR");
+                .contains("@perm.canCreate")
+                .contains("AppModule).QMS");
     }
 }

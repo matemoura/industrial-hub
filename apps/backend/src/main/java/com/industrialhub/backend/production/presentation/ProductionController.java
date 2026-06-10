@@ -175,7 +175,7 @@ public class ProductionController {
 
     @PostMapping("/import/stock")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public ImportProductionBatchResponse importStock(
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
@@ -184,7 +184,7 @@ public class ProductionController {
 
     @PostMapping("/import/production-orders")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public ImportProductionBatchResponse importProductionOrders(
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
@@ -210,7 +210,7 @@ public class ProductionController {
     }
 
     @GetMapping("/import/history")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public Page<ImportProductionBatchResponse> importHistory(
             @RequestParam(required = false) ProductionImportType type,
             @PageableDefault(size = 20, sort = "importedAt") Pageable pageable) {
@@ -218,7 +218,7 @@ public class ProductionController {
     }
 
     @GetMapping("/import/history/{id}")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public ImportProductionBatchResponse importHistoryById(@PathVariable UUID id) {
         return importHistory.getById(id);
     }
@@ -226,13 +226,13 @@ public class ProductionController {
     // ===== Product / Family read endpoints =====
 
     @GetMapping("/families")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<ProductFamilyResponse> listFamilies() {
         return listFamilies.execute();
     }
 
     @GetMapping("/products")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public Page<ProductSummaryResponse> listProducts(
             @RequestParam(required = false) String familyCode,
             @RequestParam(required = false) ProductType type,
@@ -242,13 +242,13 @@ public class ProductionController {
     }
 
     @GetMapping("/products/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public ProductDetailResponse getProduct(@PathVariable UUID id) {
         return listProducts.getDetail(id);
     }
 
     @GetMapping("/products/{id}/cycle-times")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<CycleTimeResponse> getCycleTimesForProduct(@PathVariable UUID id) {
         return listCycleTimes.execute(id);
     }
@@ -256,7 +256,7 @@ public class ProductionController {
     // ===== Stock endpoints =====
 
     @GetMapping("/stock")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<StockPositionResponse> listStock(
             @RequestParam(required = false) Boolean belowMin) {
         return listStock.listLatestPositions(belowMin);
@@ -265,7 +265,7 @@ public class ProductionController {
     // ===== Production Orders endpoints =====
 
     @GetMapping("/production-orders")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public Page<ProductionOrderSummaryResponse> listOrders(
             @RequestParam(required = false) String familyCode,
             @RequestParam(required = false) ProductionOrderStatus status,
@@ -278,7 +278,7 @@ public class ProductionController {
     // ===== Cycle Times endpoints =====
 
     @GetMapping("/cycle-times")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<CycleTimeResponse> listCycleTimes(
             @RequestParam(required = false) UUID productId) {
         return listCycleTimes.execute(productId);
@@ -287,7 +287,7 @@ public class ProductionController {
     // ===== Tracking endpoints (US-082 / ADR-041) =====
 
     @GetMapping("/tracking/families")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public ProductionTrackingResponse getTracking(
             @RequestParam(required = false) String familyCode,
             @RequestParam(required = false) Boolean overdue) {
@@ -295,7 +295,7 @@ public class ProductionController {
     }
 
     @GetMapping("/tracking/orders")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public ProductionOrderListResponse getTrackingOrders(
             @RequestParam(required = false) String familyCode,
             @RequestParam(required = false) String displayStatus,
@@ -306,7 +306,7 @@ public class ProductionController {
     }
 
     @GetMapping("/tracking/summary")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public ProductionSummaryResponse getSummary() {
         return getSummary.execute();
     }
@@ -315,7 +315,7 @@ public class ProductionController {
 
     @PostMapping("/sterilization-loads")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public SterilizationLoadResponse createLoad(
             @Valid @RequestBody CreateSterilizationLoadRequest request,
             Authentication authentication) {
@@ -323,7 +323,7 @@ public class ProductionController {
     }
 
     @GetMapping("/sterilization-loads")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public Page<SterilizationLoadResponse> listLoads(
             @RequestParam(required = false) LoadStatus status,
             @RequestParam(required = false) SterilizationMethod method,
@@ -334,20 +334,20 @@ public class ProductionController {
     }
 
     @GetMapping("/sterilization-loads/pending-orders")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<PendingOrderForLoadResponse> getPendingOrders() {
         return getPendingOrders.execute();
     }
 
     @GetMapping("/sterilization-loads/{id}")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public SterilizationLoadDetailResponse getLoadDetail(@PathVariable UUID id) {
         return getLoadDetail.execute(id);
     }
 
     @PostMapping("/sterilization-loads/{id}/orders")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public void addOrder(
             @PathVariable UUID id,
             @Valid @RequestBody AddOrderToLoadRequest request,
@@ -357,13 +357,13 @@ public class ProductionController {
 
     @DeleteMapping("/sterilization-loads/{id}/orders/{orderId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canDelete(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public void removeOrder(@PathVariable UUID id, @PathVariable UUID orderId) {
         removeOrderFromLoad.execute(id, orderId);
     }
 
     @PutMapping("/sterilization-loads/{id}/status")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public SterilizationLoadResponse transitionStatus(
             @PathVariable UUID id,
             @Valid @RequestBody TransitionLoadStatusRequest request,
@@ -374,7 +374,7 @@ public class ProductionController {
     // ===== MRP endpoints (US-085 / ADR-030, ADR-043) =====
 
     @PostMapping("/mrp/dry-run")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public com.industrialhub.backend.production.application.dto.MrpRunResult dryRunMrp(
             Authentication authentication) {
         return dryRunMrp.execute(authentication.getName());
@@ -382,27 +382,27 @@ public class ProductionController {
 
     @PostMapping("/mrp/run")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public com.industrialhub.backend.production.application.dto.MrpRunResult runMrp(
             Authentication authentication) {
         return runMrp.execute(authentication.getName());
     }
 
     @GetMapping("/mrp/runs")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public Page<com.industrialhub.backend.production.application.dto.MrpRunResponse> getMrpRuns(
             @PageableDefault(size = 20) Pageable pageable) {
         return getMrpRuns.execute(pageable);
     }
 
     @GetMapping("/mrp/suggested-orders")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<com.industrialhub.backend.production.application.dto.MrpPlannedOrderResponse> getMrpSuggestions() {
         return getMrpSuggestions.execute();
     }
 
     @PutMapping("/mrp/suggested-orders/{id}/accept")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public com.industrialhub.backend.production.application.dto.MrpPlannedOrderResponse acceptSuggestion(
             @PathVariable UUID id,
             @RequestBody(required = false) com.industrialhub.backend.production.application.dto.AcceptMrpSuggestionRequest request,
@@ -412,7 +412,7 @@ public class ProductionController {
     }
 
     @PutMapping("/mrp/suggested-orders/{id}/reject")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public com.industrialhub.backend.production.application.dto.MrpPlannedOrderResponse rejectSuggestion(
             @PathVariable UUID id,
             @Valid @RequestBody com.industrialhub.backend.production.application.dto.RejectMrpSuggestionRequest request,
@@ -421,7 +421,7 @@ public class ProductionController {
     }
 
     @PutMapping("/mrp/suggested-orders/{id}/convert")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public com.industrialhub.backend.production.application.dto.MrpPlannedOrderResponse convertSuggestion(
             @PathVariable UUID id,
             Authentication authentication) {
@@ -431,7 +431,7 @@ public class ProductionController {
     // ===== Staffing endpoints (US-086 / ADR-030) =====
 
     @GetMapping("/staffing-config")
-    @PreAuthorize("hasAnyRole('OPERATOR','SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public com.industrialhub.backend.production.application.dto.StaffingConfigResponse getStaffingConfig() {
         return getStaffingConfig.execute();
     }
@@ -445,7 +445,7 @@ public class ProductionController {
     }
 
     @PutMapping("/production-orders/{id}/staffing")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public com.industrialhub.backend.production.application.dto.ProductionOrderStaffingResponse updateOrderStaffing(
             @PathVariable UUID id,
             @Valid @RequestBody com.industrialhub.backend.production.application.dto.UpdateOrderStaffingRequest request) {
@@ -453,7 +453,7 @@ public class ProductionController {
     }
 
     @DeleteMapping("/production-orders/{id}/staffing")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canDelete(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public com.industrialhub.backend.production.application.dto.ProductionOrderStaffingResponse resetOrderStaffing(
             @PathVariable UUID id) {
         return resetOrderStaffing.execute(id);
@@ -462,13 +462,13 @@ public class ProductionController {
     // ===== Planning Board endpoints (US-087 / ADR-030) =====
 
     @GetMapping("/planning/families")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<com.industrialhub.backend.production.application.dto.FamilyPlanningBoardResponse> getPlanningBoard() {
         return getPlanningBoard.execute();
     }
 
     @GetMapping("/planning/timeline")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<com.industrialhub.backend.production.application.dto.TimelineEntryResponse> getPlanningTimeline(
             @RequestParam(required = false) String familyCode,
             @RequestParam(defaultValue = "8") int weeks) {
@@ -476,7 +476,7 @@ public class ProductionController {
     }
 
     @GetMapping("/planning/purchase-needs")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<com.industrialhub.backend.production.application.dto.PurchaseNeedResponse> getPurchaseNeeds() {
         return getPurchaseNeeds.execute();
     }
@@ -492,7 +492,7 @@ public class ProductionController {
     }
 
     @GetMapping("/import/bom/template")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public org.springframework.http.ResponseEntity<byte[]> bomTemplate() {
         byte[] bytes = getBomTemplate.execute();
         return org.springframework.http.ResponseEntity.ok()
@@ -504,7 +504,7 @@ public class ProductionController {
     }
 
     @GetMapping("/products/{code}/bom")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<BomComponentRow> getProductBom(@PathVariable String code) {
         return getProductBom.execute(code);
     }
@@ -512,7 +512,7 @@ public class ProductionController {
     // ===== Planning Report endpoints (US-102 / ADR-044) =====
 
     @GetMapping("/reports/planning-summary")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public List<PlanningSummaryRow> getPlanningSummary(
             @RequestParam(required = false) String familyCode,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -521,7 +521,7 @@ public class ProductionController {
     }
 
     @GetMapping("/reports/planning-summary/export")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public org.springframework.http.ResponseEntity<byte[]> exportPlanningSummary(
             @RequestParam(required = false) String familyCode,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
@@ -532,7 +532,7 @@ public class ProductionController {
     // ===== Sprint 34 — Production Overview =====
 
     @GetMapping("/overview")
-    @PreAuthorize("hasAnyRole('SUPERVISOR','ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
     public ProductionOverviewDto getProductionOverview() {
         return getProductionOverview.getOverview();
     }

@@ -44,7 +44,7 @@ public class CapaController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public Page<CAPASummaryResponse> listCapas(
             @RequestParam(required = false) ActionType type,
             @RequestParam(required = false) ActionStatus status,
@@ -57,7 +57,7 @@ public class CapaController {
      * Sprint 39 / US-116: dashboard de aging de CAPAs.
      */
     @GetMapping("/aging")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public CapaAgingResponse getAging() {
         return getCapaAging.execute();
     }
@@ -66,7 +66,7 @@ public class CapaController {
      * Sprint 39 / US-116: exporta CAPAs abertas como CSV (UTF-8 BOM + ';').
      */
     @GetMapping("/aging/export")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<byte[]> exportAgingCsv() {
         byte[] csv = exportCapaAgingCsv.execute();
         String filename = "capas-aging-" + LocalDate.now().format(DateTimeFormatter.ISO_LOCAL_DATE) + ".csv";
@@ -80,7 +80,7 @@ public class CapaController {
      * Sprint 39 / US-116: atualiza dueDate de uma CAPA.
      */
     @PutMapping("/{id}/due-date")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public CAPASummaryResponse updateDueDate(@PathVariable UUID id,
                                               @RequestBody @Valid UpdateCapaDueDateRequest req) {
         return updateCapaDueDate.execute(id, req);

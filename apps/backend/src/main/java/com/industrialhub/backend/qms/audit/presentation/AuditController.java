@@ -67,7 +67,7 @@ public class AuditController {
     // ── Audits CRUD ─────────────────────────────────────────────────────────
 
     @PostMapping
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<InternalAuditResponse> createAudit(
             @RequestBody @Valid CreateInternalAuditRequest request,
             Principal principal) {
@@ -76,7 +76,7 @@ public class AuditController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('OPERATOR')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<Page<InternalAuditResponse>> listAudits(
             @RequestParam(required = false) AuditStatus status,
             @RequestParam(required = false) AuditType auditType,
@@ -88,19 +88,19 @@ public class AuditController {
     }
 
     @GetMapping("/compliance-dashboard")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<AuditComplianceDashboard> getComplianceDashboard() {
         return ResponseEntity.ok(complianceDashboardUseCase.execute());
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('OPERATOR')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<InternalAuditDetailResponse> getAudit(@PathVariable UUID id) {
         return ResponseEntity.ok(getAuditDetailUseCase.execute(id));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<InternalAuditResponse> updateAudit(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateInternalAuditRequest request,
@@ -109,7 +109,7 @@ public class AuditController {
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<InternalAuditResponse> transitionStatus(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateAuditStatusRequest request,
@@ -120,7 +120,7 @@ public class AuditController {
     // ── Checklist ────────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/checklist")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<List<AuditChecklistItemResponse>> addChecklistItems(
             @PathVariable UUID id,
             @RequestBody @Valid List<CreateAuditChecklistItemRequest> requests) {
@@ -129,7 +129,7 @@ public class AuditController {
     }
 
     @PutMapping("/{id}/checklist/{itemId}")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canEdit(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<AuditChecklistItemResponse> updateChecklistItem(
             @PathVariable UUID id,
             @PathVariable UUID itemId,
@@ -140,7 +140,7 @@ public class AuditController {
     // ── Findings ─────────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/findings")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<AuditFindingResponse> addFinding(
             @PathVariable UUID id,
             @RequestBody @Valid CreateAuditFindingRequest request,
@@ -150,7 +150,7 @@ public class AuditController {
     }
 
     @DeleteMapping("/{id}/findings/{findingId}")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canDelete(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<Void> deleteFinding(
             @PathVariable UUID id,
             @PathVariable UUID findingId) {
@@ -161,7 +161,7 @@ public class AuditController {
     // ── Report ───────────────────────────────────────────────────────────────
 
     @PostMapping("/{id}/report")
-    @PreAuthorize("hasRole('SUPERVISOR')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<byte[]> generateReport(
             @PathVariable UUID id,
             Principal principal) {

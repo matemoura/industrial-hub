@@ -76,6 +76,7 @@ public class DataInitializer implements ApplicationRunner {
                     .role(role)
                     .active(true)
                     .email(email)
+                    .mustChangePassword(true) // SEC-047: force password change on first login
                     .build());
         }
     }

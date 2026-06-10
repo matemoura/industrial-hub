@@ -33,16 +33,26 @@ public class ExportNcCsvUseCase {
             for (NonConformance nc : ncs) {
                 printer.printRecord(
                     nc.getId(),
-                    nc.getTitle(),
+                    escapeCsv(nc.getTitle()),
                     nc.getType(),
                     nc.getSeverity(),
                     nc.getStatus(),
-                    nc.getReportedBy(),
+                    escapeCsv(nc.getReportedBy()),
                     nc.getReportedAt(),
-                    nc.getClosedBy(),
+                    escapeCsv(nc.getClosedBy()),
                     nc.getClosedAt()
                 );
             }
         }
+    }
+
+    // SEC-026: prevent CSV injection — prefix formula chars with a single quote
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        String trimmed = value.trim();
+        if (!trimmed.isEmpty() && "=+-@".indexOf(trimmed.charAt(0)) >= 0) {
+            return "'" + trimmed;
+        }
+        return trimmed;
     }
 }

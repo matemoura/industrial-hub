@@ -86,6 +86,10 @@ public class GetManagementReviewDataUseCase {
     @Cacheable(value = "management-review", key = "#from.toString() + '-' + #to.toString()")
     @Transactional(readOnly = true)
     public ManagementReviewData execute(LocalDate from, LocalDate to, String principal) {
+        if (from.isAfter(to)) {
+            throw new InvalidManagementReviewPeriodException(
+                "from não pode ser posterior a to");
+        }
         if (ChronoUnit.DAYS.between(from, to) > 366) {
             throw new InvalidManagementReviewPeriodException(
                 "Período máximo de 366 dias para análise crítica");

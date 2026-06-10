@@ -31,7 +31,7 @@ public class QmsReportController {
      * Período máximo: 366 dias. Seções selecionáveis: NCS, CAPAS, GED, RCA.
      */
     @PostMapping("/quality")
-    @PreAuthorize("hasAnyRole('SUPERVISOR', 'ADMIN')")
+    @PreAuthorize("@perm.canView(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).QMS)")
     public ResponseEntity<byte[]> generateQualityReport(
             @Valid @RequestBody QualityReportRequest req) throws IOException {
 
