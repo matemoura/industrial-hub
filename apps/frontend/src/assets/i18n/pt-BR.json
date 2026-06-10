@@ -1,0 +1,58 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "oee": "OEE",
+    "qms": "Qualidade",
+    "maintenance": "Manutenção",
+    "production": "Produção",
+    "training": "Treinamentos",
+    "changes": "Mudanças",
+    "management_review": "Análise Crítica",
+    "admin": "Administração",
+    "logout": "Sair"
+  },
+  "common": {
+    "loading": "Carregando...",
+    "error": "Erro ao carregar dados",
+    "save": "Salvar",
+    "cancel": "Cancelar",
+    "confirm": "Confirmar",
+    "delete": "Excluir",
+    "edit": "Editar",
+    "create": "Criar",
+    "search": "Buscar",
+    "filter": "Filtrar",
+    "export": "Exportar",
+    "import": "Importar",
+    "back": "Voltar",
+    "next": "Próximo",
+    "previous": "Anterior",
+    "yes": "Sim",
+    "no": "Não",
+    "active": "Ativo",
+    "inactive": "Inativo",
+    "status": "Status",
+    "actions": "Ações",
+    "date": "Data",
+    "description": "Descrição",
+    "name": "Nome",
+    "email": "E-mail",
+    "password": "Senha",
+    "role": "Perfil",
+    "language": "Idioma"
+  },
+  "auth": {
+    "login": "Entrar",
+    "logout": "Sair",
+    "email": "E-mail",
+    "password": "Senha",
+    "forgot_password": "Esqueceu a senha?",
+    "invalid_credentials": "Credenciais inválidas"
+  },
+  "language": {
+    "pt_BR": "Português (BR)",
+    "en_US": "English (US)",
+    "es_ES": "Español",
+    "fr_FR": "Français"
+  }
+}

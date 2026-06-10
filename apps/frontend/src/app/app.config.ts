@@ -6,12 +6,13 @@ import { provideServiceWorker } from '@angular/service-worker';
 import { routes } from './app.routes';
 import { authInterceptor } from './auth/auth.interceptor';
 import { plantHeaderInterceptor } from './shared/plant-selector/plant-header.interceptor';
+import { acceptLanguageInterceptor } from './shared/i18n/accept-language.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
-    provideHttpClient(withInterceptors([authInterceptor, plantHeaderInterceptor])),
+    provideHttpClient(withInterceptors([authInterceptor, plantHeaderInterceptor, acceptLanguageInterceptor])),
     provideServiceWorker('ngsw-worker.js', {
       enabled: !isDevMode(),
       registrationStrategy: 'registerWhenStable:30000',

@@ -11,6 +11,7 @@ import { PlantService } from '../../admin/plants/plant.service';
 import { SwUpdate, VersionEvent } from '@angular/service-worker';
 import { OfflineQueueService } from '../offline/offline-queue.service';
 import { OfflineSyncService } from '../offline/offline-sync.service';
+import { I18nService } from '../i18n/i18n.service';
 
 const MOCK_NOTIFICATIONS: Notification[] = [
   {
@@ -111,6 +112,7 @@ describe('NavComponent', () => {
         { provide: SwUpdate, useValue: makeSwUpdate() },
         { provide: OfflineQueueService, useValue: makeOfflineQueueService() },
         { provide: OfflineSyncService, useValue: makeOfflineSyncService() },
+        { provide: I18nService, useValue: { currentLang: signal('pt-BR'), translate: (k: string) => k } },
       ],
     }).compileComponents();
 
@@ -241,6 +243,7 @@ describe('NavComponent', () => {
           { provide: SwUpdate, useValue: makeSwUpdate() },
           { provide: OfflineQueueService, useValue: makeOfflineQueueService() },
           { provide: OfflineSyncService, useValue: makeOfflineSyncService() },
+          { provide: I18nService, useValue: { currentLang: signal('pt-BR'), translate: (k: string) => k } },
         ],
       }).compileComponents();
       // Should not throw

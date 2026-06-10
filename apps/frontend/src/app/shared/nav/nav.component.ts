@@ -28,12 +28,13 @@ import { PlantService, PlantResponse } from '../../admin/plants/plant.service';
 import { PlantSelectorComponent, PlantOption } from '../plant-selector/plant-selector.component';
 import { PlantContextService } from '../plant-selector/plant-context.service';
 import { ShellStateService } from '../shell/shell-state.service';
+import { LanguageSelectorComponent } from '../i18n/language-selector.component';
 
 @Component({
   selector: 'app-nav',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, PlantSelectorComponent],
+  imports: [RouterLink, PlantSelectorComponent, LanguageSelectorComponent],
   templateUrl: './nav.component.html',
   styleUrl: './nav.component.scss',
 })

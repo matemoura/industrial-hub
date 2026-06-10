@@ -1,0 +1,58 @@
+{
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "oee": "OEE",
+    "qms": "Qualité",
+    "maintenance": "Maintenance",
+    "production": "Production",
+    "training": "Formation",
+    "changes": "Changements",
+    "management_review": "Revue de Direction",
+    "admin": "Administration",
+    "logout": "Déconnexion"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur lors du chargement",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "import": "Importer",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "yes": "Oui",
+    "no": "Non",
+    "active": "Actif",
+    "inactive": "Inactif",
+    "status": "Statut",
+    "actions": "Actions",
+    "date": "Date",
+    "description": "Description",
+    "name": "Nom",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "role": "Rôle",
+    "language": "Langue"
+  },
+  "auth": {
+    "login": "Se connecter",
+    "logout": "Déconnexion",
+    "email": "E-mail",
+    "password": "Mot de passe",
+    "forgot_password": "Mot de passe oublié ?",
+    "invalid_credentials": "Identifiants invalides"
+  },
+  "language": {
+    "pt_BR": "Português (BR)",
+    "en_US": "English (US)",
+    "es_ES": "Español",
+    "fr_FR": "Français"
+  }
+}

@@ -21,6 +21,7 @@ import com.industrialhub.backend.common.auth.application.usecase.InvalidCredenti
 import com.industrialhub.backend.common.auth.domain.InvalidPasswordException;
 import com.industrialhub.backend.common.auth.domain.LastAdminException;
 import com.industrialhub.backend.common.auth.domain.UserAlreadyExistsException;
+import com.industrialhub.backend.common.auth.domain.UserEmailAlreadyExistsException;
 import com.industrialhub.backend.common.auth.domain.UserNotFoundException;
 import com.industrialhub.backend.common.security.TooManyRequestsException;
 import com.industrialhub.backend.maintenance.domain.InactiveEquipmentScheduleException;
@@ -68,6 +69,8 @@ import com.industrialhub.backend.qms.ged.domain.InvalidGedTransitionException;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
@@ -88,6 +91,16 @@ public class GlobalExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private final MessageSource messageSource;
+
+    public GlobalExceptionHandler(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
+
+    private String msg(String key, Object... args) {
+        return messageSource.getMessage(key, args.length > 0 ? args : null, LocaleContextHolder.getLocale());
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().stream()
@@ -104,7 +117,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidCredentialsException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidCredentials(InvalidCredentialsException ex) {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.invalid.credentials"),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -181,7 +194,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RcaNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleRcaNotFound(RcaNotFoundException ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.rca.not.found"),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -189,7 +202,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RcaAlreadyExistsException.class)
     public ResponseEntity<Map<String, Object>> handleRcaAlreadyExists(RcaAlreadyExistsException ex) {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.rca.already.exists"),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -291,10 +304,18 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    @ExceptionHandler(UserEmailAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleUserEmailAlreadyExists(UserEmailAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
     @ExceptionHandler(LastAdminException.class)
     public ResponseEntity<Map<String, Object>> handleLastAdmin(LastAdminException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.last.admin"),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -302,7 +323,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidPasswordException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidPassword(InvalidPasswordException ex) {
         return ResponseEntity.badRequest().body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.invalid.password"),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -429,7 +450,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InsufficientStockException.class)
     public ResponseEntity<Map<String, Object>> handleInsufficientStock(InsufficientStockException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.insufficient.stock"),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -598,7 +619,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(InvalidGedFileException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidGedFile(InvalidGedFileException ex) {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.invalid.ged.file", ex.getMessage()),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -851,7 +872,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleChangeRequestForbidden(
             com.industrialhub.backend.common.changes.domain.ChangeRequestForbiddenException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.change.request.forbidden"),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -865,12 +886,22 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    // Sprint 47 — Enhanced Audit Trail
+    @ExceptionHandler(com.industrialhub.backend.common.domain.InvalidRetentionDaysException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidRetentionDays(
+            com.industrialhub.backend.common.domain.InvalidRetentionDaysException ex) {
+        return ResponseEntity.badRequest().body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
     // Sprint 46 — Análise Crítica pela Direção (ISO 13485 §5.6)
     @ExceptionHandler(com.industrialhub.backend.common.domain.InvalidManagementReviewPeriodException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidManagementReviewPeriod(
             com.industrialhub.backend.common.domain.InvalidManagementReviewPeriodException ex) {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
-                "message", ex.getMessage(),
+                "message", msg("error.invalid.management.review.period"),
                 "timestamp", Instant.now().toString()
         ));
     }
@@ -916,7 +947,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, Object>> handleGeneric(Exception ex) {
         log.error("Erro não tratado", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of(
-                "message", "Erro interno. Contate o administrador.",
+                "message", msg("error.internal"),
                 "timestamp", Instant.now().toString()
         ));
     }

@@ -7,6 +7,7 @@ import { Subject } from 'rxjs';
 import { SwUpdate, VersionEvent } from '@angular/service-worker';
 import { App } from './app';
 import { AuthService } from './auth/auth.service';
+import { I18nService } from './shared/i18n/i18n.service';
 import { MaintenanceService } from './maintenance/maintenance.service';
 import { OfflineQueueService } from './shared/offline/offline-queue.service';
 import { OfflineSyncService } from './shared/offline/offline-sync.service';
@@ -38,6 +39,7 @@ describe('App', () => {
         { provide: NotificationService, useValue: { getUnreadCount: vi.fn().mockReturnValue(of({ count: 0 })), getNotifications: vi.fn().mockReturnValue(of({ content: [], totalElements: 0 })), markAllRead: vi.fn().mockReturnValue(of(undefined)), markRead: vi.fn().mockReturnValue(of(undefined)) } },
         { provide: PlantService, useValue: { listPlants: vi.fn().mockReturnValue(of([])) } },
         { provide: SwUpdate, useValue: { isEnabled: false, versionUpdates: new Subject<VersionEvent>(), unrecoverable: new Subject<{ type: string; reason: string }>(), activateUpdate: vi.fn().mockResolvedValue(true) } },
+        { provide: I18nService, useValue: { currentLang: signal('pt-BR'), translate: (k: string) => k } },
       ],
     }).compileComponents();
   });

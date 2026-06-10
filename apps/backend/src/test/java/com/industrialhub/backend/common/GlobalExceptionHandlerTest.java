@@ -1,6 +1,8 @@
 package com.industrialhub.backend.common;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.support.ReloadableResourceBundleMessageSource;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 
 import java.util.Map;
@@ -9,7 +11,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class GlobalExceptionHandlerTest {
 
-    private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
+    private GlobalExceptionHandler handler;
+
+    @BeforeEach
+    void setUp() {
+        ReloadableResourceBundleMessageSource source = new ReloadableResourceBundleMessageSource();
+        source.setBasename("classpath:i18n/messages");
+        source.setDefaultEncoding("UTF-8");
+        source.setFallbackToSystemLocale(false);
+        handler = new GlobalExceptionHandler(source);
+    }
 
     @Test
     void maxUploadSizeExceeded_returns413WithMessage() {
