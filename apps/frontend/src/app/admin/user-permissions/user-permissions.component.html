@@ -1,0 +1,94 @@
+<div class="perms-card">
+  <div class="perms-card__header">
+    <h3 class="perms-card__title">Permissões por Módulo</h3>
+    <p class="perms-card__sub">Controle de acesso granular por funcionalidade</p>
+  </div>
+
+  @if (errorMsg()) {
+    <div class="alert alert-error" role="alert">{{ errorMsg() }}</div>
+  }
+
+  @if (successMsg()) {
+    <div class="alert alert-success" role="alert">{{ successMsg() }}</div>
+  }
+
+  @if (isLoading()) {
+    <div class="loading-state" data-testid="perms-loading">Carregando permissões…</div>
+  } @else {
+    <div class="table-card">
+      <table class="perms-table" data-testid="perms-table">
+        <thead>
+          <tr>
+            <th class="col-module">Módulo</th>
+            <th class="col-perm">Ver</th>
+            <th class="col-perm">Criar</th>
+            <th class="col-perm">Editar</th>
+            <th class="col-perm">Excluir</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (module of allModules; track module) {
+            <tr class="perms-row" [attr.data-testid]="'row-' + module">
+              <td class="col-module">
+                <span class="module-label">{{ moduleLabels[module] }}</span>
+              </td>
+              <td class="col-perm">
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="'Ver ' + moduleLabels[module]"
+                  [attr.data-testid]="'perm-' + module + '-canView'"
+                  [checked]="getPerm(module).canView"
+                  (change)="togglePerm(module, 'canView')"
+                />
+              </td>
+              <td class="col-perm">
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="'Criar ' + moduleLabels[module]"
+                  [attr.data-testid]="'perm-' + module + '-canCreate'"
+                  [checked]="getPerm(module).canCreate"
+                  (change)="togglePerm(module, 'canCreate')"
+                />
+              </td>
+              <td class="col-perm">
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="'Editar ' + moduleLabels[module]"
+                  [attr.data-testid]="'perm-' + module + '-canEdit'"
+                  [checked]="getPerm(module).canEdit"
+                  (change)="togglePerm(module, 'canEdit')"
+                />
+              </td>
+              <td class="col-perm">
+                <input
+                  type="checkbox"
+                  [attr.aria-label]="'Excluir ' + moduleLabels[module]"
+                  [attr.data-testid]="'perm-' + module + '-canDelete'"
+                  [checked]="getPerm(module).canDelete"
+                  (change)="togglePerm(module, 'canDelete')"
+                />
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="perms-actions">
+      <button
+        class="btn-primary"
+        type="button"
+        data-testid="btn-save-perms"
+        [disabled]="isSaving()"
+        (click)="save()"
+      >
+        @if (isSaving()) {
+          <span class="spinner" aria-hidden="true"></span>
+          <span>Salvando…</span>
+        } @else {
+          Salvar Permissões
+        }
+      </button>
+    </div>
+  }
+</div>

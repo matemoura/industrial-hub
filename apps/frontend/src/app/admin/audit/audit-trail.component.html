@@ -1,0 +1,269 @@
+<div class="page-wrapper">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">Trilha de Auditoria</h1>
+      <p class="page-subtitle">Registro completo de ações e eventos do sistema</p>
+    </div>
+    <button
+      class="btn-export"
+      type="button"
+      data-testid="btn-export-csv"
+      (click)="exportCsv()"
+    >
+      Exportar CSV
+    </button>
+  </div>
+
+  @if (errorMsg()) {
+    <div class="alert alert-error" role="alert">{{ errorMsg() }}</div>
+  }
+
+  <!-- ── Seção 1: Filtros ────────────────────────────────────────────────── -->
+  <div class="filters-card">
+    <div class="filters-grid">
+      <div class="field">
+        <label for="filter-username">Usuário</label>
+        <input
+          id="filter-username"
+          type="text"
+          [ngModel]="filterUsername()"
+          (ngModelChange)="filterUsername.set($event)"
+          placeholder="ex: joao.silva"
+          data-testid="filter-username"
+        />
+      </div>
+
+      <div class="field">
+        <label for="filter-module">Módulo</label>
+        <select
+          id="filter-module"
+          [ngModel]="filterModule()"
+          (ngModelChange)="filterModule.set($event)"
+          data-testid="filter-module"
+        >
+          <option value="">TODOS</option>
+          @for (m of modules; track m) {
+            <option [value]="m">{{ m }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="filter-action">Ação</label>
+        <select
+          id="filter-action"
+          [ngModel]="filterAction()"
+          (ngModelChange)="filterAction.set($event)"
+          data-testid="filter-action"
+        >
+          <option value="">TODAS</option>
+          @for (a of commonActions; track a) {
+            <option [value]="a">{{ a }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="filter-from">De</label>
+        <input
+          id="filter-from"
+          type="date"
+          [ngModel]="filterFrom()"
+          (ngModelChange)="filterFrom.set($event)"
+          data-testid="filter-from"
+        />
+      </div>
+
+      <div class="field">
+        <label for="filter-to">Até</label>
+        <input
+          id="filter-to"
+          type="date"
+          [ngModel]="filterTo()"
+          (ngModelChange)="filterTo.set($event)"
+          data-testid="filter-to"
+        />
+      </div>
+    </div>
+
+    <div class="filters-actions">
+      <button class="btn-secondary" type="button" (click)="clearFilters()" data-testid="btn-clear">
+        Limpar Filtros
+      </button>
+      <button class="btn-primary" type="button" (click)="applyFilters()" data-testid="btn-filter">
+        Filtrar
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Seção 2: Tabela de logs ─────────────────────────────────────────── -->
+  <div class="table-card">
+    @if (isLoading()) {
+      <div class="loading-state" data-testid="audit-loading">Carregando logs…</div>
+    } @else {
+      <table class="data-table" data-testid="audit-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Usuário</th>
+            <th>Ação</th>
+            <th>Módulo</th>
+            <th>Entidade</th>
+            <th>IP</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (log of logs(); track log.id) {
+            <tr
+              class="log-row"
+              [class.log-row--expanded]="expandedId() === log.id"
+              (click)="toggleExpand(log.id)"
+              style="cursor: pointer"
+              data-testid="log-row"
+            >
+              <td>{{ formatTimestamp(log.timestamp) }}</td>
+              <td data-testid="log-username">{{ log.username }}</td>
+              <td><span class="action-chip">{{ log.action }}</span></td>
+              <td>{{ log.module ?? '—' }}</td>
+              <td class="entity-cell">
+                <span class="entity-type">{{ log.entityType }}</span>
+                @if (log.entityId) {
+                  <span class="entity-id">{{ log.entityId }}</span>
+                }
+              </td>
+              <td>{{ log.ipAddress ?? '—' }}</td>
+            </tr>
+            @if (expandedId() === log.id) {
+              <tr class="log-detail-row" data-testid="log-detail">
+                <td colspan="6">
+                  <div class="log-detail">
+                    @if (log.details) {
+                      <div class="detail-section">
+                        <span class="detail-label">Detalhes</span>
+                        <pre class="detail-pre">{{ formatJson(log.details) }}</pre>
+                      </div>
+                    }
+                    @if (log.beforeState) {
+                      <div class="detail-section">
+                        <span class="detail-label">Estado Anterior</span>
+                        <pre class="detail-pre" data-testid="before-state">{{ formatJson(log.beforeState) }}</pre>
+                      </div>
+                    }
+                    @if (log.afterState) {
+                      <div class="detail-section">
+                        <span class="detail-label">Estado Posterior</span>
+                        <pre class="detail-pre" data-testid="after-state">{{ formatJson(log.afterState) }}</pre>
+                      </div>
+                    }
+                    @if (!log.details && !log.beforeState && !log.afterState) {
+                      <p class="empty-detail">Nenhum detalhe adicional disponível.</p>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-state">Nenhum log encontrado.</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <div class="pagination">
+        <button
+          class="btn-page"
+          type="button"
+          [disabled]="currentPage() === 0"
+          (click)="prevPage()"
+          data-testid="btn-prev"
+        >
+          ← Anterior
+        </button>
+        <span class="page-info" data-testid="page-info">
+          Página {{ currentPage() + 1 }} de {{ totalPages() || 1 }}
+        </span>
+        <button
+          class="btn-page"
+          type="button"
+          [disabled]="currentPage() >= totalPages() - 1"
+          (click)="nextPage()"
+          data-testid="btn-next"
+        >
+          Próxima →
+        </button>
+      </div>
+    }
+  </div>
+
+  <!-- ── Seção 3: Configuração de Retenção ──────────────────────────────── -->
+  @if (isAdmin()) {
+    <div class="retention-card">
+      <div class="retention-card__header">
+        <h2 class="retention-card__title">Retenção de Logs de Auditoria</h2>
+        <p class="retention-card__sub">Define por quantos dias os logs são mantidos no sistema</p>
+      </div>
+
+      @if (retention()) {
+        <div class="retention-current">
+          <div class="retention-field">
+            <span class="retention-field__label">Retenção atual</span>
+            <span class="retention-field__value" data-testid="retention-current">
+              {{ retention()!.retentionDays }} dias
+            </span>
+          </div>
+          @if (retention()!.updatedAt) {
+            <div class="retention-field">
+              <span class="retention-field__label">Última atualização</span>
+              <span class="retention-field__value">{{ formatTimestamp(retention()!.updatedAt!) }}</span>
+            </div>
+          }
+          @if (retention()!.updatedBy) {
+            <div class="retention-field">
+              <span class="retention-field__label">Atualizado por</span>
+              <span class="retention-field__value">{{ retention()!.updatedBy }}</span>
+            </div>
+          }
+        </div>
+      }
+
+      @if (retentionError()) {
+        <div class="alert alert-error" role="alert">{{ retentionError() }}</div>
+      }
+      @if (retentionSuccess()) {
+        <div class="alert alert-success" role="alert">{{ retentionSuccess() }}</div>
+      }
+
+      <div class="retention-form">
+        <div class="field">
+          <label for="retention-days">Novo valor (dias)</label>
+          <input
+            id="retention-days"
+            type="number"
+            min="30"
+            max="3650"
+            [ngModel]="retentionDays()"
+            (ngModelChange)="retentionDays.set($event)"
+            placeholder="ex: 365"
+            data-testid="input-retention-days"
+          />
+          <span class="field-hint">Mínimo: 30 dias · Máximo: 3650 dias (10 anos)</span>
+        </div>
+        <button
+          class="btn-primary"
+          type="button"
+          data-testid="btn-save-retention"
+          [disabled]="!retentionValid() || isSavingRetention()"
+          (click)="saveRetention()"
+        >
+          @if (isSavingRetention()) {
+            <span class="spinner" aria-hidden="true"></span>
+            <span>Salvando…</span>
+          } @else {
+            Atualizar Retenção
+          }
+        </button>
+      </div>
+    </div>
+  }
+</div>

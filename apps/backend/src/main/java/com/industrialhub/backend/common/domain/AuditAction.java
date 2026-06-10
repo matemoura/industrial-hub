@@ -115,5 +115,10 @@ public enum AuditAction {
     COMPLAINT_ANVISA_REPORTED,
     MDR_REPORT_GENERATED,
     // US-135 — Análise Crítica pela Direção (ISO 13485 §5.6)
-    MANAGEMENT_REVIEW_GENERATED
+    MANAGEMENT_REVIEW_GENERATED,
+    // US-137/139 — Email Auth + Module Permissions (Sprint 47)
+    USER_UPDATED,
+    USER_PERMISSIONS_UPDATED,
+    // US-141 — Enhanced Audit Trail (Sprint 47)
+    AUDIT_RETENTION_UPDATED
 }

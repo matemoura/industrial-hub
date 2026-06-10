@@ -59,6 +59,15 @@
                 }
               </td>
               <td class="actions-cell">
+                <button
+                  class="btn-action btn-permissions"
+                  type="button"
+                  (click)="openPermissionsDialog(user)"
+                  [attr.aria-label]="'Gerenciar permissões de ' + user.username"
+                  data-testid="btn-manage-permissions"
+                >
+                  Permissões
+                </button>
                 @if (canManagePlants()) {
                   <button
                     class="btn-action btn-plants"
@@ -217,6 +226,29 @@
 
       <div class="dialog-actions">
         <button class="btn-primary" (click)="showPlantsDialog.set(false)" type="button">Fechar</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (showPermissionsDialog() && selectedUser()) {
+  <div
+    class="dialog-overlay"
+    (click)="showPermissionsDialog.set(false)"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="perms-dialog-title"
+    data-testid="permissions-dialog"
+  >
+    <div class="dialog dialog--wide" (click)="$event.stopPropagation()">
+      <h2 class="dialog-title" id="perms-dialog-title">
+        Permissões — {{ selectedUser()!.username }}
+      </h2>
+      <div class="dialog-body">
+        <app-user-permissions [userId]="selectedUser()!.id" />
+      </div>
+      <div class="dialog-actions">
+        <button class="btn-primary" type="button" (click)="showPermissionsDialog.set(false)">Fechar</button>
       </div>
     </div>
   </div>

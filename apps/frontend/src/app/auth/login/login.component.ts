@@ -30,7 +30,7 @@ export class LoginComponent implements OnDestroy {
   readonly currentYear = new Date().getFullYear();
 
   readonly form = new FormGroup({
-    username: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
+    email: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.email] }),
     password: new FormControl('', { nonNullable: true, validators: [Validators.required] }),
   });
 

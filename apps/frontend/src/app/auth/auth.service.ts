@@ -7,7 +7,7 @@ import { OfflineQueueService } from '../shared/offline/offline-queue.service';
 import { OfflineSyncService } from '../shared/offline/offline-sync.service';
 
 export interface LoginRequest {
-  username: string;
+  email: string;
   password: string;
 }
 

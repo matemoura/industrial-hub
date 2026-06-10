@@ -6,6 +6,8 @@ import com.industrialhub.backend.common.auth.application.dto.UserResponse;
 import com.industrialhub.backend.common.auth.domain.InvalidPasswordException;
 import com.industrialhub.backend.common.auth.domain.User;
 import com.industrialhub.backend.common.auth.domain.UserAlreadyExistsException;
+import com.industrialhub.backend.common.auth.domain.UserEmailAlreadyExistsException;
+import org.springframework.dao.DataIntegrityViolationException;
 import com.industrialhub.backend.common.auth.infrastructure.UserRepository;
 import com.industrialhub.backend.common.domain.AuditAction;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -44,7 +46,12 @@ public class CreateUserUseCase {
                 .mustChangePassword(true)
                 .build();
 
-        User saved = userRepository.save(user);
+        User saved;
+        try {
+            saved = userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            throw new UserEmailAlreadyExistsException(request.email());
+        }
 
         auditService.log(adminUsername, AuditAction.USER_CREATED, "User",
                 saved.getId(), Map.of("role", saved.getRole().name()));

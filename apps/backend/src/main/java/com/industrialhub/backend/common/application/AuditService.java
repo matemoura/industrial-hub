@@ -30,47 +30,56 @@ public class AuditService {
     @Async
     public void log(String username, AuditAction action, String entityType,
                     UUID entityId, Map<String, Object> details) {
-        doSave(username, action, entityType, entityId.toString(), details, null);
+        doSave(username, action, entityType, entityId.toString(), details, null, null, null, null);
     }
 
     @Async
     public void log(String username, AuditAction action, String entityType,
                     String entityId, Map<String, Object> details) {
-        doSave(username, action, entityType, entityId, details, null);
+        doSave(username, action, entityType, entityId, details, null, null, null, null);
+    }
+
+    @Async
+    public void log(String username, AuditAction action, String entityType,
+                    UUID entityId, Map<String, Object> details, String module) {
+        doSave(username, action, entityType, entityId.toString(), details, null, module, null, null);
+    }
+
+    @Async
+    public void log(String username, AuditAction action, String entityType,
+                    String entityId, Map<String, Object> details, String module) {
+        doSave(username, action, entityType, entityId, details, null, module, null, null);
+    }
+
+    @Async
+    public void log(String username, AuditAction action, String entityType,
+                    UUID entityId, Map<String, Object> details, String module,
+                    Object before, Object after) {
+        doSave(username, action, entityType, entityId.toString(), details, null, module, before, after);
+    }
+
+    @Async
+    public void log(String username, AuditAction action, String entityType,
+                    String entityId, Map<String, Object> details, String module,
+                    Object before, Object after) {
+        doSave(username, action, entityType, entityId, details, null, module, before, after);
     }
 
     /**
      * Registra um evento de auditoria incluindo o endereço IP do solicitante.
-     *
-     * <p><strong>Este método é síncrono e bloqueia a thread do caller</strong> —
-     * ao contrário das sobrecargas {@link #log(String, AuditAction, String, UUID, Map)}
-     * e {@link #log(String, AuditAction, String, String, Map)}, que são anotadas com
-     * {@code @Async} e executam em thread separada do pool de tarefas assíncronas.
-     * Use este método apenas quando o IP precisar ser persistido imediatamente antes
-     * de devolver a resposta ao cliente (ex.: {@code LOGIN_FAILED}).</p>
-     *
-     * @param username    nome do usuário que realizou a ação
-     * @param action      tipo de ação auditada
-     * @param entityType  tipo da entidade afetada (ex.: {@code "Auth"})
-     * @param entityId    identificador da entidade afetada
-     * @param details     mapa de detalhes adicionais (pode ser {@code null})
-     * @param ipAddress   endereço IP do cliente; persistido na coluna dedicada {@code ip_address}
+     * Síncrono — use apenas quando o IP precisar ser persistido imediatamente (ex.: LOGIN_FAILED).
      */
     public void logWithIp(String username, AuditAction action, String entityType,
                           String entityId, Map<String, Object> details, String ipAddress) {
-        doSave(username, action, entityType, entityId, details, ipAddress);
+        doSave(username, action, entityType, entityId, details, ipAddress, null, null, null);
     }
 
     private void doSave(String username, AuditAction action, String entityType,
-                        String entityId, Map<String, Object> details, String ipAddress) {
-        String detailsJson = null;
-        if (details != null && !details.isEmpty()) {
-            try {
-                detailsJson = objectMapper.writeValueAsString(details);
-            } catch (JsonProcessingException e) {
-                log.warn("Failed to serialize audit details for action {}: {}", action, e.getMessage());
-            }
-        }
+                        String entityId, Map<String, Object> details, String ipAddress,
+                        String module, Object before, Object after) {
+        String detailsJson = serialize(details, action);
+        String beforeJson = serialize(before, action);
+        String afterJson = serialize(after, action);
 
         AuditLog entry = AuditLog.builder()
                 .timestamp(LocalDateTime.now())
@@ -80,8 +89,23 @@ public class AuditService {
                 .entityId(entityId)
                 .details(detailsJson)
                 .ipAddress(ipAddress)
+                .module(module)
+                .beforeState(beforeJson)
+                .afterState(afterJson)
                 .build();
 
         repository.save(entry);
+    }
+
+    private String serialize(Object obj, AuditAction action) {
+        if (obj == null) return null;
+        if (obj instanceof java.util.Map<?, ?> map && map.isEmpty()) return null;
+        try {
+            if (obj instanceof String s) return s;
+            return objectMapper.writeValueAsString(obj);
+        } catch (JsonProcessingException e) {
+            log.warn("Failed to serialize audit object for action {}: {}", action, e.getMessage());
+            return null;
+        }
     }
 }

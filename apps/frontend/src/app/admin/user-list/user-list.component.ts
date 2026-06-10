@@ -14,12 +14,13 @@ import { UserResponse, UserService, CreateUserRequest } from '../user.service';
 import { PlantResponse, PlantService } from '../plants/plant.service';
 import { AuthService } from '../../auth/auth.service';
 import { AdminService } from '../admin.service';
+import { UserPermissionsComponent } from '../user-permissions/user-permissions.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [LowerCasePipe, FormsModule],
+  imports: [LowerCasePipe, FormsModule, UserPermissionsComponent],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.scss',
 })
@@ -41,6 +42,7 @@ export class UserListComponent implements OnInit {
   readonly showRoleDialog = signal(false);
   readonly showPlantsDialog = signal(false);
   readonly showAnonDialog = signal(false);
+  readonly showPermissionsDialog = signal(false);
   readonly selectedUser = signal<UserResponse | null>(null);
 
   // Anonymize dialog (AC#14 — US-068)
@@ -104,6 +106,11 @@ export class UserListComponent implements OnInit {
       },
       error: (err) => this.error.set(err?.error?.message ?? 'Erro ao criar usuário.'),
     });
+  }
+
+  openPermissionsDialog(user: UserResponse): void {
+    this.selectedUser.set(user);
+    this.showPermissionsDialog.set(true);
   }
 
   openRoleDialog(user: UserResponse): void {

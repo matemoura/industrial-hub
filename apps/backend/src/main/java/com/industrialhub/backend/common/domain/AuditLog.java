@@ -54,4 +54,13 @@ public class AuditLog {
 
     @Column(name = "ip_address")
     private String ipAddress;
+
+    @Column(length = 50)
+    private String module;
+
+    @Column(name = "before_state", columnDefinition = "TEXT")
+    private String beforeState;
+
+    @Column(name = "after_state", columnDefinition = "TEXT")
+    private String afterState;
 }

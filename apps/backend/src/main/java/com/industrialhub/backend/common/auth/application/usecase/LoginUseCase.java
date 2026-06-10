@@ -33,10 +33,10 @@ public class LoginUseCase {
     }
 
     public LoginResponseDto execute(LoginRequestDto request, String ipAddress) {
-        rateLimiter.checkLimit(ipAddress, request.username());
+        rateLimiter.checkLimit(ipAddress, request.email());
 
         try {
-            User user = userRepository.findByUsername(request.username())
+            User user = userRepository.findByEmail(request.email())
                     .orElseThrow(InvalidCredentialsException::new);
 
             if (!user.isActive()) {
@@ -54,15 +54,16 @@ public class LoginUseCase {
                     token,
                     user.getUsername(),
                     user.getRole().name(),
+                    user.getEmail(),
                     jwtService.getExpirationMs(),
                     user.isMustChangePassword()
             );
         } catch (InvalidCredentialsException ex) {
             auditService.logWithIp(
-                    request.username(),
+                    request.email(),
                     AuditAction.LOGIN_FAILED,
                     "Auth",
-                    request.username(),
+                    request.email(),
                     null,
                     ipAddress
             );

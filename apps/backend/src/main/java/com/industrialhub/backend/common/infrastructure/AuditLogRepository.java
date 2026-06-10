@@ -7,6 +7,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -38,4 +39,27 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
 
     /** Finds audit logs by username for data export. */
     List<AuditLog> findByUsernameOrderByTimestampDesc(String username);
+
+    @Query("""
+        SELECT a FROM AuditLog a
+        WHERE (:username IS NULL OR a.username = :username)
+          AND (:module IS NULL OR a.module = :module)
+          AND (:action IS NULL OR CAST(a.action AS string) = :action)
+          AND (:from IS NULL OR a.timestamp >= :from)
+          AND (:to IS NULL OR a.timestamp <= :to)
+        ORDER BY a.timestamp DESC
+        """)
+    Page<AuditLog> findByFilters(
+        @Param("username") String username,
+        @Param("module")   String module,
+        @Param("action")   String action,
+        @Param("from")     LocalDateTime from,
+        @Param("to")       LocalDateTime to,
+        Pageable pageable
+    );
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Transactional
+    @Query("DELETE FROM AuditLog a WHERE a.timestamp < :cutoff")
+    int deleteOlderThan(@Param("cutoff") LocalDateTime cutoff);
 }

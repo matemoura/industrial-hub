@@ -13,7 +13,10 @@ public record AuditLogResponse(
     AuditAction action,
     String entityType,
     String entityId,
+    String module,
     String details,
+    String beforeState,
+    String afterState,
     String ipAddress
 ) {
     public static AuditLogResponse from(AuditLog log) {
@@ -24,7 +27,10 @@ public record AuditLogResponse(
             log.getAction(),
             log.getEntityType(),
             log.getEntityId(),
+            log.getModule(),
             log.getDetails(),
+            log.getBeforeState(),
+            log.getAfterState(),
             log.getIpAddress()
         );
     }

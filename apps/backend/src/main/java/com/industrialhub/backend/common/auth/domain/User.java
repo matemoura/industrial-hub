@@ -32,7 +32,7 @@ public class User {
     @Column(nullable = false)
     private boolean active;
 
-    @Column(length = 100)
+    @Column(unique = true, length = 100)
     private String email;
 
     @Builder.Default

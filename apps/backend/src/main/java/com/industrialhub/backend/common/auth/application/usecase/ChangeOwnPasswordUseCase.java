@@ -52,6 +52,6 @@ public class ChangeOwnPasswordUseCase {
 
         String newToken = jwtService.generateToken(user.getUsername(), user.getRole().name(), false);
         return new LoginResponseDto(newToken, user.getUsername(), user.getRole().name(),
-                jwtService.getExpirationMs(), false);
+                user.getEmail(), jwtService.getExpirationMs(), false);
     }
 }

@@ -57,15 +57,16 @@
         }
 
         <div class="field">
-          <label for="username">Usuário</label>
+          <label for="email">E-mail</label>
           <input
-            id="username"
-            type="text"
-            formControlName="username"
-            placeholder="seu.usuario"
-            autocomplete="username"
-            data-testid="username"
-            [class.invalid]="form.controls.username.invalid && form.controls.username.touched"
+            id="email"
+            type="email"
+            formControlName="email"
+            placeholder="seu@msbbrasil.com"
+            autocomplete="email"
+            pattern="[^@]+@[^@]+"
+            data-testid="email"
+            [class.invalid]="form.controls.email.invalid && form.controls.email.touched"
             aria-required="true"
           />
         </div>

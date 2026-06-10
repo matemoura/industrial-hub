@@ -35,6 +35,33 @@ export interface ChangePasswordResponse {
   mustChangePassword: boolean;
 }
 
+export type AppModule =
+  | 'OEE'
+  | 'QMS'
+  | 'MAINTENANCE'
+  | 'PRODUCTION'
+  | 'TRAINING'
+  | 'CHANGES'
+  | 'MANAGEMENT_REVIEW';
+
+export interface UserModulePermissionResponse {
+  module: AppModule;
+  canView: boolean;
+  canCreate: boolean;
+  canEdit: boolean;
+  canDelete: boolean;
+}
+
+export const MODULE_LABELS: Record<AppModule, string> = {
+  OEE: 'OEE',
+  QMS: 'Qualidade',
+  MAINTENANCE: 'Manutenção',
+  PRODUCTION: 'Produção',
+  TRAINING: 'Treinamentos',
+  CHANGES: 'Mudanças',
+  MANAGEMENT_REVIEW: 'Análise Crítica',
+};
+
 const BASE = '/api/v1/admin/users';
 
 @Injectable({ providedIn: 'root' })
@@ -67,5 +94,18 @@ export class UserService {
 
   exportMyData(): Observable<Blob> {
     return this.http.get('/api/v1/users/me/data-export', { responseType: 'blob' });
+  }
+
+  getUserPermissions(userId: string): Observable<UserModulePermissionResponse[]> {
+    return this.http.get<UserModulePermissionResponse[]>(`${BASE}/${userId}/permissions`);
+  }
+
+  updateUserPermissions(
+    userId: string,
+    permissions: UserModulePermissionResponse[],
+  ): Observable<UserModulePermissionResponse[]> {
+    return this.http.put<UserModulePermissionResponse[]>(`${BASE}/${userId}/permissions`, {
+      permissions,
+    });
   }
 }

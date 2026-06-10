@@ -4,6 +4,8 @@ import com.industrialhub.backend.common.application.dto.UserDataExportResponse;
 import com.industrialhub.backend.common.application.usecase.DataExportUseCase;
 import com.industrialhub.backend.common.auth.application.dto.*;
 import com.industrialhub.backend.common.auth.application.usecase.*;
+import com.industrialhub.backend.common.auth.application.usecase.GetUserPermissionsUseCase;
+import com.industrialhub.backend.common.auth.application.usecase.UpdateUserPermissionsUseCase;
 import jakarta.validation.Valid;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -28,6 +30,8 @@ public class UserController {
     private final ReactivateUserUseCase reactivateUser;
     private final ChangeOwnPasswordUseCase changeOwnPassword;
     private final DataExportUseCase dataExportUseCase;
+    private final GetUserPermissionsUseCase getUserPermissions;
+    private final UpdateUserPermissionsUseCase updateUserPermissions;
 
     public UserController(GetUserListUseCase getUserList,
                           CreateUserUseCase createUser,
@@ -35,7 +39,9 @@ public class UserController {
                           DeactivateUserUseCase deactivateUser,
                           ReactivateUserUseCase reactivateUser,
                           ChangeOwnPasswordUseCase changeOwnPassword,
-                          DataExportUseCase dataExportUseCase) {
+                          DataExportUseCase dataExportUseCase,
+                          GetUserPermissionsUseCase getUserPermissions,
+                          UpdateUserPermissionsUseCase updateUserPermissions) {
         this.getUserList = getUserList;
         this.createUser = createUser;
         this.updateUserRole = updateUserRole;
@@ -43,6 +49,8 @@ public class UserController {
         this.reactivateUser = reactivateUser;
         this.changeOwnPassword = changeOwnPassword;
         this.dataExportUseCase = dataExportUseCase;
+        this.getUserPermissions = getUserPermissions;
+        this.updateUserPermissions = updateUserPermissions;
     }
 
     @GetMapping("/api/v1/admin/users")
@@ -85,6 +93,20 @@ public class UserController {
     public ResponseEntity<LoginResponseDto> changePassword(@Valid @RequestBody ChangePasswordRequest request,
                                                            Authentication auth) {
         return ResponseEntity.ok(changeOwnPassword.execute(auth.getName(), request));
+    }
+
+    @GetMapping("/api/v1/admin/users/{id}/permissions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<UserModulePermissionResponse> getUserPermissions(@PathVariable UUID id) {
+        return getUserPermissions.execute(id);
+    }
+
+    @PutMapping("/api/v1/admin/users/{id}/permissions")
+    @PreAuthorize("hasRole('ADMIN')")
+    public List<UserModulePermissionResponse> updateUserPermissions(@PathVariable UUID id,
+                                                                     @Valid @RequestBody UpdateUserPermissionsRequest request,
+                                                                     Authentication auth) {
+        return updateUserPermissions.execute(id, request, auth.getName());
     }
 
     /**

@@ -52,7 +52,7 @@ describe('LoginComponent', () => {
 
   it('loading becomes true while request is in flight and resets to false on success', () => {
     const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
-    comp.form.setValue({ username: 'admin', password: 'admin' });
+    comp.form.setValue({ email: 'admin@msbbrasil.com', password: 'admin' });
     comp.submit();
 
     expect(comp.loading()).toBe(true);
@@ -65,7 +65,7 @@ describe('LoginComponent', () => {
 
   it('shows error and resets loading on 401', () => {
     const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
-    comp.form.setValue({ username: 'user', password: 'wrong' });
+    comp.form.setValue({ email: 'user@msbbrasil.com', password: 'wrong' });
     comp.submit();
 
     httpTesting.expectOne('/api/v1/auth/login').flush(
@@ -79,7 +79,7 @@ describe('LoginComponent', () => {
 
   it('shows fallback error when response has no message', () => {
     const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
-    comp.form.setValue({ username: 'user', password: 'wrong' });
+    comp.form.setValue({ email: 'user@msbbrasil.com', password: 'wrong' });
     comp.submit();
 
     httpTesting
@@ -114,7 +114,7 @@ describe('LoginComponent', () => {
     const router = TestBed.inject(Router);
     const spy = vi.spyOn(router, 'navigate').mockResolvedValue(true);
 
-    fixture.componentInstance.form.setValue({ username: 'admin', password: 'admin' });
+    fixture.componentInstance.form.setValue({ email: 'admin@msbbrasil.com', password: 'admin' });
     fixture.componentInstance.submit();
 
     httpTesting
@@ -129,7 +129,7 @@ describe('LoginComponent', () => {
     vi.useFakeTimers();
     try {
       const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
-      comp.form.setValue({ username: 'user', password: 'wrong' });
+      comp.form.setValue({ email: 'user@msbbrasil.com', password: 'wrong' });
       comp.submit();
 
       httpTesting.expectOne('/api/v1/auth/login').flush(
@@ -155,7 +155,7 @@ describe('LoginComponent', () => {
     vi.useFakeTimers();
     try {
       const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
-      comp.form.setValue({ username: 'user', password: 'wrong' });
+      comp.form.setValue({ email: 'user@msbbrasil.com', password: 'wrong' });
       comp.submit();
 
       httpTesting.expectOne('/api/v1/auth/login').flush(
@@ -182,7 +182,7 @@ describe('LoginComponent', () => {
     vi.useFakeTimers();
     try {
       const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
-      comp.form.setValue({ username: 'user', password: 'wrong' });
+      comp.form.setValue({ email: 'user@msbbrasil.com', password: 'wrong' });
       comp.submit();
 
       httpTesting.expectOne('/api/v1/auth/login').flush(
@@ -197,5 +197,25 @@ describe('LoginComponent', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+
+  // US-138 (a) — campo email tem type="email"
+  it('US-138 (a): email input has type="email"', () => {
+    const fixture = TestBed.createComponent(LoginComponent);
+    fixture.detectChanges();
+    const input = fixture.nativeElement.querySelector('[data-testid="email"]') as HTMLInputElement;
+    expect(input).toBeTruthy();
+    expect(input.type).toBe('email');
+  });
+
+  // US-138 (b) — submit com email válido envia campo email no payload
+  it('US-138 (b): submit with valid email sends email field to authService.login()', () => {
+    const { componentInstance: comp } = TestBed.createComponent(LoginComponent);
+    comp.form.setValue({ email: 'joao@msbbrasil.com', password: 'senha123' });
+    comp.submit();
+
+    const req = httpTesting.expectOne('/api/v1/auth/login');
+    expect(req.request.body).toEqual({ email: 'joao@msbbrasil.com', password: 'senha123' });
+    req.flush({ token: 'tok', username: 'joao', role: 'OPERATOR', expiresInMs: 28800000 });
   });
 });

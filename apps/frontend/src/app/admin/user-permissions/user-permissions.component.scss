@@ -1,0 +1,147 @@
+.perms-card {
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  margin-top: 24px;
+
+  &__header {
+    margin-bottom: 20px;
+  }
+
+  &__title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--msb-text);
+    margin: 0 0 4px;
+  }
+
+  &__sub {
+    font-size: 13px;
+    color: var(--msb-text-muted);
+    margin: 0;
+  }
+}
+
+.table-card {
+  overflow-x: auto;
+  margin-bottom: 16px;
+}
+
+.perms-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th {
+    padding: 10px 12px;
+    text-align: left;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--msb-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--msb-bg-tint);
+    background: var(--msb-bg);
+
+    &.col-perm {
+      text-align: center;
+    }
+  }
+
+  td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--msb-bg-tint);
+    color: var(--msb-text);
+
+    &.col-perm {
+      text-align: center;
+    }
+  }
+
+  .perms-row:last-child td {
+    border-bottom: none;
+  }
+}
+
+.module-label {
+  font-weight: 500;
+  color: var(--msb-text);
+}
+
+input[type='checkbox'] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--msb-primary);
+}
+
+.perms-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--msb-primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+
+  &:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+.spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  margin-bottom: 16px;
+
+  &-error {
+    background: #fef2f2;
+    color: var(--msb-status-danger);
+    border: 1px solid #fecaca;
+  }
+
+  &-success {
+    background: #f0fdf4;
+    color: var(--msb-status-ok);
+    border: 1px solid #bbf7d0;
+  }
+}
+
+.loading-state {
+  padding: 24px;
+  text-align: center;
+  color: var(--msb-text-muted);
+  font-size: 14px;
+}
