@@ -17,4 +17,9 @@ public interface CalibrationRecordRepository extends JpaRepository<CalibrationRe
     long countByResultAndCalibratedAtAfter(CalibrationResult result, LocalDate since);
 
     long countByCalibratedAtAfter(LocalDate since);
+
+    // US-135 — Management Review aggregations
+    long countByResultAndCalibratedAtBetween(CalibrationResult result, LocalDate from, LocalDate to);
+
+    long countByCalibratedAtBetween(LocalDate from, LocalDate to);
 }

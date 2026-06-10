@@ -2234,14 +2234,14 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 36 | Gestão de Documentos (GED) — catálogo controlado com revisões imutáveis + MinIO | US-110, US-111 | ADR-047 |
 | ✅ Sprint 37 | CAPAS Formal — extensão da CorrectiveAction com PENDING_EFFECTIVENESS + lista dedicada | US-112 | ADR-048 |
 | ✅ Sprint 38 | GED & CAPAS Security Hardening — MIME validation, path traversal, TOCTOU fix | US-113, US-114 | ADR-049 |
-| 🚧 Sprint 39 | Rastreabilidade Regulatória NC↔GED + Dashboard CAPA Aging + Relatório Executivo de Qualidade | US-115, US-116, US-117 | ADR-050 |
-| ⬜ Sprint 40 | Gestão de Treinamentos e Competências — ISO 13485 §6.2 | US-118, US-119, US-120 | ADR-051 |
-| ⬜ Sprint 41 | Gestão de Calibração e MSA — ISO 13485 §7.6 | US-121, US-122, US-123 | ADR-052 |
-| ⬜ Sprint 42 | Auditorias Internas — ISO 13485 §8.2.4 | US-124, US-125, US-126 | ADR-053 |
-| ⬜ Sprint 43 | Gestão de Risco / FMEA — ISO 14971 | US-127, US-128, US-129 | ADR-054 |
-| ⬜ Sprint 44 | Controle de Mudanças — ISO 13485 §4.1 | US-130, US-131 | ADR-055 |
-| ⬜ Sprint 45 | Reclamações de Clientes + MDR — ISO 13485 §8.2.1 / ANVISA | US-132, US-133, US-134 | ADR-056 |
-| ⬜ Sprint 46 | Análise Crítica pela Direção — ISO 13485 §5.6 | US-135, US-136 | ADR-057 |
+| ✅ Sprint 39 | Rastreabilidade Regulatória NC↔GED + Dashboard CAPA Aging + Relatório Executivo de Qualidade | US-115, US-116, US-117 | ADR-050 |
+| ✅ Sprint 40 | Gestão de Treinamentos e Competências — ISO 13485 §6.2 | US-118, US-119, US-120 | ADR-051 |
+| ✅ Sprint 41 | Gestão de Calibração e MSA — ISO 13485 §7.6 | US-121, US-122, US-123 | ADR-052 |
+| ✅ Sprint 42 | Auditorias Internas — ISO 13485 §8.2.4 | US-124, US-125, US-126 | ADR-053 |
+| ✅ Sprint 43 | Gestão de Risco / FMEA — ISO 14971 | US-127, US-128, US-129 | ADR-054 |
+| ✅ Sprint 44 | Controle de Mudanças — ISO 13485 §4.1 | US-130, US-131 | ADR-055 |
+| ✅ Sprint 45 | Reclamações de Clientes + MDR — ISO 13485 §8.2.1 / ANVISA | US-132, US-133, US-134 | ADR-056 |
+| ✅ Sprint 46 | Análise Crítica pela Direção — ISO 13485 §5.6 | US-135, US-136 | ADR-057 |
 
 ---
 
@@ -3128,17 +3128,17 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 39 🚧
+## Sprint 39 ✅
 **Objetivo**: Rastreabilidade Regulatória + Relatório Executivo de Qualidade — vinculação NC↔GED, dashboard de aging de CAPAs e exportação de relatório de qualidade para auditorias ANVISA/FDA
 **ADR**: ADR-050
-**Status**: planejada
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-115 | Vinculação NC ↔ Documento GED (rastreabilidade regulatória) | 4 | ⬜ planejado |
-| US-116 | Dashboard de aging de CAPAs com exportação CSV | 4 | ⬜ planejado |
-| US-117 | Relatório executivo de qualidade exportável (PDF/Excel) | 5 | ⬜ planejado |
+| US-115 | Vinculação NC ↔ Documento GED (rastreabilidade regulatória) | 4 | ✅ concluído |
+| US-116 | Dashboard de aging de CAPAs com exportação CSV | 4 | ✅ concluído |
+| US-117 | Relatório executivo de qualidade exportável (PDF/Excel) | 5 | ✅ concluído |
 
 **Total**: 13 pontos
 
@@ -3349,28 +3349,28 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 | ✅ Sprint 36 | Gestão de Documentos (GED) — catálogo controlado com revisões imutáveis + MinIO | US-110, US-111 | ADR-047 |
 | ✅ Sprint 37 | CAPAS Formal — extensão da CorrectiveAction com PENDING_EFFECTIVENESS + lista dedicada | US-112 | ADR-048 |
 | ✅ Sprint 38 | GED & CAPAS Security Hardening — MIME validation, path traversal, TOCTOU fix | US-113, US-114 | ADR-049 |
-| 🚧 Sprint 39 | Rastreabilidade Regulatória NC↔GED + Dashboard CAPA Aging + Relatório Executivo de Qualidade | US-115, US-116, US-117 | ADR-050 |
-| ⬜ Sprint 40 | Gestão de Treinamentos e Competências — ISO 13485 §6.2 | US-118, US-119, US-120 | ADR-051 |
-| ⬜ Sprint 41 | Gestão de Calibração e MSA — ISO 13485 §7.6 | US-121, US-122, US-123 | ADR-052 |
-| ⬜ Sprint 42 | Auditorias Internas — ISO 13485 §8.2.4 | US-124, US-125, US-126 | ADR-053 |
-| ⬜ Sprint 43 | Gestão de Risco / FMEA — ISO 14971 | US-127, US-128, US-129 | ADR-054 |
-| ⬜ Sprint 44 | Controle de Mudanças — ISO 13485 §4.1 | US-130, US-131 | ADR-055 |
-| ⬜ Sprint 45 | Reclamações de Clientes + MDR — ISO 13485 §8.2.1 / ANVISA | US-132, US-133, US-134 | ADR-056 |
-| ⬜ Sprint 46 | Análise Crítica pela Direção — ISO 13485 §5.6 | US-135, US-136 | ADR-057 |
+| ✅ Sprint 39 | Rastreabilidade Regulatória NC↔GED + Dashboard CAPA Aging + Relatório Executivo de Qualidade | US-115, US-116, US-117 | ADR-050 |
+| ✅ Sprint 40 | Gestão de Treinamentos e Competências — ISO 13485 §6.2 | US-118, US-119, US-120 | ADR-051 |
+| ✅ Sprint 41 | Gestão de Calibração e MSA — ISO 13485 §7.6 | US-121, US-122, US-123 | ADR-052 |
+| ✅ Sprint 42 | Auditorias Internas — ISO 13485 §8.2.4 | US-124, US-125, US-126 | ADR-053 |
+| ✅ Sprint 43 | Gestão de Risco / FMEA — ISO 14971 | US-127, US-128, US-129 | ADR-054 |
+| ✅ Sprint 44 | Controle de Mudanças — ISO 13485 §4.1 | US-130, US-131 | ADR-055 |
+| ✅ Sprint 45 | Reclamações de Clientes + MDR — ISO 13485 §8.2.1 / ANVISA | US-132, US-133, US-134 | ADR-056 |
+| ✅ Sprint 46 | Análise Crítica pela Direção — ISO 13485 §5.6 | US-135, US-136 | ADR-057 |
 
 ---
 
-## Sprint 40 ⬜
+## Sprint 40 ✅
 **Objetivo**: Gestão de Treinamentos e Competências — registro de treinamentos por colaborador, matriz de competências, avaliação de eficácia e alertas de certificações vencendo (ISO 13485 §6.2)
 **ADR**: ADR-051
-**Status**: planejada
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-118 | Backend de treinamentos — CRUD de cursos, registros por colaborador e matriz de competências | 5 | ⬜ planejado |
-| US-119 | Avaliação de eficácia e alertas de certificações vencendo | 3 | ⬜ planejado |
-| US-120 | Frontend — catálogo, registros de treinamento e dashboard de compliance | 4 | ⬜ planejado |
+| US-118 | Backend de treinamentos — CRUD de cursos, registros por colaborador e matriz de competências | 5 | ✅ concluído |
+| US-119 | Avaliação de eficácia e alertas de certificações vencendo | 3 | ✅ concluído |
+| US-120 | Frontend — catálogo, registros de treinamento e dashboard de compliance | 4 | ✅ concluído |
 
 **Total**: 12 pontos
 
@@ -3461,17 +3461,17 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 41 ⬜
+## Sprint 41 ✅
 **Objetivo**: Gestão de Calibração e MSA — agenda por equipamento, registros com resultado in/out-of-tolerance, vínculo com GED, alertas automáticos e NC automática quando fora de tolerância (ISO 13485 §7.6)
 **ADR**: ADR-052
-**Status**: planejada
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-121 | Backend de calibração — planos, registros e resultados | 5 | ⬜ planejado |
-| US-122 | NC automática + alertas de vencimento de calibração | 3 | ⬜ planejado |
-| US-123 | Frontend — agenda, histórico e dashboard de calibração | 4 | ⬜ planejado |
+| US-121 | Backend de calibração — planos, registros e resultados | 5 | ✅ concluído |
+| US-122 | NC automática + alertas de vencimento de calibração | 3 | ✅ concluído |
+| US-123 | Frontend — agenda, histórico e dashboard de calibração | 4 | ✅ concluído |
 
 **Total**: 12 pontos
 
@@ -3540,17 +3540,17 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 42 ⬜
+## Sprint 42 ✅
 **Objetivo**: Auditorias Internas — planejamento de auditorias ISO 13485, checklists por processo, achados vinculados a NCs/CAPAs e relatório de auditoria (ISO 13485 §8.2.4)
 **ADR**: ADR-053
-**Status**: planejada
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-124 | Backend de auditorias — planejamento, checklists e achados | 5 | ⬜ planejado |
-| US-125 | Relatório de auditoria exportável (PDF) e dashboard de conformidade | 3 | ⬜ planejado |
-| US-126 | Frontend — planejamento, checklist interativo e achados | 4 | ⬜ planejado |
+| US-124 | Backend de auditorias — planejamento, checklists e achados | 5 | ✅ concluído |
+| US-125 | Relatório de auditoria exportável (PDF) e dashboard de conformidade | 3 | ✅ concluído |
+| US-126 | Frontend — planejamento, checklist interativo e achados | 4 | ✅ concluído |
 
 **Total**: 12 pontos
 
@@ -3621,17 +3621,17 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 43 ⬜
+## Sprint 43 ✅
 **Objetivo**: Gestão de Risco / FMEA — registro de riscos, análise FMEA (severity/occurrence/detectability/RPN), ações de mitigação e matriz de risco visual (ISO 14971)
 **ADR**: ADR-054
-**Status**: planejada
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-127 | Backend de gestão de risco — registro FMEA e ações de mitigação | 5 | ⬜ planejado |
-| US-128 | Matriz de risco visual e rastreabilidade NC-Risco | 3 | ⬜ planejado |
-| US-129 | Frontend — cadastro FMEA, matriz visual e painel de riscos | 4 | ⬜ planejado |
+| US-127 | Backend de gestão de risco — registro FMEA e ações de mitigação | 5 | ✅ concluído |
+| US-128 | Matriz de risco visual e rastreabilidade NC-Risco | 3 | ✅ concluído |
+| US-129 | Frontend — cadastro FMEA, matriz visual e painel de riscos | 4 | ✅ concluído |
 
 **Total**: 12 pontos
 
@@ -3707,8 +3707,8 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-130 | Backend de controle de mudanças — CRUD, fluxo de aprovação e vínculos | 5 | ⬜ planejado |
-| US-131 | Frontend — solicitação, fluxo de aprovação e rastreabilidade de mudanças | 5 | ⬜ planejado |
+| US-130 | Backend de controle de mudanças — CRUD, fluxo de aprovação e vínculos | 5 | ✅ concluído |
+| US-131 | Frontend — solicitação, fluxo de aprovação e rastreabilidade de mudanças | 5 | ✅ concluído |
 
 **Total**: 10 pontos
 
@@ -3766,17 +3766,17 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 45 ⬜
+## Sprint 45 ✅
 **Objetivo**: Reclamações de Clientes e Relatório MDR — registro, investigação, vínculo com NC/CAPA, relatório para ANVISA (MDR) e indicadores (ISO 13485 §8.2.1 / ANVISA RDC 665/2022)
 **ADR**: ADR-056
-**Status**: planejada
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-132 | Backend de reclamações — CRUD, investigação e vínculos com NC/CAPA | 5 | ⬜ planejado |
-| US-133 | Relatório MDR para ANVISA e indicadores de reclamação | 3 | ⬜ planejado |
-| US-134 | Frontend — registro, investigação e dashboard de reclamações | 4 | ⬜ planejado |
+| US-132 | Backend de reclamações — CRUD, investigação e vínculos com NC/CAPA | 5 | ✅ concluído |
+| US-133 | Relatório MDR para ANVISA e indicadores de reclamação | 3 | ✅ concluído |
+| US-134 | Frontend — registro, investigação e dashboard de reclamações | 4 | ✅ concluído |
 
 **Total**: 12 pontos
 
@@ -3842,16 +3842,16 @@ Consolida os itens diferidos das revisões de Helena (SH-38, SH-41, SUG-23), Bea
 
 ---
 
-## Sprint 46 ⬜
+## Sprint 46 ✅
 **Objetivo**: Análise Crítica pela Direção — dashboard consolidado ISO 13485 §5.6 com todos os indicadores do SGQ (NCs, CAPAs, treinamentos, calibrações, auditorias, reclamações, riscos, mudanças) e relatório PDF exportável para apresentação à direção
 **ADR**: ADR-057
-**Status**: planejada
+**Status**: concluída
 
 ### User Stories
 | ID | Título | Pontos | Status |
 |----|--------|--------|--------|
-| US-135 | Backend — agregação de indicadores ISO 13485 §5.6 e geração de PDF para direção | 4 | ⬜ planejado |
-| US-136 | Frontend — dashboard executivo de análise crítica | 5 | ⬜ planejado |
+| US-135 | Backend — agregação de indicadores ISO 13485 §5.6 e geração de PDF para direção | 4 | ✅ concluído |
+| US-136 | Frontend — dashboard executivo de análise crítica | 5 | ✅ concluído |
 
 **Total**: 9 pontos
 

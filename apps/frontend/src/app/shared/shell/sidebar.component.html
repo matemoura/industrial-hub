@@ -113,6 +113,12 @@
 
     @if (role() === 'ADMIN') {
       <div class="nav-section">
+        <span class="nav-section__title">GESTÃO</span>
+        <ul class="nav-list">
+          <li><a routerLink="/management-review" routerLinkActive="active" class="nav-item">Análise Crítica</a></li>
+        </ul>
+      </div>
+      <div class="nav-section">
         <span class="nav-section__title">ADMIN</span>
         <ul class="nav-list">
           <li><a routerLink="/admin/users"             routerLinkActive="active" class="nav-item">Usuários</a></li>

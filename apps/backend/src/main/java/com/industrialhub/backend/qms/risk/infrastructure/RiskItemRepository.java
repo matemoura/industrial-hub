@@ -50,4 +50,11 @@ public interface RiskItemRepository extends JpaRepository<RiskItem, UUID> {
         GROUP BY r.severity, r.occurrence, r.riskLevel
         """)
     List<Object[]> findMatrixData();
+
+    // US-135 — Management Review aggregations
+    @Query("SELECT COUNT(r) FROM RiskItem r WHERE r.riskLevel = 'CRITICAL' AND r.status NOT IN ('MITIGATED', 'ACCEPTED')")
+    long countCriticalOpen();
+
+    @Query("SELECT COUNT(r) FROM RiskItem r WHERE r.status = 'MITIGATED' AND r.updatedAt >= :from AND r.updatedAt < :to")
+    long countMitigatedInPeriod(@Param("from") java.time.LocalDateTime from, @Param("to") java.time.LocalDateTime to);
 }

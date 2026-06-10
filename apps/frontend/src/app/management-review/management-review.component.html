@@ -1,0 +1,166 @@
+<div class="sp-page">
+
+  @if (!isAdmin()) {
+    <div class="access-denied">
+      <p>Acesso restrito a administradores.</p>
+    </div>
+  } @else {
+
+    <div class="sp-page-header">
+      <div>
+        <span class="sp-kicker">ISO 13485 §5.6</span>
+        <h1 class="sp-title">Análise Crítica pela Direção</h1>
+      </div>
+    </div>
+
+    <!-- Filtro de período -->
+    <div class="mr-filter-bar">
+      <label class="mr-filter-label">
+        De
+        <input type="date" class="mr-date-input" [value]="fromDate()"
+               (change)="fromDate.set($any($event.target).value)" />
+      </label>
+      <label class="mr-filter-label">
+        Até
+        <input type="date" class="mr-date-input" [value]="toDate()"
+               (change)="toDate.set($any($event.target).value)" />
+      </label>
+      <button class="sp-btn sp-btn--primary" (click)="loadIndicators()" [disabled]="isLoading()">
+        @if (isLoading()) { Carregando... } @else { Carregar Indicadores }
+      </button>
+      <button class="sp-btn sp-btn--secondary" (click)="exportPdf()"
+              [disabled]="!data() || isExporting()">
+        @if (isExporting()) { Exportando... } @else { Exportar PDF }
+      </button>
+    </div>
+
+    @if (error()) {
+      <div class="mr-error">{{ error() }}</div>
+    }
+
+    @if (data(); as d) {
+
+      <!-- Seção 1 — Qualidade do Produto -->
+      <section class="mr-section">
+        <h2 class="mr-section__title">Qualidade do Produto</h2>
+        <div class="mr-cards">
+
+          <div class="mr-card">
+            <span class="mr-card__label">NC Críticas Abertas</span>
+            <span class="mr-card__value">{{ d.ncSummary.criticalOpen }}</span>
+            <app-semaphore-chip [status]="ncStatus()"
+              [label]="ncStatus() === 'green' ? 'OK' : ncStatus() === 'amber' ? 'Atenção' : 'Crítico'" />
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">NCs Reportadas no Período</span>
+            <span class="mr-card__value">{{ d.ncSummary.totalReported }}</span>
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">CAPAs Vencidas</span>
+            <span class="mr-card__value">{{ d.capaSummary.overdueCount }}</span>
+            <app-semaphore-chip [status]="capaStatus()"
+              [label]="capaStatus() === 'green' ? 'OK' : capaStatus() === 'amber' ? 'Atenção' : 'Crítico'" />
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">Taxa de Efetividade CAPA</span>
+            <span class="mr-card__value">
+              @if (d.capaSummary.effectivenessRate != null) {
+                {{ d.capaSummary.effectivenessRate | number:'1.1-1' }}%
+              } @else { — }
+            </span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Seção 2 — Conformidade Operacional -->
+      <section class="mr-section">
+        <h2 class="mr-section__title">Conformidade Operacional</h2>
+        <div class="mr-cards">
+
+          <div class="mr-card">
+            <span class="mr-card__label">Calibrações Vencidas</span>
+            <span class="mr-card__value">{{ d.calibrationSummary.overdueSchedules }}</span>
+            <app-semaphore-chip [status]="calibStatus()"
+              [label]="calibStatus() === 'green' ? 'OK' : 'Crítico'" />
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">Auditorias Concluídas no Período</span>
+            <span class="mr-card__value">{{ d.auditSummary.completed }}</span>
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">Achados Não Conformes</span>
+            <span class="mr-card__value">{{ d.auditSummary.nonConformingFindings }}</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Seção 3 — Risco e Mudanças -->
+      <section class="mr-section">
+        <h2 class="mr-section__title">Risco e Mudanças</h2>
+        <div class="mr-cards">
+
+          <div class="mr-card">
+            <span class="mr-card__label">Riscos Críticos Abertos</span>
+            <span class="mr-card__value">{{ d.riskSummary.criticalOpen }}</span>
+            <app-semaphore-chip [status]="riskStatus()"
+              [label]="riskStatus() === 'green' ? 'OK' : 'Crítico'" />
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">RPN Médio</span>
+            <span class="mr-card__value">
+              @if (d.riskSummary.avgRpn != null) {
+                {{ d.riskSummary.avgRpn | number:'1.1-1' }}
+              } @else { — }
+            </span>
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">Mudanças Implementadas</span>
+            <span class="mr-card__value">{{ d.changeSummary.implemented }}</span>
+          </div>
+
+        </div>
+      </section>
+
+      <!-- Seção 4 — Produção (KPI Snapshot) -->
+      <section class="mr-section">
+        <h2 class="mr-section__title">Produção · KPI Snapshot</h2>
+        <div class="mr-cards">
+
+          <div class="mr-card">
+            <span class="mr-card__label">OEE 30 dias</span>
+            <span class="mr-card__value">
+              @if (d.kpiSummary.oee30Days != null) {
+                {{ d.kpiSummary.oee30Days | number:'1.1-1' }}%
+              } @else { — }
+            </span>
+            <app-semaphore-chip [status]="oeeStatus()"
+              [label]="oeeStatus() === 'green' ? 'OK' : oeeStatus() === 'amber' ? 'Atenção' : 'Crítico'" />
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">NCs Abertas (total)</span>
+            <span class="mr-card__value">{{ d.kpiSummary.openNcs }}</span>
+          </div>
+
+          <div class="mr-card">
+            <span class="mr-card__label">Ordens de Serviço Abertas</span>
+            <span class="mr-card__value">{{ d.kpiSummary.openWorkOrders }}</span>
+          </div>
+
+        </div>
+      </section>
+
+    }
+
+  }
+
+</div>

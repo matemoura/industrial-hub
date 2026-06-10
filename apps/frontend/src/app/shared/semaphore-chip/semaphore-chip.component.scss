@@ -1,0 +1,12 @@
+.semaphore-chip {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #fff;
+
+  &--green { background: #3FA66A; }
+  &--amber { background: #E8A93C; }
+  &--red   { background: #D24A4A; }
+}

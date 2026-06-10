@@ -98,6 +98,13 @@ public interface NonConformanceRepository extends JpaRepository<NonConformance, 
     /** Finds NCs reported by a specific username (for data export and individual anonymization). */
     List<NonConformance> findByReportedByOrderByReportedAtDesc(String reportedBy);
 
+    // US-135 — Management Review aggregations
+    @Query("SELECT COUNT(nc) FROM NonConformance nc WHERE nc.severity = 'CRITICAL' AND nc.status <> 'CLOSED'")
+    long countCriticalOpen();
+
+    @Query("SELECT nc FROM NonConformance nc WHERE nc.status = 'CLOSED' AND nc.closedAt >= :from AND nc.closedAt < :to")
+    List<NonConformance> findClosedBetween(@Param("from") LocalDateTime from, @Param("to") LocalDateTime to);
+
     @Query("""
         SELECT nc FROM NonConformance nc
         WHERE (:status IS NULL OR nc.status = :status)

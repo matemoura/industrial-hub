@@ -865,6 +865,16 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    // Sprint 46 — Análise Crítica pela Direção (ISO 13485 §5.6)
+    @ExceptionHandler(com.industrialhub.backend.common.domain.InvalidManagementReviewPeriodException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidManagementReviewPeriod(
+            com.industrialhub.backend.common.domain.InvalidManagementReviewPeriodException ex) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                "message", ex.getMessage(),
+                "timestamp", Instant.now().toString()
+        ));
+    }
+
     // Sprint 45 — Reclamações de Clientes + MDR (ISO 13485 §8.2.1)
     @ExceptionHandler(com.industrialhub.backend.qms.complaints.domain.CustomerComplaintNotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleComplaintNotFound(

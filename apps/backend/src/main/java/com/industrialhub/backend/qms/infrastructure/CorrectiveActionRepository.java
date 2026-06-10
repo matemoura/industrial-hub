@@ -14,6 +14,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -111,4 +112,10 @@ public interface CorrectiveActionRepository extends JpaRepository<CorrectiveActi
         GROUP BY a.type
     """)
     List<Object[]> countByType();
+
+    // US-135 — Management Review aggregations
+    long countByStatusIn(List<ActionStatus> statuses);
+
+    @Query("SELECT COUNT(a) FROM CorrectiveAction a WHERE a.dueDate < :today AND a.status <> 'DONE'")
+    long countOverdue(@Param("today") LocalDate today);
 }

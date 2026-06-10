@@ -120,14 +120,14 @@ Shell: topbar gradient `#1F3A4A → #5F88A1 → #56A4BB` (60px) + dark sidebar `
 | GED — Gestão de Documentos controlados (Document + DocumentRevision imutável + MinIO) | `qms/ged/` | 36 | ✅ done |
 | CAPAS Formal — CorrectiveAction + PENDING_EFFECTIVENESS + lista cross-NC | `qms/` | 37 | ✅ done |
 | GED & CAPAS Security Hardening (MIME validation, path traversal, TOCTOU fix) | `qms/ged/`, `qms/` | 38 | ✅ done |
-| NC↔GED Link + CAPA Aging Dashboard + Relatório Executivo de Qualidade (iText 7) | `qms/`, `qms/ged/` | 39 | 🚧 em andamento |
-| Gestão de Treinamentos e Competências (ISO 13485 §6.2) | `training/` | 40 | ⬜ planejado |
-| Gestão de Calibração e MSA (ISO 13485 §7.6) | `maintenance/` | 41 | ⬜ planejado |
-| Auditorias Internas (ISO 13485 §8.2.4) | `qms/audit/` | 42 | ⬜ planejado |
-| Gestão de Risco / FMEA (ISO 14971) | `qms/risk/` | 43 | ⬜ planejado |
-| Controle de Mudanças (ISO 13485 §4.1) | `common/changes/` | 44 | ⬜ planejado |
-| Reclamações de Clientes + MDR (ISO 13485 §8.2.1 / ANVISA RDC 665/2022) | `qms/complaints/` | 45 | ⬜ planejado |
-| Análise Crítica pela Direção (ISO 13485 §5.6) | `common/presentation/`, `common/application/` | 46 | ⬜ planejado |
+| NC↔GED Link + CAPA Aging Dashboard + Relatório Executivo de Qualidade (iText 7) | `qms/`, `qms/ged/` | 39 | ✅ done |
+| Gestão de Treinamentos e Competências (ISO 13485 §6.2) | `training/` | 40 | ✅ done |
+| Gestão de Calibração e MSA (ISO 13485 §7.6) | `maintenance/` | 41 | ✅ done |
+| Auditorias Internas (ISO 13485 §8.2.4) | `qms/audit/` | 42 | ✅ done |
+| Gestão de Risco / FMEA (ISO 14971) | `qms/risk/` | 43 | ✅ done |
+| Controle de Mudanças (ISO 13485 §4.1) | `common/changes/` | 44 | ✅ done |
+| Reclamações de Clientes + MDR (ISO 13485 §8.2.1 / ANVISA RDC 665/2022) | `qms/complaints/` | 45 | ✅ done |
+| Análise Crítica pela Direção (ISO 13485 §5.6) | `common/presentation/`, `common/application/` | 46 | ✅ done |
 
 ## Key Conventions
 

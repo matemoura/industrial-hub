@@ -39,4 +39,11 @@ public interface InternalAuditRepository extends JpaRepository<InternalAudit, UU
 
     @Query("SELECT COUNT(a) FROM InternalAudit a WHERE a.status = 'PLANNED' AND a.plannedDate < :today")
     long countOverdue(@Param("today") LocalDate today);
+
+    // US-135 — Management Review aggregations
+    @Query("SELECT COUNT(a) FROM InternalAudit a WHERE a.status = 'COMPLETED' AND a.completedDate >= :from AND a.completedDate <= :to")
+    long countCompletedBetween(@Param("from") LocalDate from, @Param("to") LocalDate to);
+
+    @Query("SELECT COUNT(a) FROM InternalAudit a WHERE a.plannedDate <= :today AND a.status IN ('PLANNED', 'IN_PROGRESS')")
+    long countPlannedNotDone(@Param("today") LocalDate today);
 }

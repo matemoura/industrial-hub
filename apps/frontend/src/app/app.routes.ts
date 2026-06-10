@@ -250,5 +250,13 @@ export const routes: Routes = [
     canActivate: [authGuard, mustChangePasswordGuard],
     loadChildren: () => import('./changes/changes.routes').then((m) => m.CHANGES_ROUTES),
   },
+  {
+    path: 'management-review',
+    canActivate: [adminGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./management-review/management-review.component').then(
+        (m) => m.ManagementReviewComponent,
+      ),
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];
