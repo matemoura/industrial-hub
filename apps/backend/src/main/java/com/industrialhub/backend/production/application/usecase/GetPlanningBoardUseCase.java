@@ -8,6 +8,7 @@ import com.industrialhub.backend.production.domain.ProductFamily;
 import com.industrialhub.backend.production.domain.ProductType;
 import com.industrialhub.backend.production.infrastructure.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.*;
@@ -36,6 +37,7 @@ public class GetPlanningBoardUseCase {
         this.productFamilyRepository = productFamilyRepository;
     }
 
+    @Transactional(readOnly = true)
     public List<FamilyPlanningBoardResponse> execute() {
         // Estoque mais recente por produto (uma query para todos)
         Map<UUID, com.industrialhub.backend.production.domain.StockSnapshot> latestStock =
@@ -82,7 +84,8 @@ public class GetPlanningBoardUseCase {
 
         int totalPeople = productionOrderRepository.sumPlannedPeopleByProduct(product.getId());
 
-        Object[] countAndDate = productionOrderRepository.countAndEarliestDueDateByProduct(product.getId());
+        java.util.List<Object[]> countAndDateResult = productionOrderRepository.countAndEarliestDueDateByProduct(product.getId());
+        Object[] countAndDate = (countAndDateResult != null && !countAndDateResult.isEmpty()) ? countAndDateResult.get(0) : null;
         int totalOpsOpen = countAndDate != null && countAndDate[0] != null
                 ? ((Number) countAndDate[0]).intValue() : 0;
         LocalDate earliestDue = countAndDate != null && countAndDate[1] != null

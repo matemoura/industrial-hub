@@ -1,0 +1,144 @@
+<div class="sp-page dynamics-import-page" data-testid="dynamics-import">
+
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">PRODUÇÃO · MICROSOFT DYNAMICS</p>
+      <h1 class="sp-title">Imports <span class="sp-title-accent">/ Dynamics</span></h1>
+    </div>
+  </div>
+
+  @if (permLoading()) {
+    <div class="perm-loading">Carregando permissões…</div>
+  } @else if (permError()) {
+    <div class="perm-error" role="alert">{{ permError() }}</div>
+  } @else {
+    <div class="sections-grid">
+      @for (section of sections; track section.key) {
+        <div
+          class="import-card"
+          [class.import-card--locked]="!canImport(section)"
+          [attr.data-testid]="'import-card-' + section.key"
+        >
+          <!-- Card header -->
+          <div class="import-card__header" [style.border-top-color]="section.accent">
+            <div class="import-card__header-left">
+              <span class="import-card__kicker" [style.color]="section.accent">{{ section.kicker }}</span>
+              <h2 class="import-card__title">{{ section.title }}</h2>
+            </div>
+            @if (!canImport(section)) {
+              <div class="import-card__lock" aria-label="Sem permissão">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </div>
+            }
+          </div>
+
+          <!-- Description -->
+          <p class="import-card__desc">{{ section.description }}</p>
+
+          @if (canImport(section)) {
+            <!-- Drop zone -->
+            @if (!sectionState(section.key).file) {
+              <div
+                class="drop-zone"
+                [class.drop-zone--over]="sectionState(section.key).dragOver"
+                (dragover)="onDragOver($event, section.key)"
+                (dragleave)="onDragLeave(section.key)"
+                (drop)="onDrop($event, section.key)"
+                role="button"
+                tabindex="0"
+                [attr.aria-label]="'Selecionar arquivo para ' + section.title"
+              >
+                <svg class="drop-zone__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" y1="3" x2="12" y2="15"/>
+                </svg>
+                <p class="drop-zone__text">Arraste o arquivo <strong>.xlsx</strong> aqui ou</p>
+                <label class="sp-btn sp-btn--secondary drop-zone__btn">
+                  Selecionar arquivo
+                  <input
+                    type="file"
+                    accept=".xlsx,.xls"
+                    class="drop-zone__input"
+                    (change)="onFileChange($event, section.key)"
+                  />
+                </label>
+              </div>
+            } @else {
+              <!-- File selected -->
+              <div class="file-ready">
+                <div class="file-ready__info">
+                  <svg class="file-ready__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                  </svg>
+                  <span class="file-ready__name">{{ sectionState(section.key).file!.name }}</span>
+                  <button class="file-ready__clear" (click)="clearFile(section.key)" type="button" aria-label="Remover arquivo">✕</button>
+                </div>
+                <button
+                  class="sp-btn sp-btn--primary file-ready__upload"
+                  (click)="upload(section.key)"
+                  [disabled]="sectionState(section.key).uploading"
+                  type="button"
+                >
+                  @if (sectionState(section.key).uploading) { Importando… } @else { Importar }
+                </button>
+              </div>
+            }
+
+            <!-- Result -->
+            @if (sectionState(section.key).result; as r) {
+              <div class="import-result" data-testid="import-result">
+                <div class="import-result__counts">
+                  <div class="result-pill result-pill--created">
+                    <span class="result-pill__value">{{ r.imported }}</span>
+                    <span class="result-pill__label">criados</span>
+                  </div>
+                  <div class="result-pill result-pill--updated">
+                    <span class="result-pill__value">{{ r.updated }}</span>
+                    <span class="result-pill__label">atualizados</span>
+                  </div>
+                  <div class="result-pill result-pill--skipped">
+                    <span class="result-pill__value">{{ r.skipped }}</span>
+                    <span class="result-pill__label">ignorados</span>
+                  </div>
+                  @if (r.errors.length) {
+                    <div class="result-pill result-pill--errors">
+                      <span class="result-pill__value">{{ r.errors.length }}</span>
+                      <span class="result-pill__label">erros</span>
+                    </div>
+                  }
+                </div>
+                @if (r.errors.length) {
+                  <ul class="import-errors">
+                    @for (err of r.errors.slice(0, 10); track $index) {
+                      <li class="import-errors__item">Linha {{ err.line }}: {{ err.message }}</li>
+                    }
+                  </ul>
+                  @if (r.errors.length > 10) {
+                    <p class="import-errors__more">… e mais {{ r.errors.length - 10 }} erros não exibidos.</p>
+                  }
+                }
+              </div>
+            }
+
+            <!-- Error -->
+            @if (sectionState(section.key).error) {
+              <div class="import-error-msg" role="alert">{{ sectionState(section.key).error }}</div>
+            }
+
+          } @else {
+            <!-- Locked state -->
+            <div class="locked-state">
+              <p class="locked-state__msg">Sem permissão para importar este tipo de dado.</p>
+              <p class="locked-state__hint">Solicite ao administrador a permissão <strong>{{ section.kicker }}</strong> no módulo Dynamics.</p>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

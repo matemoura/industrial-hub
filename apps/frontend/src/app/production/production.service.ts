@@ -82,11 +82,25 @@ export interface CycleTime {
   effectiveDate: string;
 }
 
+export interface ImportErrorItem {
+  line: number;
+  message: string;
+}
+
 export interface ImportResult {
   imported: number;
   updated: number;
   skipped: number;
-  errors: string[];
+  errors: ImportErrorItem[];
+}
+
+export interface ImportPermissions {
+  canImportProducts: boolean;
+  canImportBom: boolean;
+  canImportCycleTimes: boolean;
+  canImportStock: boolean;
+  canImportOrders: boolean;
+  canImportOeeData: boolean;
 }
 
 export interface Page<T> {
@@ -208,6 +222,10 @@ export class ProductionService {
     const form = new FormData();
     form.append('file', file);
     return this.http.post<ImportResult>(`${this.BASE}/import/cycle-times`, form);
+  }
+
+  getImportPermissions(): Observable<ImportPermissions> {
+    return this.http.get<ImportPermissions>(`${this.BASE}/import/my-permissions`);
   }
 
   listCycleTimes(params?: CycleTimeListParams): Observable<CycleTime[]> {

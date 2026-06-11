@@ -1,15 +1,20 @@
-<div class="page">
-  <div class="page-header">
-    <h1 class="page-title">Tempos de Ciclo</h1>
+<div class="sp-page page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">PRODUÇÃO · TEMPOS</p>
+      <h1 class="sp-title">Tempos <span class="sp-title-accent">/ Ciclo</span></h1>
+    </div>
     @if (canImport()) {
-      <button
-        type="button"
-        class="btn btn--primary"
-        data-testid="btn-import-cycle-times"
-        (click)="toggleUpload()"
-      >
-        Importar
-      </button>
+      <div class="sp-page-actions">
+        <button
+          type="button"
+          class="sp-btn sp-btn--primary"
+          data-testid="btn-import-cycle-times"
+          (click)="toggleUpload()"
+        >
+          Importar
+        </button>
+      </div>
     }
   </div>
 
@@ -31,7 +36,7 @@
           <p class="drop-zone__file" data-testid="selected-filename">{{ selectedFile()!.name }}</p>
         } @else {
           <p class="drop-zone__hint">Arraste o arquivo ou</p>
-          <label class="btn btn--secondary" for="cycle-file-input">Selecionar arquivo</label>
+          <label class="sp-btn sp-btn--secondary" for="cycle-file-input">Selecionar arquivo</label>
           <input
             id="cycle-file-input"
             type="file"
@@ -46,7 +51,7 @@
       <div class="upload-actions">
         <button
           type="button"
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           data-testid="btn-confirm-upload"
           [disabled]="!selectedFile() || isUploading()"
           (click)="confirmUpload()"

@@ -1,6 +1,9 @@
-<div class="page">
-  <div class="page-header">
-    <h1 class="page-title">Estoque e Ordens de Produção</h1>
+<div class="sp-page page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">PRODUÇÃO · ORDENS</p>
+      <h1 class="sp-title">Ordens <span class="sp-title-accent">/ Produção</span></h1>
+    </div>
   </div>
 
   @if (errorMsg()) {
@@ -48,7 +51,7 @@
         @if (canImport()) {
           <button
             type="button"
-            class="btn btn--primary"
+            class="sp-btn sp-btn--primary"
             data-testid="btn-import-stock"
             (click)="toggleStockUpload()"
           >
@@ -70,7 +73,7 @@
               <p class="drop-zone__file" data-testid="stock-filename">{{ stockSelectedFile()!.name }}</p>
             } @else {
               <p class="drop-zone__hint">Arraste o arquivo ou</p>
-              <label class="btn btn--secondary" for="stock-file-input">Selecionar arquivo</label>
+              <label class="sp-btn sp-btn--secondary" for="stock-file-input">Selecionar arquivo</label>
               <input
                 id="stock-file-input"
                 type="file"
@@ -84,7 +87,7 @@
           <div class="upload-actions">
             <button
               type="button"
-              class="btn btn--primary"
+              class="sp-btn sp-btn--primary"
               data-testid="btn-confirm-stock-upload"
               [disabled]="!stockSelectedFile() || stockIsUploading()"
               (click)="confirmStockUpload()"
@@ -173,7 +176,7 @@
         @if (canImport()) {
           <button
             type="button"
-            class="btn btn--primary"
+            class="sp-btn sp-btn--primary"
             data-testid="btn-import-orders"
             (click)="toggleOrdersUpload()"
           >
@@ -195,7 +198,7 @@
               <p class="drop-zone__file" data-testid="orders-filename">{{ ordersSelectedFile()!.name }}</p>
             } @else {
               <p class="drop-zone__hint">Arraste o arquivo ou</p>
-              <label class="btn btn--secondary" for="orders-file-input">Selecionar arquivo</label>
+              <label class="sp-btn sp-btn--secondary" for="orders-file-input">Selecionar arquivo</label>
               <input
                 id="orders-file-input"
                 type="file"
@@ -209,7 +212,7 @@
           <div class="upload-actions">
             <button
               type="button"
-              class="btn btn--primary"
+              class="sp-btn sp-btn--primary"
               data-testid="btn-confirm-orders-upload"
               [disabled]="!ordersSelectedFile() || ordersIsUploading()"
               (click)="confirmOrdersUpload()"

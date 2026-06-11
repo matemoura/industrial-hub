@@ -80,8 +80,24 @@ public class ImportProductionOrdersUseCase {
 
             Map<String, Integer> colIndex = ExcelParsingHelper.buildColumnIndex(header);
 
+            // Accept internal column names OR Dynamics Portuguese export column names
+            String headerError = ExcelParsingHelper.validateRequiredColumnsAliased(colIndex,
+                    new String[]{"op_number", "produção"},
+                    new String[]{"dynamics_code", "número_do_item"},
+                    new String[]{"planned_qty", "quantidade"});
+            if (headerError != null) {
+                errors.add(new ImportErrorDto(1, headerError));
+                return saveBatch(fileName, username, total, created, updated, errors);
+            }
+
             // SEC-117: cache StaffingConfig once before the loop — avoids N queries for each OP row
             StaffingConfig staffingConfig = getStaffingConfig.getOrCreate();
+
+            // Pre-load all existing products and orders into maps — avoids N+1 queries
+            Map<String, Product>          existingProducts = new java.util.HashMap<>();
+            Map<String, ProductionOrder>  existingOrders   = new java.util.HashMap<>();
+            productRepository.findAll().forEach(p -> existingProducts.put(p.getDynamicsCode(), p));
+            orderRepository.findAll().forEach(o -> existingOrders.put(o.getDynamicsOrderNumber(), o));
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -89,58 +105,55 @@ public class ImportProductionOrdersUseCase {
                 total++;
 
                 try {
-                    String orderNumber = ExcelParsingHelper.getString(row, colIndex, "op_number");
+                    String orderNumber = ExcelParsingHelper.getStringByAliases(row, colIndex,
+                            "op_number", "produção");
                     if (orderNumber == null || orderNumber.isBlank()) {
-                        errors.add(new ImportErrorDto(i + 1, "op_number ausente"));
+                        errors.add(new ImportErrorDto(i + 1, "Número da ordem ausente"));
                         continue;
                     }
 
-                    String dynamicsCode = ExcelParsingHelper.getString(row, colIndex, "dynamics_code");
+                    String dynamicsCode = ExcelParsingHelper.getStringByAliases(row, colIndex,
+                            "dynamics_code", "número_do_item");
                     if (dynamicsCode == null || dynamicsCode.isBlank()) {
-                        errors.add(new ImportErrorDto(i + 1, "dynamics_code ausente"));
+                        errors.add(new ImportErrorDto(i + 1, "Código do item ausente"));
                         continue;
                     }
 
                     String statusStr = ExcelParsingHelper.getString(row, colIndex, "status");
-                    ProductionOrderStatus status;
-                    try {
-                        status = ProductionOrderStatus.valueOf(statusStr != null ? statusStr.trim().toUpperCase() : "");
-                    } catch (IllegalArgumentException e) {
-                        errors.add(new ImportErrorDto(i + 1, "status inválido: " + statusStr));
-                        continue;
-                    }
+                    ProductionOrderStatus status = parseOrderStatus(statusStr);
 
-                    Optional<Product> productOpt = productRepository.findByDynamicsCode(dynamicsCode.trim());
-                    if (productOpt.isEmpty()) {
+                    Product product = existingProducts.get(dynamicsCode.trim());
+                    if (product == null) {
                         errors.add(new ImportErrorDto(i + 1, "Produto não encontrado: " + dynamicsCode));
                         continue;
                     }
-                    Product product = productOpt.get();
 
-                    Double plannedQtyD = ExcelParsingHelper.getDouble(row, colIndex, "planned_qty");
+                    Double plannedQtyD = ExcelParsingHelper.getDoubleByAliases(row, colIndex,
+                            "planned_qty", "quantidade");
                     Double producedQtyD = ExcelParsingHelper.getDouble(row, colIndex, "produced_qty");
-                    LocalDate startDate = ExcelParsingHelper.getLocalDate(row, colIndex, "start_date");
-                    LocalDate dueDate = ExcelParsingHelper.getLocalDate(row, colIndex, "due_date");
+                    LocalDate startDate = ExcelParsingHelper.getLocalDateByAliases(row, colIndex,
+                            "start_date", "início");
+                    LocalDate dueDate = ExcelParsingHelper.getLocalDateByAliases(row, colIndex,
+                            "due_date", "entrega");
 
                     BigDecimal plannedQty = plannedQtyD != null ? BigDecimal.valueOf(plannedQtyD) : BigDecimal.ZERO;
                     BigDecimal producedQty = producedQtyD != null ? BigDecimal.valueOf(producedQtyD) : null;
 
-                    Optional<ProductionOrder> existing = orderRepository.findByDynamicsOrderNumber(orderNumber.trim());
-                    if (existing.isPresent()) {
-                        ProductionOrder order = existing.get();
+                    ProductionOrder existingOrder = existingOrders.get(orderNumber.trim());
+                    if (existingOrder != null) {
                         // Update Dynamics-managed fields; preserve Hub-managed fields
-                        order.setStatus(status);
-                        order.setPlannedQty(plannedQty);
-                        order.setProducedQty(producedQty);
-                        order.setStartDate(startDate);
-                        order.setDueDate(dueDate);
-                        order.setUpdatedAt(LocalDateTime.now());
+                        existingOrder.setStatus(status);
+                        existingOrder.setPlannedQty(plannedQty);
+                        existingOrder.setProducedQty(producedQty);
+                        existingOrder.setStartDate(startDate);
+                        existingOrder.setDueDate(dueDate);
+                        existingOrder.setUpdatedAt(LocalDateTime.now());
                         // US-086 AC#2 — recalculate staffing on import if not manually overridden
-                        if (!order.isPeopleOverridden()) {
-                            order.setPlannedPeople(calculateStaffing(product, plannedQty, dueDate, staffingConfig));
+                        if (!existingOrder.isPeopleOverridden()) {
+                            existingOrder.setPlannedPeople(calculateStaffing(product, plannedQty, dueDate, staffingConfig));
                         }
                         // Do NOT touch: peopleOverridden, sterilizationLoad (Hub-managed)
-                        orderRepository.save(order);
+                        orderRepository.save(existingOrder);
                         updated++;
                     } else {
                         // US-086 AC#2 — calculate staffing for new OPs on import
@@ -158,7 +171,8 @@ public class ImportProductionOrdersUseCase {
                                 .importedAt(LocalDateTime.now())
                                 .updatedAt(LocalDateTime.now())
                                 .build();
-                        orderRepository.save(order);
+                        order = orderRepository.save(order);
+                        existingOrders.put(orderNumber.trim(), order);
                         created++;
                     }
                 } catch (Exception e) {
@@ -173,6 +187,20 @@ public class ImportProductionOrdersUseCase {
         }
 
         return saveBatch(fileName, username, total, created, updated, errors);
+    }
+
+    /** Translates Dynamics order status values (Portuguese or English) to the internal enum. */
+    private ProductionOrderStatus parseOrderStatus(String s) {
+        if (s == null) return ProductionOrderStatus.PLANNED;
+        try {
+            return ProductionOrderStatus.valueOf(s.trim().toUpperCase());
+        } catch (IllegalArgumentException ignored) {}
+        String norm = s.trim().toLowerCase();
+        if (norm.contains("processo") || norm.contains("progress") || norm.contains("iniciada")) return ProductionOrderStatus.IN_PROGRESS;
+        if (norm.contains("liberada") || norm.contains("released")) return ProductionOrderStatus.RELEASED;
+        if (norm.contains("conclu") || norm.contains("finaliz") || norm.contains("encerr") || norm.contains("done") || norm.contains("completed")) return ProductionOrderStatus.DONE;
+        if (norm.contains("cancel")) return ProductionOrderStatus.CANCELLED;
+        return ProductionOrderStatus.PLANNED;
     }
 
     /**

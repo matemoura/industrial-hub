@@ -1,15 +1,20 @@
-<div class="page">
-  <div class="page-header">
-    <h1 class="page-title">Catálogo de Produtos</h1>
+<div class="sp-page page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">PRODUÇÃO · CATÁLOGO</p>
+      <h1 class="sp-title">Catálogo <span class="sp-title-accent">/ Produtos</span></h1>
+    </div>
     @if (canImport()) {
-      <button
-        type="button"
-        class="btn btn--primary"
-        data-testid="btn-import-excel"
-        (click)="toggleUpload()"
-      >
-        Importar Excel
-      </button>
+      <div class="sp-page-actions">
+        <button
+          type="button"
+          class="sp-btn sp-btn--primary"
+          data-testid="btn-import-excel"
+          (click)="toggleUpload()"
+        >
+          Importar Excel
+        </button>
+      </div>
     }
   </div>
 
@@ -35,7 +40,7 @@
           <p class="drop-zone__file" data-testid="selected-filename">{{ selectedFile()!.name }}</p>
         } @else {
           <p class="drop-zone__hint">Arraste e solte o arquivo aqui ou</p>
-          <label class="btn btn--secondary" for="file-input-products">Selecionar arquivo</label>
+          <label class="sp-btn sp-btn--secondary" for="file-input-products">Selecionar arquivo</label>
           <input
             id="file-input-products"
             type="file"
@@ -50,7 +55,7 @@
       <div class="upload-actions">
         <button
           type="button"
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           data-testid="btn-confirm-upload"
           [disabled]="!selectedFile() || isUploading()"
           (click)="confirmUpload()"

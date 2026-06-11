@@ -19,4 +19,7 @@ public interface ImportProductionBatchRepository extends JpaRepository<ImportPro
     Page<ImportProductionBatch> findFiltered(@Param("type") ProductionImportType type, Pageable pageable);
 
     Optional<ImportProductionBatch> findFirstByTypeOrderByImportedAtDesc(ProductionImportType type);
+
+    @Query("SELECT MAX(b.importedAt) FROM ImportProductionBatch b")
+    java.time.LocalDateTime findLastSyncAt();
 }

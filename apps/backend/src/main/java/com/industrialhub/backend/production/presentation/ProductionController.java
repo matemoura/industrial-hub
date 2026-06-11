@@ -1,5 +1,7 @@
 package com.industrialhub.backend.production.presentation;
 
+import com.industrialhub.backend.common.auth.application.PermissionService;
+import com.industrialhub.backend.common.auth.domain.AppModule;
 import com.industrialhub.backend.production.application.dto.*;
 import com.industrialhub.backend.production.application.usecase.*;
 import com.industrialhub.backend.production.application.dto.BomImportResponse;
@@ -32,6 +34,7 @@ import java.util.UUID;
 @Validated
 public class ProductionController {
 
+    private final PermissionService perm;
     private final ImportProductCatalogUseCase importProductCatalog;
     private final ImportStockSnapshotUseCase importStockSnapshot;
     private final ImportProductionOrdersUseCase importProductionOrders;
@@ -80,6 +83,7 @@ public class ProductionController {
     private final GetPurchaseNeedsUseCase getPurchaseNeeds;
 
     public ProductionController(
+            PermissionService perm,
             ImportProductCatalogUseCase importProductCatalog,
             ImportStockSnapshotUseCase importStockSnapshot,
             ImportProductionOrdersUseCase importProductionOrders,
@@ -120,6 +124,7 @@ public class ProductionController {
             GetProductBomUseCase getProductBom,
             GetPlanningSummaryUseCase getPlanningSummary,
             GetProductionOverviewUseCase getProductionOverview) {
+        this.perm = perm;
         this.importProductCatalog = importProductCatalog;
         this.importStockSnapshot = importStockSnapshot;
         this.importProductionOrders = importProductionOrders;
@@ -164,9 +169,23 @@ public class ProductionController {
 
     // ===== Import endpoints =====
 
+    @GetMapping("/import/my-permissions")
+    @PreAuthorize("isAuthenticated()")
+    public ImportPermissionsResponse getImportPermissions(Authentication authentication) {
+        String u = authentication.getName();
+        return new ImportPermissionsResponse(
+                perm.canCreate(u, AppModule.DYNAMICS_PRODUCTS),
+                perm.canCreate(u, AppModule.DYNAMICS_BOM),
+                perm.canCreate(u, AppModule.DYNAMICS_CYCLE_TIMES),
+                perm.canCreate(u, AppModule.DYNAMICS_STOCK),
+                perm.canCreate(u, AppModule.DYNAMICS_ORDERS),
+                perm.canCreate(u, AppModule.DYNAMICS_OEE)
+        );
+    }
+
     @PostMapping("/import/products")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).DYNAMICS_PRODUCTS)")
     public ImportProductionBatchResponse importProducts(
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
@@ -175,7 +194,7 @@ public class ProductionController {
 
     @PostMapping("/import/stock")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).DYNAMICS_STOCK)")
     public ImportProductionBatchResponse importStock(
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
@@ -184,7 +203,7 @@ public class ProductionController {
 
     @PostMapping("/import/production-orders")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).PRODUCTION)")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).DYNAMICS_ORDERS)")
     public ImportProductionBatchResponse importProductionOrders(
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
@@ -193,7 +212,7 @@ public class ProductionController {
 
     @PostMapping("/import/cycle-times")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).DYNAMICS_CYCLE_TIMES)")
     public ImportProductionBatchResponse importCycleTimes(
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {
@@ -484,7 +503,7 @@ public class ProductionController {
     // ===== BOM endpoints (US-101 / ADR-044) =====
 
     @PostMapping("/import/bom")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("@perm.canCreate(authentication.name, T(com.industrialhub.backend.common.auth.domain.AppModule).DYNAMICS_BOM)")
     public BomImportResponse importBom(
             @RequestParam("file") MultipartFile file,
             Authentication authentication) {

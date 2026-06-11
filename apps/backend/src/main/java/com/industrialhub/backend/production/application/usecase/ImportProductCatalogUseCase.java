@@ -69,63 +69,81 @@ public class ImportProductCatalogUseCase {
 
             Map<String, Integer> colIndex = buildColumnIndex(header);
 
+            // Accept internal column names OR Dynamics Portuguese export column names
+            String headerError = ExcelParsingHelper.validateRequiredColumnsAliased(colIndex,
+                    new String[]{"dynamics_code", "número_do_item"});
+            if (headerError != null) {
+                errors.add(new ImportErrorDto(1, headerError));
+                return saveBatch(fileName, username, total, created, updated, errors);
+            }
+
+            // Pre-load all existing products and families into maps — avoids N+1 queries
+            Map<String, Product>       existingProducts = new HashMap<>();
+            Map<String, ProductFamily> existingFamilies = new HashMap<>();
+            productRepository.findAll().forEach(p -> existingProducts.put(p.getDynamicsCode(), p));
+            familyRepository.findAll().forEach(f -> existingFamilies.put(f.getCode(), f));
+
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
                 if (row == null) continue;
                 total++;
 
                 try {
-                    String dynamicsCode = getString(row, colIndex, "dynamics_code");
+                    String dynamicsCode = getStringByAliases(row, colIndex,
+                            "dynamics_code", "número_do_item");
                     if (dynamicsCode == null || dynamicsCode.isBlank()) {
-                        errors.add(new ImportErrorDto(i + 1, "dynamics_code ausente ou nulo"));
+                        errors.add(new ImportErrorDto(i + 1, "Código do item ausente ou nulo"));
                         continue;
                     }
+                    dynamicsCode = dynamicsCode.trim();
 
-                    String typeStr = getString(row, colIndex, "type");
-                    ProductType type;
-                    try {
-                        type = ProductType.valueOf(typeStr != null ? typeStr.trim().toUpperCase() : "");
-                    } catch (IllegalArgumentException e) {
-                        errors.add(new ImportErrorDto(i + 1, "type inválido: " + typeStr));
-                        continue;
-                    }
+                    String typeStr = getStringByAliases(row, colIndex,
+                            "type", "tipo_de_produto", "tipo_de_produto/serviço", "subtipo_do_produto");
+                    ProductType type = parseProductType(typeStr);
 
-                    String name = getString(row, colIndex, "name");
-                    String familyCode = getString(row, colIndex, "family_code");
-                    String familyName = getString(row, colIndex, "family_name");
-                    String unit = getString(row, colIndex, "unit");
+                    String name = getStringByAliases(row, colIndex,
+                            "name", "nome_do_produto", "pesquisar_nome");
+                    String familyCode = getStringByAliases(row, colIndex,
+                            "family_code", "grupos_de_dimensões_de_produto");
+                    String familyName = getStringByAliases(row, colIndex,
+                            "family_name", "grupos_de_dimensões_de_produto");
+                    String unit = getStringByAliases(row, colIndex,
+                            "unit", "unidade_de_estoque");
                     String sterilizationStr = getString(row, colIndex, "requires_sterilization");
                     boolean requiresSterilization = "true".equalsIgnoreCase(sterilizationStr)
                             || "1".equals(sterilizationStr) || "sim".equalsIgnoreCase(sterilizationStr);
 
-                    // Upsert family — unless RAW_MATERIAL type
+                    // Derive family from column value or fall back to product code prefix
+                    if (familyCode == null || familyCode.isBlank()) {
+                        familyCode = deriveFamilyCode(dynamicsCode);
+                        if (familyName == null || familyName.isBlank()) familyName = familyCode;
+                    }
+
+                    // Upsert family from in-memory map — no DB query per row
                     ProductFamily family = null;
                     if (type != ProductType.RAW_MATERIAL && familyCode != null && !familyCode.isBlank()) {
                         final String fc = familyCode.trim();
                         final String fn = familyName != null ? familyName.trim() : fc;
-                        family = familyRepository.findByCode(fc)
-                                .orElseGet(() -> familyRepository.save(
-                                        ProductFamily.builder().code(fc).name(fn).active(true).build()));
+                        family = existingFamilies.computeIfAbsent(fc,
+                                k -> familyRepository.save(
+                                        ProductFamily.builder().code(k).name(fn).active(true).build()));
                     }
 
-                    // Upsert product
-                    Optional<Product> existing = productRepository.findByDynamicsCode(dynamicsCode.trim());
-                    if (existing.isPresent()) {
-                        Product p = existing.get();
-                        p.setName(name != null ? name.trim() : p.getName());
-                        p.setType(type);
-                        p.setUnit(unit != null ? unit.trim() : p.getUnit());
-                        p.setRequiresSterilization(requiresSterilization);
-                        p.setLastSyncAt(LocalDateTime.now());
-                        if (family != null) {
-                            p.setFamily(family);
-                        }
+                    // Upsert product from in-memory map — no DB query per row
+                    Product existing = existingProducts.get(dynamicsCode);
+                    if (existing != null) {
+                        existing.setName(name != null ? name.trim() : existing.getName());
+                        existing.setType(type);
+                        existing.setUnit(unit != null ? unit.trim() : existing.getUnit());
+                        existing.setRequiresSterilization(requiresSterilization);
+                        existing.setLastSyncAt(LocalDateTime.now());
+                        if (family != null) existing.setFamily(family);
                         // Hub-managed fields (leadTimeDays, minStockQty, batchSize) are NOT updated here
-                        productRepository.save(p);
+                        productRepository.save(existing);
                         updated++;
                     } else {
                         Product p = Product.builder()
-                                .dynamicsCode(dynamicsCode.trim())
+                                .dynamicsCode(dynamicsCode)
                                 .name(name != null ? name.trim() : dynamicsCode)
                                 .type(type)
                                 .family(family)
@@ -134,7 +152,8 @@ public class ImportProductCatalogUseCase {
                                 .active(true)
                                 .lastSyncAt(LocalDateTime.now())
                                 .build();
-                        productRepository.save(p);
+                        p = productRepository.save(p);
+                        existingProducts.put(dynamicsCode, p);
                         created++;
                     }
                 } catch (Exception e) {
@@ -190,10 +209,44 @@ public class ImportProductCatalogUseCase {
         Cell cell = row.getCell(idx);
         if (cell == null) return null;
         return switch (cell.getCellType()) {
-            case STRING -> cell.getStringCellValue().trim();
+            case STRING -> { String v = cell.getStringCellValue().trim(); yield v.isEmpty() ? null : v; }
             case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
             default -> null;
         };
+    }
+
+    private String getStringByAliases(Row row, Map<String, Integer> colIndex, String... aliases) {
+        for (String alias : aliases) {
+            String v = getString(row, colIndex, alias);
+            if (v != null && !v.isBlank()) return v;
+        }
+        return null;
+    }
+
+    /**
+     * Derives a family code from the product code prefix (leading letters).
+     * Examples: "MP0000001" → "MP", "UC0000022" → "UC", "50503" → "MSB"
+     */
+    private String deriveFamilyCode(String dynamicsCode) {
+        if (dynamicsCode == null || dynamicsCode.isBlank()) return "OUTROS";
+        StringBuilder prefix = new StringBuilder();
+        for (char c : dynamicsCode.toCharArray()) {
+            if (Character.isLetter(c)) prefix.append(c);
+            else break;
+        }
+        return prefix.length() > 0 ? prefix.toString().toUpperCase() : "MSB";
+    }
+
+    /** Translates Dynamics product type values (Portuguese or English) to the internal enum. */
+    private ProductType parseProductType(String s) {
+        if (s == null) return ProductType.FINISHED;
+        try {
+            return ProductType.valueOf(s.trim().toUpperCase());
+        } catch (IllegalArgumentException ignored) {}
+        String norm = s.trim().toLowerCase();
+        if (norm.contains("mat") && (norm.contains("prim") || norm.contains("raw"))) return ProductType.RAW_MATERIAL;
+        if (norm.contains("inter") || norm.contains("semi")) return ProductType.INTERMEDIATE;
+        return ProductType.FINISHED;
     }
 }

@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, catchError, of, throwError } from 'rxjs';
 
 const BASE = '/api/v1/production';
 
@@ -117,6 +117,8 @@ export class PlanningService {
   }
 
   getPurchaseNeeds(): Observable<PurchaseNeed[]> {
-    return this.http.get<PurchaseNeed[]>(`${BASE}/planning/purchase-needs`);
+    return this.http.get<PurchaseNeed[]>(`${BASE}/planning/purchase-needs`).pipe(
+      catchError(err => err.status === 404 ? of([]) : throwError(() => err))
+    );
   }
 }

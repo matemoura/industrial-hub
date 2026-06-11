@@ -22,6 +22,8 @@ public interface ProductionOrderRepository extends JpaRepository<ProductionOrder
 
     Optional<ProductionOrder> findByDynamicsOrderNumber(String dynamicsOrderNumber);
 
+    List<ProductionOrder> findByDynamicsOrderNumberIn(java.util.Collection<String> orderNumbers);
+
     /**
      * Returns tracking view for all non-terminal orders, optionally filtered by family.
      * DONE orders from the current week are included (status = DONE AND importedAt >= weekStart).
@@ -158,6 +160,30 @@ public interface ProductionOrderRepository extends JpaRepository<ProductionOrder
         """)
     int sumPlannedPeopleByProduct(@Param("productId") java.util.UUID productId);
 
+    /** KPI Dashboard — total OPs abertas (PLANNED + RELEASED + IN_PROGRESS) */
+    @Query("""
+        SELECT COUNT(po)
+        FROM ProductionOrder po
+        WHERE po.status IN (
+            com.industrialhub.backend.production.domain.ProductionOrderStatus.PLANNED,
+            com.industrialhub.backend.production.domain.ProductionOrderStatus.RELEASED,
+            com.industrialhub.backend.production.domain.ProductionOrderStatus.IN_PROGRESS
+        )
+        """)
+    long countOpenOrders();
+
+    /** KPI Dashboard — OPs atrasadas (dueDate passado, não encerradas) */
+    @Query("""
+        SELECT COUNT(po)
+        FROM ProductionOrder po
+        WHERE po.dueDate < :today
+          AND po.status NOT IN (
+              com.industrialhub.backend.production.domain.ProductionOrderStatus.DONE,
+              com.industrialhub.backend.production.domain.ProductionOrderStatus.CANCELLED
+          )
+        """)
+    long countOverdueOrders(@Param("today") java.time.LocalDate today);
+
     /** US-087 — count e earliest dueDate de OPs abertas por produto */
     @Query("""
         SELECT COUNT(po), MIN(po.dueDate)
@@ -168,7 +194,7 @@ public interface ProductionOrderRepository extends JpaRepository<ProductionOrder
               com.industrialhub.backend.production.domain.ProductionOrderStatus.CANCELLED
           )
         """)
-    Object[] countAndEarliestDueDateByProduct(@Param("productId") java.util.UUID productId);
+    java.util.List<Object[]> countAndEarliestDueDateByProduct(@Param("productId") java.util.UUID productId);
 
     /** Pending orders for sterilization queue */
     @Query("""

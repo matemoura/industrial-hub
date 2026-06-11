@@ -11,6 +11,7 @@ import com.industrialhub.backend.production.infrastructure.StockSnapshotReposito
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.UUID;
 
@@ -29,11 +30,13 @@ public class ListProductsUseCase {
         this.cycleTimeRepository = cycleTimeRepository;
     }
 
+    @Transactional(readOnly = true)
     public Page<ProductSummaryResponse> list(String familyCode, ProductType type, boolean active, Pageable pageable) {
         return productRepository.findFiltered(familyCode, type, active, pageable)
                 .map(ProductSummaryResponse::from);
     }
 
+    @Transactional(readOnly = true)
     public ProductDetailResponse getDetail(UUID id) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new ProductNotFoundException(id));

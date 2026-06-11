@@ -68,7 +68,22 @@ public class ImportStockSnapshotUseCase {
             }
 
             Map<String, Integer> colIndex = ExcelParsingHelper.buildColumnIndex(header);
-            ImportProductionBatch batch = null; // will be created after counting
+
+            // Accept internal column names OR Dynamics Portuguese export column names
+            String headerError = ExcelParsingHelper.validateRequiredColumnsAliased(colIndex,
+                    new String[]{"dynamics_code", "número_do_item"},
+                    new String[]{"qty", "quantidade_física_disponível", "total_disponível", "estoque_físico"});
+            if (headerError != null) {
+                errors.add(new ImportErrorDto(1, headerError));
+                return saveBatch(fileName, username, total, created, updated, errors, null);
+            }
+
+            // snapshot_date defaults to today when absent from the file (Dynamics export has no date column)
+            LocalDate defaultSnapshotDate = LocalDate.now();
+
+            // Pre-load all existing products into a map — avoids N+1 queries
+            Map<String, Product> existingProducts = new java.util.HashMap<>();
+            productRepository.findAll().forEach(p -> existingProducts.put(p.getDynamicsCode(), p));
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -76,31 +91,29 @@ public class ImportStockSnapshotUseCase {
                 total++;
 
                 try {
-                    String dynamicsCode = ExcelParsingHelper.getString(row, colIndex, "dynamics_code");
+                    String dynamicsCode = ExcelParsingHelper.getStringByAliases(row, colIndex,
+                            "dynamics_code", "número_do_item");
                     if (dynamicsCode == null || dynamicsCode.isBlank()) {
-                        errors.add(new ImportErrorDto(i + 1, "dynamics_code ausente"));
+                        errors.add(new ImportErrorDto(i + 1, "Código do item ausente"));
                         continue;
                     }
 
-                    Integer qty = ExcelParsingHelper.getInteger(row, colIndex, "qty");
+                    Integer qty = ExcelParsingHelper.getIntegerByAliases(row, colIndex,
+                            "qty", "quantidade_física_disponível", "total_disponível", "estoque_físico");
                     if (qty == null || qty < 0) {
-                        errors.add(new ImportErrorDto(i + 1, "qty inválido: " + qty));
+                        errors.add(new ImportErrorDto(i + 1, "Quantidade inválida: " + qty));
                         continue;
                     }
 
-                    LocalDate snapshotDate = ExcelParsingHelper.getLocalDate(row, colIndex, "snapshot_date");
-                    if (snapshotDate == null) {
-                        errors.add(new ImportErrorDto(i + 1, "snapshot_date ausente ou inválido"));
-                        continue;
-                    }
+                    LocalDate snapshotDate = ExcelParsingHelper.getLocalDateByAliases(row, colIndex,
+                            "snapshot_date", "data");
+                    if (snapshotDate == null) snapshotDate = defaultSnapshotDate;
 
-                    Optional<Product> productOpt = productRepository.findByDynamicsCode(dynamicsCode.trim());
-                    if (productOpt.isEmpty()) {
+                    Product product = existingProducts.get(dynamicsCode.trim());
+                    if (product == null) {
                         errors.add(new ImportErrorDto(i + 1, "Produto não encontrado: " + dynamicsCode));
                         continue;
                     }
-
-                    Product product = productOpt.get();
                     Optional<StockSnapshot> existing = stockSnapshotRepository
                             .findByProductIdAndSnapshotDate(product.getId(), snapshotDate);
 

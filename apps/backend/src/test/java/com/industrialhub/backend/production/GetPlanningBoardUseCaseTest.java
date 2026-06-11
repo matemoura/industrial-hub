@@ -69,7 +69,7 @@ class GetPlanningBoardUseCaseTest {
         when(mrpPlannedOrderRepository.sumActiveSuggestedQtyByProduct(product.getId())).thenReturn(0);
         when(productionOrderRepository.sumPlannedPeopleByProduct(product.getId())).thenReturn(0);
         when(productionOrderRepository.countAndEarliestDueDateByProduct(product.getId()))
-                .thenReturn(new Object[]{0L, null});
+                .thenReturn(List.<Object[]>of(new Object[]{0L, null}));
 
         List<FamilyPlanningBoardResponse> result = useCase.execute();
 
@@ -91,7 +91,7 @@ class GetPlanningBoardUseCaseTest {
         when(mrpPlannedOrderRepository.sumActiveSuggestedQtyByProduct(product.getId())).thenReturn(0);
         when(productionOrderRepository.sumPlannedPeopleByProduct(product.getId())).thenReturn(0);
         when(productionOrderRepository.countAndEarliestDueDateByProduct(product.getId()))
-                .thenReturn(new Object[]{0L, null});
+                .thenReturn(List.<Object[]>of(new Object[]{0L, null}));
 
         List<FamilyPlanningBoardResponse> result = useCase.execute();
 
@@ -112,7 +112,7 @@ class GetPlanningBoardUseCaseTest {
         when(mrpPlannedOrderRepository.sumActiveSuggestedQtyByProduct(product.getId())).thenReturn(0);
         when(productionOrderRepository.sumPlannedPeopleByProduct(product.getId())).thenReturn(0);
         when(productionOrderRepository.countAndEarliestDueDateByProduct(product.getId()))
-                .thenReturn(new Object[]{0L, null});
+                .thenReturn(List.<Object[]>of(new Object[]{0L, null}));
 
         List<FamilyPlanningBoardResponse> result = useCase.execute();
 

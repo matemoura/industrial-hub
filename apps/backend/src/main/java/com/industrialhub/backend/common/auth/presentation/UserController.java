@@ -2,6 +2,7 @@ package com.industrialhub.backend.common.auth.presentation;
 
 import com.industrialhub.backend.common.application.dto.UserDataExportResponse;
 import com.industrialhub.backend.common.application.usecase.DataExportUseCase;
+import com.industrialhub.backend.common.application.usecase.ExportUserDataPdfUseCase;
 import com.industrialhub.backend.common.auth.application.dto.*;
 import com.industrialhub.backend.common.auth.application.usecase.*;
 import com.industrialhub.backend.common.auth.application.usecase.GetUserPermissionsUseCase;
@@ -32,6 +33,7 @@ public class UserController {
     private final DataExportUseCase dataExportUseCase;
     private final GetUserPermissionsUseCase getUserPermissions;
     private final UpdateUserPermissionsUseCase updateUserPermissions;
+    private final ExportUserDataPdfUseCase exportUserDataPdf;
 
     public UserController(GetUserListUseCase getUserList,
                           CreateUserUseCase createUser,
@@ -41,7 +43,8 @@ public class UserController {
                           ChangeOwnPasswordUseCase changeOwnPassword,
                           DataExportUseCase dataExportUseCase,
                           GetUserPermissionsUseCase getUserPermissions,
-                          UpdateUserPermissionsUseCase updateUserPermissions) {
+                          UpdateUserPermissionsUseCase updateUserPermissions,
+                          ExportUserDataPdfUseCase exportUserDataPdf) {
         this.getUserList = getUserList;
         this.createUser = createUser;
         this.updateUserRole = updateUserRole;
@@ -51,6 +54,7 @@ public class UserController {
         this.dataExportUseCase = dataExportUseCase;
         this.getUserPermissions = getUserPermissions;
         this.updateUserPermissions = updateUserPermissions;
+        this.exportUserDataPdf = exportUserDataPdf;
     }
 
     @GetMapping("/api/v1/admin/users")
@@ -111,16 +115,21 @@ public class UserController {
 
     /**
      * GET /api/v1/users/me/data-export
-     * Exports all personal data for the authenticated user as a JSON attachment.
+     * Exports all personal data for the authenticated user as a PDF attachment.
      */
     @GetMapping("/api/v1/users/me/data-export")
-    public ResponseEntity<UserDataExportResponse> exportMyData(Authentication auth) {
-        UserDataExportResponse export = dataExportUseCase.execute(auth.getName());
-        String safeUsername = auth.getName().replaceAll("[^a-zA-Z0-9_\\-]", "_");
-        String filename = "dados-pessoais-" + safeUsername + "-" + LocalDate.now() + ".json";
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
-        return ResponseEntity.ok().headers(headers).body(export);
+    public ResponseEntity<byte[]> exportMyData(Authentication auth) {
+        try {
+            UserDataExportResponse data = dataExportUseCase.execute(auth.getName());
+            byte[] pdfBytes = exportUserDataPdf.execute(data);
+            String safeUsername = auth.getName().replaceAll("[^a-zA-Z0-9_\\-]", "_");
+            String filename = "dados-pessoais-" + safeUsername + "-" + LocalDate.now() + ".pdf";
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDisposition(ContentDisposition.attachment().filename(filename).build());
+            return ResponseEntity.ok().headers(headers).body(pdfBytes);
+        } catch (java.io.IOException e) {
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
