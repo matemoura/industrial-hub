@@ -18,7 +18,7 @@ public interface InternalAuditRepository extends JpaRepository<InternalAudit, UU
         SELECT a FROM InternalAudit a
         WHERE (:status IS NULL OR a.status = :status)
         AND (:auditType IS NULL OR a.auditType = :auditType)
-        AND (:leadAuditor IS NULL OR LOWER(a.leadAuditor) LIKE LOWER(CONCAT('%', :leadAuditor, '%')))
+        AND (:leadAuditor IS NULL OR LOWER(a.leadAuditor) LIKE LOWER(CONCAT('%', CAST(:leadAuditor AS string), '%')))
         AND (:from IS NULL OR a.plannedDate >= :from)
         AND (:to IS NULL OR a.plannedDate <= :to)
         ORDER BY a.plannedDate DESC

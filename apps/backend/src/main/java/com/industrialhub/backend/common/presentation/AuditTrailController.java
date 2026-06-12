@@ -52,7 +52,9 @@ public class AuditTrailController {
             @RequestParam(defaultValue = "20") int size) {
 
         Pageable pageable = PageRequest.of(page, Math.min(size, 100));
-        return auditLogRepository.findByFilters(username, module, action, from, to, pageable)
+        LocalDateTime effectiveFrom = from != null ? from : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime effectiveTo   = to   != null ? to   : LocalDateTime.of(9999, 12, 31, 23, 59);
+        return auditLogRepository.findByFilters(username, module, action, effectiveFrom, effectiveTo, pageable)
                 .map(AuditLogResponse::from);
     }
 
@@ -64,8 +66,10 @@ public class AuditTrailController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime to) {
 
+        LocalDateTime exportFrom = from != null ? from : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime exportTo   = to   != null ? to   : LocalDateTime.of(9999, 12, 31, 23, 59);
         List<AuditLog> logs = auditLogRepository
-                .findByFilters(username, module, action, from, to, PageRequest.of(0, 10000))
+                .findByFilters(username, module, action, exportFrom, exportTo, PageRequest.of(0, 10000))
                 .getContent();
 
         byte[] csv = buildCsv(logs);

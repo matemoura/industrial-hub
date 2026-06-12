@@ -21,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -89,14 +88,14 @@ public class TrainingController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<TrainingCourseResponse> createCourse(
             @RequestBody @Valid CreateCourseBody body,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal String principal) {
 
         var req = new CreateTrainingCourseUseCase.Request(
             body.code(), body.title(), body.description(), body.category(),
             body.durationHours(), body.validityMonths(), body.requiredForRoles()
         );
         return ResponseEntity.status(HttpStatus.CREATED).body(
-            createCourse.execute(req, principal.getUsername()));
+            createCourse.execute(req, principal));
     }
 
     @GetMapping("/courses")
@@ -117,21 +116,21 @@ public class TrainingController {
     public TrainingCourseResponse updateCourse(
             @PathVariable UUID id,
             @RequestBody @Valid UpdateCourseBody body,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal String principal) {
 
         var req = new UpdateTrainingCourseUseCase.Request(
             body.title(), body.description(), body.category(),
             body.durationHours(), body.validityMonths(), body.requiredForRoles()
         );
-        return updateCourse.execute(id, req, principal.getUsername());
+        return updateCourse.execute(id, req, principal);
     }
 
     @PutMapping("/courses/{id}/deactivate")
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deactivateCourse(@PathVariable UUID id,
-                                 @AuthenticationPrincipal UserDetails principal) {
-        deactivateCourse.execute(id, principal.getUsername());
+                                 @AuthenticationPrincipal String principal) {
+        deactivateCourse.execute(id, principal);
     }
 
     // ── Records ──────────────────────────────────────────────────────────────
@@ -146,12 +145,12 @@ public class TrainingController {
             @RequestParam(required = false) @Min(0) @Max(100) Integer score,
             @RequestParam @NotNull Boolean passed,
             @RequestParam(required = false) MultipartFile certificate,
-            @AuthenticationPrincipal UserDetails principal) throws IOException {
+            @AuthenticationPrincipal String principal) throws IOException {
 
         var req = new CreateTrainingRecordUseCase.Request(
             courseId, username, completedAt, instructorName, score, passed);
         return ResponseEntity.status(HttpStatus.CREATED).body(
-            createRecord.execute(req, certificate, principal.getUsername()));
+            createRecord.execute(req, certificate, principal));
     }
 
     @GetMapping("/records")
@@ -166,8 +165,8 @@ public class TrainingController {
 
     @GetMapping("/records/me")
     public List<TrainingRecordResponse> myRecords(
-            @AuthenticationPrincipal UserDetails principal) {
-        return myRecords.execute(principal.getUsername());
+            @AuthenticationPrincipal String principal) {
+        return myRecords.execute(principal);
     }
 
     @GetMapping("/records/{id}/certificate")
@@ -180,8 +179,8 @@ public class TrainingController {
     @PreAuthorize("hasRole('ADMIN')")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void deleteRecord(@PathVariable UUID id,
-                             @AuthenticationPrincipal UserDetails principal) {
-        deleteRecord.execute(id, principal.getUsername());
+                             @AuthenticationPrincipal String principal) {
+        deleteRecord.execute(id, principal);
     }
 
     // ── Analysis ─────────────────────────────────────────────────────────────
@@ -197,10 +196,10 @@ public class TrainingController {
     public TrainingRecordResponse assessEffectiveness(
             @PathVariable UUID id,
             @RequestBody @Valid EffectivenessBody body,
-            @AuthenticationPrincipal UserDetails principal) {
+            @AuthenticationPrincipal String principal) {
 
         var req = new AssessEffectivenessUseCase.Request(body.result(), body.notes());
-        return assessEffectiveness.execute(id, req, principal.getUsername());
+        return assessEffectiveness.execute(id, req, principal);
     }
 
     @GetMapping("/compliance-summary")

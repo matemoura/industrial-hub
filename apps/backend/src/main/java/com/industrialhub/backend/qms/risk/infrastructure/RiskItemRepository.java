@@ -18,9 +18,9 @@ public interface RiskItemRepository extends JpaRepository<RiskItem, UUID> {
         SELECT r FROM RiskItem r
         WHERE (:status IS NULL OR r.status = :status)
         AND (:riskLevel IS NULL OR r.riskLevel = :riskLevel)
-        AND (:owner IS NULL OR LOWER(r.owner) LIKE LOWER(CONCAT('%', :owner, '%')))
+        AND (:owner IS NULL OR LOWER(r.owner) LIKE LOWER(CONCAT('%', CAST(:owner AS string), '%')))
         AND (:linkedNcId IS NULL OR r.linkedNcId = :linkedNcId)
-        AND (:linkedProductCode IS NULL OR LOWER(r.linkedProductCode) LIKE LOWER(CONCAT('%', :linkedProductCode, '%')))
+        AND (:linkedProductCode IS NULL OR LOWER(r.linkedProductCode) LIKE LOWER(CONCAT('%', CAST(:linkedProductCode AS string), '%')))
         ORDER BY r.rpn DESC
         """)
     Page<RiskItem> findByFilters(

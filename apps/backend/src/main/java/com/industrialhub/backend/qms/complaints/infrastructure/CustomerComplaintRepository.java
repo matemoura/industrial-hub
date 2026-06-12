@@ -19,7 +19,7 @@ public interface CustomerComplaintRepository extends JpaRepository<CustomerCompl
         SELECT c FROM CustomerComplaint c
         WHERE (:status IS NULL OR c.status = :status)
         AND (:severity IS NULL OR c.severity = :severity)
-        AND (:productCode IS NULL OR LOWER(c.productCode) LIKE LOWER(CONCAT('%', :productCode, '%')))
+        AND (:productCode IS NULL OR LOWER(c.productCode) LIKE LOWER(CONCAT('%', CAST(:productCode AS string), '%')))
         AND (:reportedToAnvisa IS NULL OR c.reportedToAnvisa = :reportedToAnvisa)
         AND (:from IS NULL OR c.reportedDate >= :from)
         AND (:to IS NULL OR c.reportedDate <= :to)

@@ -16,7 +16,6 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
@@ -61,28 +60,28 @@ public class WebhookController {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public WebhookSubscriptionResponse create(@Valid @RequestBody CreateWebhookRequest request,
-                                               @AuthenticationPrincipal UserDetails user) {
-        return createUseCase.execute(request, user.getUsername());
+                                               @AuthenticationPrincipal String user) {
+        return createUseCase.execute(request, user);
     }
 
     @PutMapping("/{id}")
     public WebhookSubscriptionResponse update(@PathVariable UUID id,
                                                @Valid @RequestBody UpdateWebhookRequest request,
-                                               @AuthenticationPrincipal UserDetails user) {
-        return updateUseCase.execute(id, request, user.getUsername());
+                                               @AuthenticationPrincipal String user) {
+        return updateUseCase.execute(id, request, user);
     }
 
     @DeleteMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID id,
-                       @AuthenticationPrincipal UserDetails user) {
-        deleteUseCase.execute(id, user.getUsername());
+                       @AuthenticationPrincipal String user) {
+        deleteUseCase.execute(id, user);
     }
 
     @PostMapping("/{id}/test")
     public WebhookTestResponse test(@PathVariable UUID id,
-                                    @AuthenticationPrincipal UserDetails user) {
-        return testUseCase.execute(id, user.getUsername());
+                                    @AuthenticationPrincipal String user) {
+        return testUseCase.execute(id, user);
     }
 
     @GetMapping("/{id}/deliveries")
@@ -92,7 +91,7 @@ public class WebhookController {
 
     @PutMapping("/{id}/activate")
     public WebhookSubscriptionResponse activate(@PathVariable UUID id,
-                                                 @AuthenticationPrincipal UserDetails user) {
-        return activateUseCase.execute(id, user.getUsername());
+                                                 @AuthenticationPrincipal String user) {
+        return activateUseCase.execute(id, user);
     }
 }

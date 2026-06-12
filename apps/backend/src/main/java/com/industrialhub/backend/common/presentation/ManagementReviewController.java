@@ -10,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,9 +39,9 @@ public class ManagementReviewController {
     public ResponseEntity<ManagementReviewData> getIndicators(
         @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
         @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-        @AuthenticationPrincipal UserDetails principal
+        @AuthenticationPrincipal String principal
     ) {
-        return ResponseEntity.ok(getDataUseCase.execute(from, to, principal.getUsername()));
+        return ResponseEntity.ok(getDataUseCase.execute(from, to, principal));
     }
 
     @GetMapping("/indicators/export")
@@ -50,9 +49,9 @@ public class ManagementReviewController {
     public ResponseEntity<byte[]> exportPdf(
         @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
         @RequestParam @NotNull @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-        @AuthenticationPrincipal UserDetails principal
+        @AuthenticationPrincipal String principal
     ) {
-        byte[] pdf = generatePdfUseCase.execute(from, to, principal.getUsername());
+        byte[] pdf = generatePdfUseCase.execute(from, to, principal);
         String filename = "management-review-" + from + "-to-" + to + ".pdf";
         return ResponseEntity.ok()
             .contentType(MediaType.APPLICATION_PDF)

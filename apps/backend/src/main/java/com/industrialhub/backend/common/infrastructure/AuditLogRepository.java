@@ -45,8 +45,8 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, UUID> {
         WHERE (:username IS NULL OR a.username = :username)
           AND (:module IS NULL OR a.module = :module)
           AND (:action IS NULL OR CAST(a.action AS string) = :action)
-          AND (:from IS NULL OR a.timestamp >= :from)
-          AND (:to IS NULL OR a.timestamp <= :to)
+          AND a.timestamp >= :from
+          AND a.timestamp <= :to
         ORDER BY a.timestamp DESC
         """)
     Page<AuditLog> findByFilters(

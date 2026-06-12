@@ -43,8 +43,10 @@ public class GetChangeRequestsUseCase {
             }
         }
 
+        LocalDateTime effectiveFrom = from != null ? from : LocalDateTime.of(1970, 1, 1, 0, 0);
+        LocalDateTime effectiveTo   = to   != null ? to   : LocalDateTime.of(9999, 12, 31, 23, 59);
         return changeRequestRepository.findByFilters(
-            effectiveStatus, changeType, requestedBy, from, to, pageable
+            effectiveStatus, changeType, requestedBy, effectiveFrom, effectiveTo, pageable
         ).map(ChangeRequestResponse::from);
     }
 

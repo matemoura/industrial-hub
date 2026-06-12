@@ -139,10 +139,7 @@ class WebhookControllerValidationTest {
 
         when(createUseCase.execute(any(), any())).thenReturn(mockResponse);
 
-        // Simulate call with a mock UserDetails principal
-        org.springframework.security.core.userdetails.User user =
-                new org.springframework.security.core.userdetails.User("admin", "", java.util.List.of());
-        WebhookSubscriptionResponse result = controller.create(request, user);
+        WebhookSubscriptionResponse result = controller.create(request, "admin");
 
         assertThat(result.url()).isEqualTo("https://example.com/hook");
     }

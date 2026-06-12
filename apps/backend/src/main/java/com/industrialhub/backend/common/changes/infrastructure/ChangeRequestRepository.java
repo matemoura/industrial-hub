@@ -19,9 +19,9 @@ public interface ChangeRequestRepository extends JpaRepository<ChangeRequest, UU
         SELECT cr FROM ChangeRequest cr
         WHERE (:status IS NULL OR cr.status = :status)
         AND (:changeType IS NULL OR cr.changeType = :changeType)
-        AND (:requestedBy IS NULL OR LOWER(cr.requestedBy) LIKE LOWER(CONCAT('%', :requestedBy, '%')))
-        AND (:from IS NULL OR cr.createdAt >= :from)
-        AND (:to IS NULL OR cr.createdAt <= :to)
+        AND (:requestedBy IS NULL OR LOWER(cr.requestedBy) LIKE LOWER(CONCAT('%', CAST(:requestedBy AS string), '%')))
+        AND cr.createdAt >= :from
+        AND cr.createdAt <= :to
         ORDER BY cr.createdAt DESC
         """)
     Page<ChangeRequest> findByFilters(
