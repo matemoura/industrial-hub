@@ -10,6 +10,12 @@
   @if (audit(); as a) {
 
     <!-- ── Header ──────────────────────────────────────────────────────── -->
+    <div class="sp-page-header">
+      <div>
+        <p class="sp-kicker">QMS · AUDITORIAS · ISO 13485 §8.2.4</p>
+        <h1 class="sp-title">Auditoria <span class="sp-title-accent">/ Detalhe</span></h1>
+      </div>
+    </div>
     <div class="detail-header">
       <div class="header-left">
         <p class="audit-kicker">QMS · AUDITORIA · {{ a.code }}</p>
@@ -38,14 +44,14 @@
       @if (isSupervisor()) {
         <div class="header-actions">
           @if (a.status === 'PLANNED') {
-            <button class="btn btn--primary" (click)="startAudit()">▶ Iniciar Auditoria</button>
+            <button class="sp-btn sp-btn--primary" (click)="startAudit()">▶ Iniciar Auditoria</button>
             <button class="btn btn--danger" data-testid="btn-cancel-audit" (click)="cancelAudit()">✕ Cancelar</button>
           }
           @if (a.status === 'IN_PROGRESS') {
             <button class="btn btn--success" (click)="completeAudit()">✓ Concluir Auditoria</button>
           }
           @if (a.status === 'COMPLETED') {
-            <button class="btn btn--primary" data-testid="btn-generate-pdf" (click)="downloadReport()">
+            <button class="sp-btn sp-btn--primary" data-testid="btn-generate-pdf" (click)="downloadReport()">
               ↓ Gerar PDF
             </button>
           }
@@ -64,7 +70,7 @@
       <div class="section-header">
         <h2 class="section-title">Checklist ({{ a.checklistItems.length }} itens)</h2>
         @if (isSupervisor() && a.status === 'IN_PROGRESS') {
-          <button class="btn btn--outline btn--sm" (click)="openAddChecklistModal()">+ Item</button>
+          <button class="sp-btn sp-btn--secondary btn--sm" (click)="openAddChecklistModal()">+ Item</button>
         }
       </div>
 
@@ -133,7 +139,7 @@
       <div class="section-header">
         <h2 class="section-title">Achados ({{ a.findings.length }})</h2>
         @if (isSupervisor() && a.status !== 'CANCELLED') {
-          <button class="btn btn--outline btn--sm" (click)="openAddFindingModal()">+ Achado</button>
+          <button class="sp-btn sp-btn--secondary btn--sm" (click)="openAddFindingModal()">+ Achado</button>
         }
       </div>
 
@@ -218,8 +224,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeAddFindingModal()">Cancelar</button>
-        <button class="btn btn--primary" (click)="submitFinding()">Salvar</button>
+        <button class="sp-btn sp-btn--secondary" (click)="closeAddFindingModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary" (click)="submitFinding()">Salvar</button>
       </div>
     </div>
   </div>
@@ -251,8 +257,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeAddChecklistModal()">Cancelar</button>
-        <button class="btn btn--primary" (click)="submitChecklistItem()">Adicionar</button>
+        <button class="sp-btn sp-btn--secondary" (click)="closeAddChecklistModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary" (click)="submitChecklistItem()">Adicionar</button>
       </div>
     </div>
   </div>

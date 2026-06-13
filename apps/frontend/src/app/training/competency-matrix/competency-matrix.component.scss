@@ -1,3 +1,16 @@
+:host {
+  display: block;
+  padding: 1.5rem 2rem;
+}
+
+.content-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow: 0 2px 16px rgba(31, 58, 74, 0.07);
+  padding: 1.5rem;
+  animation: msbFadeUp 0.4s ease both;
+}
+
 .page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem;
   &__left { flex: 1; } }
 .page-title { font-size: 1.25rem; font-weight: 600; color: #1F3A4A; margin: 0 0 .25rem; }

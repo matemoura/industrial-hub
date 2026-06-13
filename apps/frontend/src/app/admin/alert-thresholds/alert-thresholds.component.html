@@ -1,21 +1,23 @@
 <section class="alert-thresholds-page">
-  <header class="page-header">
-    <div class="page-header__title">
-      <h1>Alertas de Limiar</h1>
-      <p class="page-header__subtitle">Configure os limiares que disparam alertas e notificações por email</p>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">ADMINISTRAÇÃO · ALERTAS</p>
+      <h1 class="sp-title">Limiares <span class="sp-title-accent">/ Notificações</span></h1>
     </div>
     @if (!loading()) {
-      <button
-        class="btn btn--primary"
-        type="button"
-        data-testid="btn-new-threshold"
-        [disabled]="availableMetrics().length === 0"
-        (click)="openCreateDialog()"
-      >
-        + Novo Limiar
-      </button>
+      <div class="sp-page-actions">
+        <button
+          class="sp-btn sp-btn--primary"
+          type="button"
+          data-testid="btn-new-threshold"
+          [disabled]="availableMetrics().length === 0"
+          (click)="openCreateDialog()"
+        >
+          + Novo Limiar
+        </button>
+      </div>
     }
-  </header>
+  </div>
 
   @if (successMsg()) {
     <div class="alert alert--success" role="status">{{ successMsg() }}</div>
@@ -41,7 +43,7 @@
         <path d="M24 14v10M24 30v2" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
       <p>Nenhum limiar configurado.</p>
-      <button class="btn btn--primary" type="button" (click)="openCreateDialog()">
+      <button class="sp-btn sp-btn--primary" type="button" (click)="openCreateDialog()">
         Configurar primeiro limiar
       </button>
     </div>
@@ -173,7 +175,7 @@
       <footer class="dialog__footer">
         <button class="btn btn--ghost" type="button" (click)="closeDialog()">Cancelar</button>
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-submit-create"
           [disabled]="formThreshold() === null || submitting()"
@@ -234,7 +236,7 @@
       <footer class="dialog__footer">
         <button class="btn btn--ghost" type="button" (click)="closeDialog()">Cancelar</button>
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-submit-edit"
           [disabled]="formThreshold() === null || submitting()"

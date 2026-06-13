@@ -1,7 +1,12 @@
-<div class="nc-form-page">
-  <div class="page-header">
-    <a routerLink="/qms/non-conformances" class="back-link">← Voltar</a>
-    <h2>Registrar Não-Conformidade</h2>
+<div class="nc-form-page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · NÃO CONFORMIDADES</p>
+      <h1 class="sp-title">Nova <span class="sp-title-accent">/ NC</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      <a routerLink="/qms/non-conformances" class="back-link">← Voltar</a>
+    </div>
   </div>
 
   <form class="nc-form" (ngSubmit)="submit()">
@@ -88,8 +93,8 @@
     }
 
     <div class="form-actions">
-      <a routerLink="/qms/non-conformances" class="btn btn--secondary">Cancelar</a>
-      <button type="submit" class="btn btn--primary" data-testid="nc-submit" [disabled]="!isValid || loading()">
+      <a routerLink="/qms/non-conformances" class="sp-btn sp-btn--secondary">Cancelar</a>
+      <button type="submit" class="sp-btn sp-btn--primary" data-testid="nc-submit" [disabled]="!isValid || loading()">
         {{ loading() ? 'Registrando…' : 'Registrar NC' }}
       </button>
     </div>

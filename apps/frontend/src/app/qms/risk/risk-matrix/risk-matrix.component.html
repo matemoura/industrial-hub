@@ -1,12 +1,14 @@
-<div class="matrix-page">
+<div class="matrix-page sp-page">
 
   <!-- ── Header ──────────────────────────────────────────────────────── -->
-  <div class="page-header">
-    <div class="page-header__title">
-      <p class="page-kicker">QMS · FMEA · ISO 14971</p>
-      <h1 class="page-title">Matriz de Risco</h1>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · ISO 14971</p>
+      <h1 class="sp-title">Matriz <span class="sp-title-accent">/ Risco</span></h1>
     </div>
-    <a routerLink="/qms/risks" class="btn btn--outline">← Voltar para lista</a>
+    <div class="sp-page-actions">
+      <a routerLink="/qms/risks" class="sp-btn sp-btn--secondary">← Voltar para lista</a>
+    </div>
   </div>
 
   @if (loading()) {

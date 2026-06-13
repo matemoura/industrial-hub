@@ -1,15 +1,17 @@
-<div class="audit-list-page">
+<div class="sp-page audit-list-page" data-testid="audit-list">
 
   <!-- ── Header ──────────────────────────────────────────────────────── -->
-  <div class="page-header">
-    <div class="page-header__title">
-      <p class="page-kicker">QMS · AUDITORIAS · ISO 13485 §8.2.4</p>
-      <h1 class="page-title">Auditorias Internas</h1>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · AUDITORIAS · ISO 13485 §8.2.4</p>
+      <h1 class="sp-title">Auditorias <span class="sp-title-accent">/ Internas</span></h1>
     </div>
     @if (isSupervisor()) {
-      <button class="btn btn--primary" data-testid="btn-new-audit" (click)="openNewModal()">
-        + Nova Auditoria
-      </button>
+      <div class="sp-page-actions">
+        <button class="sp-btn sp-btn--primary" data-testid="btn-new-audit" (click)="openNewModal()">
+          + Nova Auditoria
+        </button>
+      </div>
     }
   </div>
 
@@ -77,20 +79,11 @@
 
   <!-- ── Table ────────────────────────────────────────────────────────── -->
   @if (loading()) {
-    <div class="skeleton-wrapper">
-      @for (i of [1,2,3,4,5]; track i) {
-        <div class="skeleton-row">
-          <span class="skeleton-cell skeleton-cell--sm"></span>
-          <span class="skeleton-cell skeleton-cell--lg"></span>
-          <span class="skeleton-cell skeleton-cell--md"></span>
-          <span class="skeleton-cell skeleton-cell--sm"></span>
-          <span class="skeleton-cell skeleton-cell--sm"></span>
-        </div>
-      }
+    <div class="audit-table-card">
+      @for (i of [1,2,3,4,5]; track i) { <div class="audit-skeleton-row"></div> }
     </div>
   } @else if (audits().length === 0) {
-    <div class="empty-state">
-      <span class="empty-icon" aria-hidden="true">📋</span>
+    <div class="audit-empty">
       <p>Nenhuma auditoria encontrada.</p>
     </div>
   } @else {
@@ -140,13 +133,11 @@
 
     <!-- Pagination -->
     @if (totalElements() > pageSize()) {
-      <div class="pagination">
-        <button class="btn btn--outline btn--sm" [disabled]="page() === 0" (click)="prevPage()">‹ Anterior</button>
-        <span class="pagination__info">Página {{ page() + 1 }} · {{ totalElements() }} registros</span>
-        <button class="btn btn--outline btn--sm"
-                [disabled]="(page() + 1) * pageSize() >= totalElements()"
-                (click)="nextPage()">
-          Próxima ›
+      <div class="audit-pagination">
+        <button class="pg-btn" [disabled]="page() === 0" (click)="prevPage()">← Anterior</button>
+        <span class="pg-info">Página {{ page() + 1 }} · {{ totalElements() }} registros</span>
+        <button class="pg-btn" [disabled]="(page() + 1) * pageSize() >= totalElements()" (click)="nextPage()">
+          Próxima →
         </button>
       </div>
     }
@@ -205,8 +196,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeNewModal()">Cancelar</button>
-        <button class="btn btn--primary"
+        <button class="sp-btn sp-btn--secondary" (click)="closeNewModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary"
                 [disabled]="modalLoading()"
                 (click)="submitNewAudit()">
           @if (modalLoading()) { Criando… } @else { Criar Auditoria }

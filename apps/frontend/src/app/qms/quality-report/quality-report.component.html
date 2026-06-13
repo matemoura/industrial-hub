@@ -1,9 +1,13 @@
-<div class="quality-report-page">
+<div class="quality-report-page sp-page">
 
-  <div class="page-header">
-    <a routerLink="/qms/non-conformances" class="back-link">← QMS</a>
-    <h1 class="page-title">Relatório Executivo de Qualidade</h1>
-    <p class="page-subtitle">Gere relatórios consolidados em PDF ou Excel para auditorias e reuniões.</p>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · RELATÓRIO</p>
+      <h1 class="sp-title">Relatório <span class="sp-title-accent">/ Qualidade</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      <a routerLink="/qms/non-conformances" class="back-link">← QMS</a>
+    </div>
   </div>
 
   <div class="report-card">
@@ -103,7 +107,7 @@
     <div class="form-actions">
       <button
         type="button"
-        class="btn btn--primary btn--lg"
+        class="sp-btn sp-btn--primary btn--lg"
         [disabled]="!isFormValid || generating()"
         (click)="generate()"
         data-testid="btn-generate"

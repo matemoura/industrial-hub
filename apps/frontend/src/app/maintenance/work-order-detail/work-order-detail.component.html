@@ -1,10 +1,10 @@
-<div class="wo-detail-page">
+<div class="wo-detail-page sp-page">
 
-  <div class="page-header">
-    <a routerLink="/maintenance/work-orders" class="back-link">← Ordens de Serviço</a>
-    @if (workOrder()) {
-      <h2>OS — {{ workOrder()!.title }}</h2>
-    }
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · ORDEM</p>
+      <h1 class="sp-title">Ordem de Serviço <span class="sp-title-accent">/ Detalhe</span></h1>
+    </div>
   </div>
 
   <!-- Snackbar -->
@@ -64,7 +64,7 @@
         @if (canEdit()) {
           <button
             type="button"
-            class="btn btn--primary"
+            class="sp-btn sp-btn--primary"
             data-testid="btn-add-part"
             (click)="openAddForm()"
           >
@@ -143,8 +143,8 @@
           <input formControlName="quantity" type="number" min="1" />
         </div>
         <div class="dialog-actions">
-          <button type="button" class="btn btn--secondary" (click)="cancelAddForm()">Cancelar</button>
-          <button type="submit" class="btn btn--primary" [disabled]="addForm.invalid || submitting()">
+          <button type="button" class="sp-btn sp-btn--secondary" (click)="cancelAddForm()">Cancelar</button>
+          <button type="submit" class="sp-btn sp-btn--primary" [disabled]="addForm.invalid || submitting()">
             {{ submitting() ? 'Adicionando…' : 'Adicionar' }}
           </button>
         </div>
@@ -160,7 +160,7 @@
       <h3>Remover Peça</h3>
       <p>Confirma a remoção desta peça? O estoque será restaurado.</p>
       <div class="dialog-actions">
-        <button type="button" class="btn btn--secondary" data-testid="btn-cancel-remove" (click)="cancelRemove()">
+        <button type="button" class="sp-btn sp-btn--secondary" data-testid="btn-cancel-remove" (click)="cancelRemove()">
           Cancelar
         </button>
         <button type="button" class="btn btn--danger" data-testid="btn-confirm-remove" [disabled]="submitting()" (click)="confirmRemove()">

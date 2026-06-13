@@ -21,11 +21,21 @@ export class I18nService {
 
   private detectInitialLang(): SupportedLanguage {
     const stored = localStorage.getItem(STORAGE_KEY) as SupportedLanguage | null;
+    const browserLanguages = typeof navigator !== 'undefined'
+      ? [navigator.language, ...(navigator.languages ?? [])].filter(Boolean)
+      : [];
+    const exactMatch = browserLanguages.find(lang => SUPPORTED.includes(lang as SupportedLanguage));
+    if (exactMatch) return exactMatch as SupportedLanguage;
+
+    const primaryMatch = browserLanguages
+      .map(lang => lang.split('-')[0])
+      .map(primary => SUPPORTED.find(lang => lang.startsWith(primary + '-')))
+      .find((lang): lang is SupportedLanguage => !!lang);
+    if (primaryMatch) return primaryMatch;
+
     if (stored && SUPPORTED.includes(stored)) return stored;
 
-    const browser = navigator.language;
-    const match = SUPPORTED.find(l => browser.startsWith(l.split('-')[0]));
-    return match ?? DEFAULT_LANG;
+    return DEFAULT_LANG;
   }
 
   private loadTranslations(lang: SupportedLanguage): void {
@@ -62,5 +72,22 @@ export class I18nService {
       (acc, [k, v]) => acc.replace(new RegExp(`\\{\\{${k}\\}\\}`, 'g'), v),
       value
     );
+  }
+
+  translateLiteral(text: string): string {
+    const literal = this.readPath(['literal', text]);
+    return typeof literal === 'string' ? literal : text;
+  }
+
+  private readPath(keys: string[]): unknown {
+    let value: unknown = this._translations();
+    for (const k of keys) {
+      if (value && typeof value === 'object') {
+        value = (value as Record<string, unknown>)[k];
+      } else {
+        return undefined;
+      }
+    }
+    return value;
   }
 }

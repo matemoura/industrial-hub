@@ -5,7 +5,7 @@
     @if (canInitiate() && !showWizard()) {
       <button
         type="button"
-        class="btn btn--primary btn--sm"
+        class="sp-btn sp-btn--primary btn--sm"
         [disabled]="initiateDisabled()"
         [title]="initiateDisabled() ? 'Inicie a análise da NC primeiro' : ''"
         (click)="initiate()"
@@ -66,7 +66,7 @@
       @if (!isReadonly() && canAddPair()) {
         <button
           type="button"
-          class="btn btn--secondary btn--sm rca-add-pair"
+          class="sp-btn sp-btn--secondary btn--sm rca-add-pair"
           (click)="addPair()"
           data-testid="btn-add-pair"
         >
@@ -93,7 +93,7 @@
         <div class="rca-actions">
           <button
             type="button"
-            class="btn btn--primary"
+            class="sp-btn sp-btn--primary"
             [disabled]="!canSave()"
             (click)="save()"
             data-testid="btn-save-rca"

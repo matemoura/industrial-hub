@@ -1,145 +1,147 @@
-.equipment-list-page {
-  padding: 2rem;
-  max-width: 1200px;
-  margin: 0 auto;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.page-header {
+// ── Filtros ───────────────────────────────────────────────────────────────────
+.eq-filters {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  margin-bottom: 1.5rem;
-
-  h2 {
-    font-size: 1.5rem;
-    font-weight: 600;
-    color: #111827;
-    margin: 0;
-  }
-}
-
-.filters {
-  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-  margin-bottom: 1.25rem;
-  background: #f8fafc;
-  padding: 1rem;
-  border-radius: 6px;
-  border: 1px solid #e5e7eb;
 }
 
-.filter-field {
-  display: flex;
-  flex-direction: column;
-  font-size: 0.78rem;
-  font-weight: 500;
-  color: #374151;
-  gap: 0.3rem;
-
-  select {
-    padding: 0.4rem 0.6rem;
-    border: 1px solid #d1d5db;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    color: #111827;
-    background: #fff;
-
-    &:focus { outline: 2px solid #0099B8; outline-offset: 1px; }
-  }
-}
-
-.filter-actions {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-end;
-}
-
-.eq-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
-
-  th {
-    background: #f8fafc;
-    padding: 0.6rem 0.9rem;
-    text-align: left;
-    font-weight: 600;
-    border-bottom: 2px solid #e2e8f0;
-    color: #374151;
-    white-space: nowrap;
-  }
-
-  td {
-    padding: 0.6rem 0.9rem;
-    border-bottom: 1px solid #f1f5f9;
-    color: #1f2937;
-  }
-}
-
-.eq-row {
+.filter-chip {
+  font-family: inherit;
+  font-size: 12px;
+  color: #1F3A4A;
+  padding: 8px 12px;
+  border: 1.5px solid #D9E4E8;
+  border-radius: 8px;
+  background: #fff;
   cursor: pointer;
-  &:hover td { background: #f0f9ff; }
+
+  &:focus {
+    outline: none;
+    border-color: #56A4BB;
+    box-shadow: 0 0 0 3px rgba(86, 164, 187, 0.15);
+  }
 }
 
+// ── Table card ────────────────────────────────────────────────────────────────
+.eq-table-card {
+  background: #FFFFFF;
+  border: 1px solid #E3ECEF;
+  border-radius: 16px;
+  overflow: hidden;
+  animation: msbFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) 0.05s both;
+}
+
+.eq-table-header {
+  display: grid;
+  grid-template-columns: 120px 1fr 140px 130px 160px 120px;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #FAFCFD;
+  border-bottom: 1px solid #EDF3F5;
+
+  span {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: #9aabb5;
+  }
+}
+
+.eq-table-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 140px 130px 160px 120px;
+  gap: 12px;
+  align-items: center;
+  padding: 13px 20px;
+  border-bottom: 1px solid #F4F8FA;
+  cursor: pointer;
+  transition: background 0.2s ease;
+
+  &:last-child { border-bottom: none; }
+  &:hover { background: #F7FBFC; }
+}
+
+// ── Cell types ────────────────────────────────────────────────────────────────
 .eq-code {
   font-family: 'Courier New', monospace;
-  font-size: 0.8rem;
-  color: #374151;
-  font-weight: 600;
+  font-size: 11px;
+  font-weight: 700;
+  color: #2F6B80;
 }
 
-.eq-name { font-weight: 500; }
+.eq-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: #1F3A4A;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
+.eq-type {
+  font-size: 12px;
+  color: #5d7689;
+}
+
+.eq-location {
+  font-size: 12px;
+  color: #5d7689;
+}
+
+.eq-date {
+  font-size: 12px;
+  color: #9aabb5;
+}
+
+// ── Status chips ──────────────────────────────────────────────────────────────
 .status-chip {
   display: inline-block;
-  padding: 0.2rem 0.6rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  padding: 3px 10px;
+  border-radius: 999px;
 
-  &.status-operational       { background: #dcfce7; color: #166534; }
-  &.status-under-maintenance { background: #fef3c7; color: #92400e; }
-  &.status-decommissioned    { background: #f3f4f6; color: #6b7280; }
+  &.status-operational       { background: #E8F5EC; color: #2E7D4F; }
+  &.status-under-maintenance { background: #FDF3E2; color: #9A6B1F; }
+  &.status-decommissioned    { background: #F0F1F3; color: #818286; }
 }
 
-.loading-msg,
-.empty-msg {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin-top: 1.5rem;
+// ── States ────────────────────────────────────────────────────────────────────
+.eq-empty {
+  text-align: center;
+  padding: 48px 24px;
+  color: #9aabb5;
+  font-size: 14px;
+  background: #FFFFFF;
+  border: 1px solid #E3ECEF;
+  border-radius: 16px;
 }
 
-.error-msg {
-  color: #dc2626;
-  font-size: 0.875rem;
-  margin-top: 1rem;
+.eq-skeleton-row {
+  height: 46px;
+  margin: 0;
+  background: linear-gradient(90deg, #f0f4f6 25%, #e8eff3 50%, #f0f4f6 75%);
+  background-size: 200% 100%;
+  animation: msb-shimmer 1.4s infinite;
+
+  &:first-child { border-radius: 16px 16px 0 0; }
+  &:last-child  { border-radius: 0 0 16px 16px; }
 }
 
-.btn {
-  padding: 0.45rem 1rem;
-  border-radius: 4px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  border: none;
-  text-decoration: none;
-  display: inline-flex;
-  align-items: center;
-  transition: background 0.15s;
-
-  &--primary {
-    background: #0099B8;
-    color: #fff;
-    &:hover { background: #006B82; }
+// ── Responsive ────────────────────────────────────────────────────────────────
+@media (max-width: 900px) {
+  .eq-table-header,
+  .eq-table-row {
+    grid-template-columns: 90px 1fr 100px 100px;
   }
 
-  &--secondary {
-    background: #f3f4f6;
-    color: #374151;
-    border: 1px solid #d1d5db;
-    &:hover { background: #e5e7eb; }
+  .eq-table-header span:nth-child(5),
+  .eq-table-header span:nth-child(6),
+  .eq-table-row span:nth-child(5),
+  .eq-table-row span:nth-child(6) {
+    display: none;
   }
 }

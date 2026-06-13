@@ -1,3 +1,8 @@
+:host {
+  display: block;
+  padding: 1.5rem 2rem;
+}
+
 .page-header { margin-bottom: 1.5rem; }
 .page-title { font-size: 1.25rem; font-weight: 600; color: #1F3A4A; margin: 0 0 .25rem; }
 .page-subtitle { font-size: .8125rem; color: #818286; margin: 0; }
@@ -12,15 +17,25 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: 1rem;
+  animation: msbFadeUp 0.4s ease both;
 }
 
 .record-card {
-  background: #fff; border: 1px solid #D9E4E8; border-radius: 10px;
-  padding: 1.25rem; display: flex; flex-direction: column; gap: .6rem;
-  transition: box-shadow .15s;
-  &:hover { box-shadow: 0 2px 12px #1F3A4A11; }
-  &--expired  { border-left: 3px solid #D24A4A; }
-  &--expiring { border-left: 3px solid #E8A93C; }
+  background: #fff;
+  border: 1px solid #E3ECEF;
+  border-radius: 16px;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  box-shadow: 0 2px 8px rgba(31, 58, 74, 0.05);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  &:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(31, 58, 74, 0.10);
+  }
+  &--expired  { border-left: 4px solid #D24A4A; }
+  &--expiring { border-left: 4px solid #E8A93C; }
 
   &__header { display: flex; align-items: center; justify-content: space-between; gap: .5rem; }
   &__title   { font-size: .9375rem; font-weight: 600; color: #1F3A4A; margin: 0; line-height: 1.3; }

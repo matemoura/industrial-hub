@@ -5,12 +5,13 @@ import { filter, map, startWith } from 'rxjs';
 import { NavComponent } from './shared/nav/nav.component';
 import { SidebarComponent } from './shared/shell/sidebar.component';
 import { ShellStateService } from './shared/shell/shell-state.service';
+import { AutoTranslateDirective } from './shared/i18n/auto-translate.directive';
 
 @Component({
   selector: 'app-root',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterOutlet, NavComponent, SidebarComponent],
+  imports: [RouterOutlet, NavComponent, SidebarComponent, AutoTranslateDirective],
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })

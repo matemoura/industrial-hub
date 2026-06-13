@@ -1,13 +1,13 @@
-<div class="aging-page">
-  <div class="page-header">
-    <div class="page-header__breadcrumb">
-      <a routerLink="/qms/capas" class="back-link">← CAPAs</a>
+<div class="aging-page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · ANALYTICS</p>
+      <h1 class="sp-title">Aging <span class="sp-title-accent">/ CAPA</span></h1>
     </div>
-    <div class="page-header__row">
-      <h1 class="page-title">Aging de CAPAs</h1>
+    <div class="sp-page-actions">
       <button
         type="button"
-        class="btn btn--outline"
+        class="sp-btn sp-btn--secondary"
         (click)="exportCsv()"
         [disabled]="exportLoading() || !aging()"
         data-testid="btn-export-csv"

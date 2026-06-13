@@ -1,17 +1,20 @@
-<div class="supplier-list-page">
+<div class="supplier-list-page sp-page">
 
   @if (toast()) {
     <div class="toast toast--success" role="status">{{ toast() }}</div>
   }
 
-  <div class="page-header">
-    <h2>Fornecedores</h2>
-    <div class="header-actions">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · FORNECEDORES</p>
+      <h1 class="sp-title">Fornecedores <span class="sp-title-accent">/ Avaliação</span></h1>
+    </div>
+    <div class="sp-page-actions">
       @if (isSupervisor) {
-        <a routerLink="/qms/suppliers/ranking" class="btn btn--outline">Ranking de Qualidade</a>
+        <a routerLink="/qms/suppliers/ranking" class="sp-btn sp-btn--secondary">Ranking de Qualidade</a>
       }
       @if (isAdmin) {
-        <a routerLink="/qms/suppliers/new" class="btn btn--primary">+ Novo Fornecedor</a>
+        <a routerLink="/qms/suppliers/new" class="sp-btn sp-btn--primary">+ Novo Fornecedor</a>
       }
     </div>
   </div>
@@ -26,7 +29,7 @@
     <div class="empty-state">
       <p>Nenhum fornecedor cadastrado.</p>
       @if (isAdmin) {
-        <a routerLink="/qms/suppliers/new" class="btn btn--primary">Cadastrar primeiro fornecedor</a>
+        <a routerLink="/qms/suppliers/new" class="sp-btn sp-btn--primary">Cadastrar primeiro fornecedor</a>
       }
     </div>
   } @else {

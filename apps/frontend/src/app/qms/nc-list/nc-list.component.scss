@@ -50,20 +50,26 @@
 .kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 18px; }
 
 .kpi-card {
-  padding: 14px 16px; border-radius: 12px; border: 1px solid transparent;
-  display: flex; flex-direction: column; gap: 4px;
+  background: #FFFFFF;
+  border: 1px solid #E3ECEF;
+  border-top: 3px solid #818286;
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 
-  &--warn    { background: rgba(232,169,60,.1);  border-color: rgba(232,169,60,.3); }
-  &--danger  { background: rgba(210,74,74,.1);   border-color: rgba(210,74,74,.3); }
-  &--blue    { background: rgba(95,136,161,.1);  border-color: rgba(95,136,161,.3); }
-  &--ok      { background: rgba(63,166,106,.1);  border-color: rgba(63,166,106,.3); }
-  &--neutral { background: #F4F7F9; border-color: #D9E4E8; }
+  &--warn    { border-top-color: #E8A93C; }
+  &--danger  { border-top-color: #D24A4A; }
+  &--blue    { border-top-color: #56A4BB; }
+  &--ok      { border-top-color: #3FA66A; }
+  &--neutral { border-top-color: #818286; }
 }
 
-.kpi-card__label { font-size: 9px; font-weight: 700; letter-spacing: .16em; color: #818286; }
+.kpi-card__label { font-size: 9px; font-weight: 700; letter-spacing: .14em; color: #9aabb5; margin: 0 0 6px; }
 .kpi-card__value {
-  font-size: 28px; font-weight: 700; color: #1F3A4A;
-  font-variant-numeric: tabular-nums; line-height: 1.1;
+  font-size: 26px; font-weight: 600; color: #1F3A4A;
+  font-variant-numeric: tabular-nums; line-height: 1.1; margin: 0;
 }
 
 // ── Filtros ───────────────────────────────────────────────────────────────────

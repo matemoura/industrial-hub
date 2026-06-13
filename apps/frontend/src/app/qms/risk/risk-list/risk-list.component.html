@@ -1,15 +1,15 @@
-<div class="risk-list-page">
+<div class="sp-page risk-list-page" data-testid="risk-list">
 
   <!-- ── Header ──────────────────────────────────────────────────────── -->
-  <div class="page-header">
-    <div class="page-header__title">
-      <p class="page-kicker">QMS · FMEA · ISO 14971</p>
-      <h1 class="page-title">Gestão de Risco</h1>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · FMEA · ISO 14971</p>
+      <h1 class="sp-title">Gestão de Risco <span class="sp-title-accent">/ FMEA</span></h1>
     </div>
-    <div class="header-actions">
-      <a routerLink="/qms/risks/matrix" class="btn btn--outline">Ver Matriz de Risco</a>
+    <div class="sp-page-actions">
+      <a routerLink="/qms/risks/matrix" class="sp-btn sp-btn--secondary">Ver Matriz →</a>
       @if (isSupervisor()) {
-        <button class="btn btn--primary" data-testid="btn-new-risk" (click)="openNewModal()">
+        <button class="sp-btn sp-btn--primary" data-testid="btn-new-risk" (click)="openNewModal()">
           + Novo Risco FMEA
         </button>
       }
@@ -143,9 +143,9 @@
     <!-- Pagination -->
     @if (totalElements() > pageSize) {
       <div class="pagination">
-        <button class="btn btn--outline btn--sm" [disabled]="page() === 0" (click)="prevPage()">‹ Anterior</button>
+        <button class="sp-btn sp-btn--secondary btn--sm" [disabled]="page() === 0" (click)="prevPage()">‹ Anterior</button>
         <span class="pagination__info">Página {{ page() + 1 }} · {{ totalElements() }} registros</span>
-        <button class="btn btn--outline btn--sm"
+        <button class="sp-btn sp-btn--secondary btn--sm"
                 [disabled]="(page() + 1) * pageSize >= totalElements()"
                 (click)="nextPage()">
           Próxima ›
@@ -255,8 +255,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeNewModal()">Cancelar</button>
-        <button class="btn btn--primary"
+        <button class="sp-btn sp-btn--secondary" (click)="closeNewModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary"
                 [disabled]="modalLoading()"
                 (click)="submitNewRisk()">
           @if (modalLoading()) { Criando… } @else { Criar Risco }

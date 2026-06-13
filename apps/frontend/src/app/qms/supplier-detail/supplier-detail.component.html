@@ -1,6 +1,12 @@
-<div class="supplier-detail-page">
-  <div class="page-header">
-    <a routerLink="/qms/suppliers" class="back-link">← Fornecedores</a>
+<div class="supplier-detail-page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · FORNECEDORES</p>
+      <h1 class="sp-title">Fornecedor <span class="sp-title-accent">/ Detalhe</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      <a routerLink="/qms/suppliers" class="back-link">← Fornecedores</a>
+    </div>
   </div>
 
   @if (toast()) {
@@ -63,7 +69,7 @@
 
         @if (isAdmin && s.active) {
           <div class="card-actions">
-            <a [routerLink]="['/qms/suppliers', s.id, 'edit']" class="btn btn--secondary">Editar</a>
+            <a [routerLink]="['/qms/suppliers', s.id, 'edit']" class="sp-btn sp-btn--secondary">Editar</a>
             <button type="button" class="btn btn--danger" [disabled]="deactivating()" (click)="deactivate()">
               {{ deactivating() ? 'Desativando…' : 'Desativar' }}
             </button>

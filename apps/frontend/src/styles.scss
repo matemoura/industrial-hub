@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700&display=swap');
 
 *,
 *::before,
@@ -40,6 +40,27 @@
   100% { background-position: 200% 0; }
 }
 
+@keyframes msbFadeUp {
+  from { transform: translateY(18px); }
+  to   { transform: translateY(0); }
+}
+
+@keyframes msbFloat {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes msbDrift {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-60px); }
+}
+
+@keyframes msbPulse {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  70%  { transform: scale(2.3); opacity: 0; }
+  100% { transform: scale(2.3); opacity: 0; }
+}
+
 html,
 body {
   height: 100%;
@@ -47,7 +68,7 @@ body {
 }
 
 body {
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   background: var(--msb-bg);
   color: var(--msb-text);
   line-height: 1.5;
@@ -55,7 +76,93 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-// ── Responsividade global — padrão SP (compartilhado por todas as páginas) ────
+// ── Padrão SP global — base aplicada a todas as páginas ──────────────────────
+
+.sp-page {
+  padding: 30px 34px 48px !important;
+  max-width: 1180px !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  box-sizing: border-box !important;
+  width: 100% !important;
+}
+
+.sp-page-header {
+  display: flex !important;
+  align-items: flex-end !important;
+  justify-content: space-between !important;
+  gap: 20px !important;
+  margin-bottom: 24px !important;
+}
+
+.sp-kicker {
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.22em !important;
+  color: #818286 !important;
+  margin: 0 0 6px !important;
+}
+
+.sp-title {
+  font-size: 30px !important;
+  font-weight: 300 !important;
+  letter-spacing: -0.02em !important;
+  color: #1F3A4A !important;
+  margin: 0 !important;
+}
+
+.sp-title-accent {
+  font-weight: 600 !important;
+  color: #56A4BB !important;
+}
+
+.sp-page-actions {
+  display: flex !important;
+  gap: 10px !important;
+  flex-shrink: 0 !important;
+}
+
+.sp-btn {
+  font-family: inherit !important;
+  font-size: 13px !important;
+  font-weight: 600 !important;
+  border-radius: 999px !important;
+  padding: 12px 22px !important;
+  cursor: pointer !important;
+  text-decoration: none !important;
+  border: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: background 0.25s ease !important;
+  white-space: nowrap !important;
+
+  &--primary {
+    background: #56A4BB !important;
+    color: #fff !important;
+    box-shadow: 0 10px 22px rgba(51, 72, 90, 0.16) !important;
+    &:hover { background: #3F89A0 !important; }
+  }
+
+  &--secondary {
+    background: #FFFFFF !important;
+    color: #2F6B80 !important;
+    border: 1.5px solid #D9E4E8 !important;
+    &:hover { border-color: #56A4BB !important; }
+  }
+}
+
+.sp-error {
+  margin-bottom: 16px !important;
+  padding: 12px 16px !important;
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  border-radius: 10px !important;
+  color: #D24A4A !important;
+  font-size: 14px !important;
+}
+
+// ── Responsividade global ──────────────────────────────────────────────────────
 
 @media (max-width: 900px) {
   .sp-page         { padding: 20px !important; }
@@ -67,6 +174,6 @@ body {
   .sp-page         { padding: 14px 16px !important; }
   .sp-title        { font-size: 20px !important; }
   .sp-kicker       { font-size: 9px !important; letter-spacing: .14em !important; }
-  .sp-page-actions { width: 100%; }
-  .sp-btn          { font-size: 11px !important; padding: 7px 12px !important; }
+  .sp-page-actions { width: 100% !important; }
+  .sp-btn          { font-size: 11px !important; padding: 9px 16px !important; }
 }

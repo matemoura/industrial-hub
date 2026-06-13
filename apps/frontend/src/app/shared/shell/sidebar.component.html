@@ -35,119 +35,150 @@
   <div class="sidebar-nav-wrap">
   <nav class="sidebar-nav">
 
+    <!-- OPERAÇÃO -->
     <div class="nav-section">
       <span class="nav-section__title">OPERAÇÃO</span>
       <ul class="nav-list">
-        <li><a routerLink="/dashboard"              routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-item">Dashboard</a></li>
-        <li><a routerLink="/oee/efficiency"         routerLinkActive="active" class="nav-item">Eficiência OEE</a></li>
-        <li><a routerLink="/oee/planned-downtimes"  routerLinkActive="active" class="nav-item">Paradas Planejadas</a></li>
-        <li><a routerLink="/indirect-activities"    routerLinkActive="active" class="nav-item">Atividades Indiretas</a></li>
-        <li><a routerLink="/processes"              routerLinkActive="active" class="nav-item">Processos</a></li>
-        <li><a routerLink="/oee/summary"             routerLinkActive="active" class="nav-item">Resumo</a></li>
+        <li><a routerLink="/dashboard"             routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}" class="nav-item">Dashboard</a></li>
+        <li><a routerLink="/oee/efficiency"        routerLinkActive="active" class="nav-item">Eficiência OEE</a></li>
+        <li><a routerLink="/oee/planned-downtimes" routerLinkActive="active" class="nav-item">Paradas Planejadas</a></li>
+        <li><a routerLink="/indirect-activities"   routerLinkActive="active" class="nav-item">Atividades Indiretas</a></li>
+        <li><a routerLink="/oee/summary"           routerLinkActive="active" class="nav-item">Resumo OEE</a></li>
+        <li>
+          <a routerLink="/maintenance/equipment" routerLinkActive="active" class="nav-item">
+            Manutenção
+            @if (belowMinCount() > 0) {
+              <span class="nav-badge nav-badge--warn" aria-label="{{ belowMinCount() }} alertas">{{ belowMinCount() }}</span>
+            }
+          </a>
+        </li>
+        <li><a routerLink="/production/tracking"   routerLinkActive="active" class="nav-item">Produção</a></li>
+      </ul>
+    </div>
+
+    <!-- QUALIDADE · QMS -->
+    <div class="nav-section">
+      <span class="nav-section__title">QUALIDADE · QMS</span>
+      <ul class="nav-list">
         <li>
           <a routerLink="/qms/non-conformances" routerLinkActive="active" class="nav-item">
             Não-Conformidades
           </a>
         </li>
         @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
-          <li><a routerLink="/qms/complaints" routerLinkActive="active" class="nav-item">Reclamações</a></li>
-          <li><a routerLink="/qms/capas" routerLinkActive="active" class="nav-item">CAPAs</a></li>
-          <li><a routerLink="/qms/capas/aging" routerLinkActive="active" class="nav-item nav-item--sub">Aging de CAPAs</a></li>
-          <li><a routerLink="/qms/reports/quality" routerLinkActive="active" class="nav-item nav-item--sub">Relatório Executivo</a></li>
-          <li><a routerLink="/qms/audits" routerLinkActive="active" class="nav-item">Auditorias</a></li>
+          <li><a routerLink="/qms/capas"             routerLinkActive="active" class="nav-item">CAPAs</a></li>
+          <li><a routerLink="/qms/audits"            routerLinkActive="active" class="nav-item">Auditorias</a></li>
         }
-        <li><a routerLink="/qms/risks" routerLinkActive="active" class="nav-item">Gestão de Risco</a></li>
-        <li>
-          <a routerLink="/qms/ged" routerLinkActive="active" class="nav-item">
-            Documentos
-          </a>
-        </li>
-        <li>
-          <a routerLink="/maintenance/equipment" routerLinkActive="active" class="nav-item">
-            Manutenção
-            @if (belowMinCount() > 0) {
-              <span class="nav-badge nav-badge--warn"
-                    aria-label="{{ belowMinCount() }} alertas de estoque">{{ belowMinCount() }}</span>
-            }
-          </a>
-        </li>
+        <li><a routerLink="/qms/risks"               routerLinkActive="active" class="nav-item">Matriz de Risco</a></li>
         @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
-          <li><a routerLink="/maintenance/dashboard" routerLinkActive="active" class="nav-item">Dashboard Manutenção</a></li>
-          <li><a routerLink="/maintenance/calibration" routerLinkActive="active" class="nav-item">Calibração</a></li>
+          <li><a routerLink="/qms/complaints"        routerLinkActive="active" class="nav-item">Reclamações</a></li>
+          <li><a routerLink="/qms/suppliers"         routerLinkActive="active" class="nav-item">Fornecedores</a></li>
         }
+        <li><a routerLink="/qms/ged"                 routerLinkActive="active" class="nav-item">Documentos (GED)</a></li>
       </ul>
     </div>
 
+    <!-- TREINAMENTOS -->
     <div class="nav-section">
       <span class="nav-section__title">TREINAMENTOS</span>
       <ul class="nav-list">
-        <li><a routerLink="/training/courses"          routerLinkActive="active" class="nav-item">Catálogo de Cursos</a></li>
-        <li><a routerLink="/training/records/me"       routerLinkActive="active" class="nav-item">Meus Treinamentos</a></li>
         @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
-          <li><a routerLink="/training/records"          routerLinkActive="active" class="nav-item">Registros</a></li>
+          <li><a routerLink="/training/dashboard"         routerLinkActive="active" class="nav-item">Dashboard de Compliance</a></li>
+        }
+        <li><a routerLink="/training/courses"             routerLinkActive="active" class="nav-item">Catálogo de Cursos</a></li>
+        <li><a routerLink="/training/records/me"          routerLinkActive="active" class="nav-item">Meus Treinamentos</a></li>
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
           <li><a routerLink="/training/competency-matrix" routerLinkActive="active" class="nav-item">Matriz de Competências</a></li>
-          <li><a routerLink="/training/dashboard"        routerLinkActive="active" class="nav-item">Dashboard Compliance</a></li>
+          <li><a routerLink="/training/records"           routerLinkActive="active" class="nav-item nav-item--sub">Todos os registros</a></li>
         }
       </ul>
     </div>
 
+    <!-- PRODUÇÃO -->
     <div class="nav-section">
       <span class="nav-section__title">PRODUÇÃO</span>
       <ul class="nav-list">
-        <li><a routerLink="/production/products"  routerLinkActive="active" class="nav-item">Produtos</a></li>
-        <li><a routerLink="/production/tracking"  routerLinkActive="active" class="nav-item">Acompanhamento</a></li>
+        <li><a routerLink="/production/tracking"          routerLinkActive="active" class="nav-item">Acompanhamento</a></li>
         @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
-          <li><a routerLink="/production/sterilization-loads" routerLinkActive="active" class="nav-item">Cargas</a></li>
-          <li><a routerLink="/production/planning"            routerLinkActive="active" class="nav-item">Planejamento</a></li>
-          <li><a routerLink="/production/overview"            routerLinkActive="active" class="nav-item">Visão Geral</a></li>
-          <li><a routerLink="/production/reports"             routerLinkActive="active" class="nav-item">Relatórios</a></li>
-          <li><a routerLink="/analytics/oee"                  routerLinkActive="active" class="nav-item">Analytics OEE</a></li>
-          <li><a routerLink="/analytics/qms"                  routerLinkActive="active" class="nav-item">Analytics QMS</a></li>
-          <li><a routerLink="/analytics/maintenance"          routerLinkActive="active" class="nav-item">Analytics Manutenção</a></li>
+          <li><a routerLink="/production/planning"        routerLinkActive="active" class="nav-item">Planejamento</a></li>
+          <li><a routerLink="/production/sterilization-loads" routerLinkActive="active" class="nav-item">Cargas de Esterilização</a></li>
         }
-        @if (role() === 'ADMIN') {
-          <li><a routerLink="/production/import"              routerLinkActive="active" class="nav-item">Importação Dynamics</a></li>
+        <li><a routerLink="/production/products"          routerLinkActive="active" class="nav-item">Catálogo de Produtos</a></li>
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/production/overview"        routerLinkActive="active" class="nav-item nav-item--sub">Visão Geral</a></li>
+          <li><a routerLink="/production/reports"         routerLinkActive="active" class="nav-item nav-item--sub">Relatórios</a></li>
         }
       </ul>
     </div>
 
-    @if (role() === 'ADMIN') {
+    <!-- INTEGRAÇÕES -->
+    @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
       <div class="nav-section">
-        <span class="nav-section__title">GESTÃO</span>
+        <span class="nav-section__title">INTEGRAÇÕES</span>
         <ul class="nav-list">
-          <li><a routerLink="/management-review" routerLinkActive="active" class="nav-item">Análise Crítica</a></li>
-        </ul>
-      </div>
-      <div class="nav-section">
-        <span class="nav-section__title">ADMIN</span>
-        <ul class="nav-list">
-          <li><a routerLink="/admin/users"             routerLinkActive="active" class="nav-item">Usuários</a></li>
-          <li><a routerLink="/admin/alert-thresholds"  routerLinkActive="active" class="nav-item">Alertas</a></li>
-          <li><a routerLink="/admin/shifts"            routerLinkActive="active" class="nav-item">Turnos</a></li>
-          <li><a routerLink="/admin/sla-rules"         routerLinkActive="active" class="nav-item">SLA</a></li>
-          <li><a routerLink="/admin/plants"            routerLinkActive="active" class="nav-item">Plantas</a></li>
-          <li><a routerLink="/admin/lgpd"              routerLinkActive="active" class="nav-item">LGPD</a></li>
-          <li><a routerLink="/admin/webhooks"          routerLinkActive="active" class="nav-item">Webhooks</a></li>
-          <li><a routerLink="/admin/audit"             routerLinkActive="active" class="nav-item">Trilha de Auditoria</a></li>
+          <li><a routerLink="/dynamics-import" routerLinkActive="active" class="nav-item">Importação Dynamics</a></li>
         </ul>
       </div>
     }
 
+    <!-- MANUTENÇÃO -->
     <div class="nav-section">
-      <span class="nav-section__title">MUDANÇAS</span>
+      <span class="nav-section__title">MANUTENÇÃO</span>
       <ul class="nav-list">
-        <li>
-          <a routerLink="/changes" routerLinkActive="active" class="nav-item">
-            Mudanças
-            @if (pendingChangesCount() > 0) {
-              <span class="nav-badge nav-badge--warn"
-                    aria-label="{{ pendingChangesCount() }} mudanças pendentes">{{ pendingChangesCount() }}</span>
-            }
-          </a>
-        </li>
+        <li><a routerLink="/maintenance/equipment"    routerLinkActive="active" class="nav-item">Equipamentos</a></li>
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/maintenance/calibration" routerLinkActive="active" class="nav-item">Calibração</a></li>
+          <li><a routerLink="/maintenance/dashboard"   routerLinkActive="active" class="nav-item">Dashboard</a></li>
+        }
+        <li><a routerLink="/processes"               routerLinkActive="active" class="nav-item nav-item--sub">Processos</a></li>
       </ul>
     </div>
 
+    <!-- ANALYTICS · GESTÃO -->
+    <div class="nav-section">
+      <span class="nav-section__title">ANALYTICS · GESTÃO</span>
+      <ul class="nav-list">
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/analytics/oee"         routerLinkActive="active" class="nav-item">Analytics Integrado</a></li>
+          <li><a routerLink="/analytics/qms"         routerLinkActive="active" class="nav-item nav-item--sub">{{ 'nav.analytics_qms' | translate }}</a></li>
+          <li><a routerLink="/analytics/maintenance" routerLinkActive="active" class="nav-item nav-item--sub">{{ 'nav.analytics_maintenance' | translate }}</a></li>
+        }
+        @if (role() === 'ADMIN') {
+          <li><a routerLink="/management-review"     routerLinkActive="active" class="nav-item">Análise pela Direção</a></li>
+        }
+        <li>
+          <a routerLink="/changes" routerLinkActive="active" class="nav-item">
+            Controle de Mudanças
+            @if (pendingChangesCount() > 0) {
+              <span class="nav-badge nav-badge--warn" aria-label="{{ pendingChangesCount() }} pendentes">{{ pendingChangesCount() }}</span>
+            }
+          </a>
+        </li>
+        @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
+          <li><a routerLink="/qms/capas/aging"         routerLinkActive="active" class="nav-item nav-item--sub">Aging CAPAs</a></li>
+          <li><a routerLink="/qms/reports/quality"     routerLinkActive="active" class="nav-item nav-item--sub">Relatório Executivo</a></li>
+        }
+      </ul>
+    </div>
+
+    <!-- ADMINISTRAÇÃO -->
+    @if (role() === 'ADMIN') {
+      <div class="nav-section">
+        <span class="nav-section__title">ADMINISTRAÇÃO</span>
+        <ul class="nav-list">
+          <li><a routerLink="/admin/users"            routerLinkActive="active" class="nav-item">Usuários e Papéis</a></li>
+          <li><a routerLink="/admin/plants"           routerLinkActive="active" class="nav-item">Plantas e Turnos</a></li>
+          <li><a routerLink="/admin/sla-rules"        routerLinkActive="active" class="nav-item">Regras de SLA</a></li>
+          <li><a routerLink="/admin/audit"            routerLinkActive="active" class="nav-item">Trilha de Auditoria</a></li>
+          <li><a routerLink="/admin/lgpd"             routerLinkActive="active" class="nav-item">LGPD e Privacidade</a></li>
+          <li><a routerLink="/admin/shifts"           routerLinkActive="active" class="nav-item nav-item--sub">Turnos</a></li>
+          <li><a routerLink="/admin/alert-thresholds" routerLinkActive="active" class="nav-item nav-item--sub">Alertas</a></li>
+          <li><a routerLink="/admin/webhooks"         routerLinkActive="active" class="nav-item nav-item--sub">Webhooks</a></li>
+        </ul>
+      </div>
+    }
+
+    <!-- CONTA -->
     <div class="nav-section">
       <span class="nav-section__title">CONTA</span>
       <ul class="nav-list">

@@ -3,6 +3,7 @@ import {
   OnInit, inject, signal, computed,
 } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, NavigationEnd } from '@angular/router';
+import { TranslatePipe } from '../i18n/translate.pipe';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { interval } from 'rxjs';
 import { filter, startWith, switchMap } from 'rxjs/operators';
@@ -16,7 +17,7 @@ import { ChangeRequestService } from '../../changes/change-request.service';
   selector: 'app-sidebar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink, RouterLinkActive],
+  imports: [RouterLink, RouterLinkActive, TranslatePipe],
   templateUrl: './sidebar.component.html',
   styleUrl: './sidebar.component.scss',
 })

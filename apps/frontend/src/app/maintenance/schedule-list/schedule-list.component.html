@@ -1,20 +1,20 @@
-<div class="page">
-  <header class="page-header">
-    <div class="page-header__title">
-      <h1>Planos de Manutenção Preventiva</h1>
-      <p class="page-header__subtitle">Planos recorrentes de manutenção por equipamento</p>
+<div class="page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · CRONOGRAMA</p>
+      <h1 class="sp-title">Ordens <span class="sp-title-accent">/ Cronograma</span></h1>
     </div>
-    <div class="page-header__actions">
+    <div class="sp-page-actions">
       @if (isSupervisor()) {
-        <a routerLink="/maintenance/schedules/new" class="btn btn--primary" data-testid="btn-new-schedule">
+        <a routerLink="/maintenance/schedules/new" class="sp-btn sp-btn--primary" data-testid="btn-new-schedule">
           + Novo Plano
         </a>
       }
-      <a routerLink="/maintenance/calendar" class="btn btn--secondary" data-testid="btn-calendar">
+      <a routerLink="/maintenance/calendar" class="sp-btn sp-btn--secondary" data-testid="btn-calendar">
         Calendário
       </a>
     </div>
-  </header>
+  </div>
 
   @if (loading()) {
     <div class="loading" data-testid="loading">Carregando planos…</div>
@@ -24,7 +24,7 @@
     <div class="empty-state" data-testid="empty">
       <p>Nenhum plano de manutenção ativo.</p>
       @if (isSupervisor()) {
-        <a routerLink="/maintenance/schedules/new" class="btn btn--primary">Criar primeiro plano</a>
+        <a routerLink="/maintenance/schedules/new" class="sp-btn sp-btn--primary">Criar primeiro plano</a>
       }
     </div>
   } @else {

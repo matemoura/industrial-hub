@@ -1,6 +1,9 @@
-<div class="equipment-detail-page">
-  <div class="page-header">
-    <a routerLink="/maintenance/equipment" class="back-link">← Equipamentos</a>
+<div class="equipment-detail-page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · EQUIPAMENTO</p>
+      <h1 class="sp-title">Equipamento <span class="sp-title-accent">/ Detalhe</span></h1>
+    </div>
   </div>
 
   @if (loading()) {
@@ -26,7 +29,7 @@
 
         @if (isAdmin && eq.active) {
           <div class="eq-card__actions">
-            <a [routerLink]="['/maintenance/equipment', eq.id, 'edit']" class="btn btn--secondary btn--sm">
+            <a [routerLink]="['/maintenance/equipment', eq.id, 'edit']" class="sp-btn sp-btn--secondary btn--sm">
               Editar
             </a>
             <button type="button" class="btn btn--danger btn--sm" (click)="deactivate()">
@@ -88,7 +91,7 @@
           @if (isSupervisor && eq.active) {
             <button
               type="button"
-              class="btn btn--primary btn--sm"
+              class="sp-btn sp-btn--primary btn--sm"
               data-testid="btn-new-work-order"
               (click)="showWorkOrderForm.set(!showWorkOrderForm())"
             >
@@ -177,7 +180,7 @@
             <div class="form-actions">
               <button
                 type="submit"
-                class="btn btn--primary"
+                class="sp-btn sp-btn--primary"
                 data-testid="wo-submit"
                 [disabled]="!isWoFormValid || woSubmitting()"
               >
@@ -222,7 +225,7 @@
                 @if (isSupervisor) {
                   <div class="wo-item__transitions">
                     @if (wo.status === 'OPEN') {
-                      <button type="button" class="btn btn--primary btn--sm" data-testid="btn-wo-in_progress" (click)="transition(wo.id, 'IN_PROGRESS')">
+                      <button type="button" class="sp-btn sp-btn--primary btn--sm" data-testid="btn-wo-in_progress" (click)="transition(wo.id, 'IN_PROGRESS')">
                         Iniciar
                       </button>
                       <button type="button" class="btn btn--danger btn--sm" data-testid="btn-wo-cancelled" (click)="transition(wo.id, 'CANCELLED')">
@@ -230,7 +233,7 @@
                       </button>
                     }
                     @if (wo.status === 'IN_PROGRESS') {
-                      <button type="button" class="btn btn--primary btn--sm" data-testid="btn-wo-done" (click)="transition(wo.id, 'DONE')">
+                      <button type="button" class="sp-btn sp-btn--primary btn--sm" data-testid="btn-wo-done" (click)="transition(wo.id, 'DONE')">
                         Concluir
                       </button>
                       <button type="button" class="btn btn--danger btn--sm" data-testid="btn-wo-cancelled" (click)="transition(wo.id, 'CANCELLED')">

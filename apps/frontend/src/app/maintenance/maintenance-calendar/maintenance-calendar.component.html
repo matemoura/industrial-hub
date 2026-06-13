@@ -1,15 +1,16 @@
-<div class="page">
-  <header class="page-header">
-    <div class="page-header__title">
-      <h1>Calendário de Manutenção</h1>
+<div class="page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · CALENDÁRIO</p>
+      <h1 class="sp-title">Calendário <span class="sp-title-accent">/ Preventiva</span></h1>
     </div>
-    <div class="page-header__nav">
+    <div class="sp-page-actions">
       <button class="btn btn--ghost" (click)="prevMonth()" data-testid="btn-prev-month">‹</button>
       <span class="month-label" data-testid="month-label">{{ monthLabel() }}</span>
       <button class="btn btn--ghost" (click)="nextMonth()" data-testid="btn-next-month">›</button>
+      <a routerLink="/maintenance/schedules" class="sp-btn sp-btn--secondary">Lista de planos</a>
     </div>
-    <a routerLink="/maintenance/schedules" class="btn btn--secondary">Lista de planos</a>
-  </header>
+  </div>
 
   @if (loading()) {
     <div class="loading" data-testid="loading">Carregando calendário…</div>

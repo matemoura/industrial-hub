@@ -1,50 +1,161 @@
-.page-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem;
-  &__left { flex: 1; } }
-.page-title { font-size: 1.25rem; font-weight: 600; color: #1F3A4A; margin: 0 0 .25rem; }
-.page-subtitle { font-size: .8125rem; color: #818286; margin: 0; }
+// ── Layout principal ──────────────────────────────────────────────────────────
+.dashboard-layout {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 20px;
+  align-items: start;
+  margin-bottom: 20px;
+  animation: msbFadeUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
 
-.dashboard-layout { display: grid; grid-template-columns: 240px 1fr; gap: 1.5rem; align-items: start; margin-bottom: 1.5rem;
-  @media (max-width: 720px) { grid-template-columns: 1fr; } }
-
-.gauge-card {
-  background: #fff; border-radius: 10px; padding: 1.25rem; box-shadow: 0 1px 4px rgba(31,58,74,.08);
-  display: flex; flex-direction: column; align-items: center; gap: .75rem;
-  &__label { font-size: .8125rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #5F88A1; margin: 0; }
+  @media (max-width: 720px) { grid-template-columns: 1fr; }
 }
-.gauge-wrap { position: relative; width: 140px; height: 140px; }
-.gauge-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.gauge-percent { font-size: 1.75rem; font-weight: 700; line-height: 1; }
-.gauge-sub { font-size: .6875rem; color: #818286; margin-top: .1rem; }
-.gauge-users { font-size: .75rem; color: #818286; text-align: center; margin: 0; }
 
-.kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .75rem; }
+// ── Gauge card ────────────────────────────────────────────────────────────────
+.gauge-card {
+  background: #FFFFFF;
+  border: 1px solid #E3ECEF;
+  border-radius: 20px;
+  padding: 28px 24px;
+  box-shadow: 0 8px 24px rgba(51, 72, 90, 0.06);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  animation: msbFadeUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+
+  &__kicker {
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: #9aabb5;
+    margin: 0;
+    text-align: center;
+  }
+}
+
+.gauge-wrap {
+  position: relative;
+  width: 148px;
+  height: 148px;
+}
+
+.gauge-center {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.gauge-percent {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+  color: #1F3A4A;
+}
+
+.gauge-sub {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: #9aabb5;
+  margin-top: 2px;
+}
+
+.gauge-users {
+  font-size: 11px;
+  color: #9aabb5;
+  text-align: center;
+  margin: 0;
+  line-height: 1.6;
+}
+
+// ── KPI cards ─────────────────────────────────────────────────────────────────
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  align-content: start;
+}
 
 .kpi-card {
-  background: #fff; border-radius: 10px; padding: 1.25rem 1rem; box-shadow: 0 1px 4px rgba(31,58,74,.08);
-  display: flex; flex-direction: column; align-items: center; gap: .35rem;
-  border-left: 4px solid transparent;
-  &--valid   { border-left-color: #3FA66A; }
-  &--expiring{ border-left-color: #E8A93C; }
-  &--expired { border-left-color: #D24A4A; }
-  &--missing { border-left-color: #818286; }
-  &__value { font-size: 2rem; font-weight: 700; color: #1F3A4A; line-height: 1; }
-  &__label { font-size: .8125rem; color: #818286; font-weight: 500; }
+  background: #FFFFFF;
+  border: 1px solid #E3ECEF;
+  border-top: 3px solid #818286;
+  border-radius: 14px;
+  padding: 18px 18px 16px;
+
+  &--ok     { border-top-color: #3FA66A; }
+  &--warn   { border-top-color: #E8A93C; }
+  &--danger { border-top-color: #D24A4A; }
+  &--neutral{ border-top-color: #818286; }
+
+  &__label {
+    margin: 0 0 6px;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: #9aabb5;
+  }
+
+  &__value {
+    margin: 0;
+    font-size: 28px;
+    font-weight: 600;
+    color: #1F3A4A;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+
+    &--ok     { color: #2E7D4F; }
+    &--warn   { color: #9A6B1F; }
+    &--danger { color: #B23B3B; }
+  }
 }
 
+// ── Action prompt ─────────────────────────────────────────────────────────────
 .action-prompt {
-  background: #FFF8ED; border: 1px solid #E8A93C44; border-radius: 8px;
-  padding: .875rem 1.125rem; font-size: .875rem; color: #1F3A4A;
-  a { color: #5F88A1; font-weight: 500; }
+  background: #FDF3E2;
+  border: 1px solid rgba(232, 169, 60, 0.3);
+  border-radius: 12px;
+  padding: 14px 18px;
+  font-size: 13px;
+  color: #1F3A4A;
+  line-height: 1.6;
+  margin-top: 4px;
+
+  strong { color: #9A6B1F; }
+  a { color: #2F6B80; font-weight: 600; }
 }
 
-.loading-state { display: grid; grid-template-columns: 240px 1fr; gap: 1.5rem;
-  @media (max-width: 720px) { grid-template-columns: 1fr; } }
-.skeleton-card { height: 200px; border-radius: 10px; background: linear-gradient(90deg, #EEF5F8 25%, #D9E4E8 50%, #EEF5F8 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; }
-@keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+// ── Loading ───────────────────────────────────────────────────────────────────
+.loading-state {
+  display: grid;
+  grid-template-columns: 280px 1fr 1fr;
+  gap: 20px;
 
-.toast { position: fixed; bottom: 1.5rem; right: 1.5rem; background: #1F3A4A; color: #fff; padding: .75rem 1.25rem; border-radius: 8px; font-size: .875rem; z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,.18); }
+  @media (max-width: 720px) { grid-template-columns: 1fr; }
+}
 
-.btn { padding: .5rem 1.25rem; border-radius: 6px; font-size: .875rem; font-weight: 500; cursor: pointer; border: none;
-  &:disabled { opacity: .55; cursor: not-allowed; }
-  &--secondary { background: #EEF5F8; color: #1F3A4A; border: 1px solid #CBD5E1; &:hover:not(:disabled) { background: #D9E4E8; } }
+.skeleton-card {
+  height: 200px;
+  border-radius: 20px;
+  background: linear-gradient(90deg, #EEF5F8 25%, #D9E4E8 50%, #EEF5F8 75%);
+  background-size: 200% 100%;
+  animation: msb-shimmer 1.4s infinite;
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+.toast {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  background: #1F3A4A;
+  color: #fff;
+  padding: 12px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 9999;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 }

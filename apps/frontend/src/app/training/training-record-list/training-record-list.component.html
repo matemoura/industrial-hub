@@ -2,14 +2,17 @@
   <div class="toast toast--success" role="status" aria-live="polite">{{ toast() }}</div>
 }
 
-<div class="page-header">
-  <div class="page-header__left">
-    <h1 class="page-title">Registros de Treinamentos</h1>
+<div class="sp-page-header">
+  <div>
+    <p class="sp-kicker">TREINAMENTOS · REGISTROS</p>
+    <h1 class="sp-title">Registros <span class="sp-title-accent">/ Histórico</span></h1>
   </div>
   @if (isSupervisor()) {
-    <button class="btn btn--primary" type="button" (click)="showNewForm.set(!showNewForm())">
-      {{ showNewForm() ? 'Cancelar' : '+ Novo Registro' }}
-    </button>
+    <div class="sp-page-actions">
+      <button class="sp-btn sp-btn--primary" type="button" (click)="showNewForm.set(!showNewForm())">
+        {{ showNewForm() ? 'Cancelar' : '+ Novo Registro' }}
+      </button>
+    </div>
   }
 </div>
 
@@ -72,8 +75,8 @@
         <input id="cert" type="file" accept=".pdf" class="form-input" (change)="onCertificateChange($event)" />
       </div>
       <div class="form-actions">
-        <button type="button" class="btn btn--ghost" (click)="showNewForm.set(false); error.set(null)">Cancelar</button>
-        <button type="submit" class="btn btn--primary" [disabled]="saving() || f.invalid">
+        <button type="button" class="sp-btn sp-btn--secondary" (click)="showNewForm.set(false); error.set(null)">Cancelar</button>
+        <button type="submit" class="sp-btn sp-btn--primary" [disabled]="saving() || f.invalid">
           {{ saving() ? 'Salvando...' : 'Salvar' }}
         </button>
       </div>
@@ -107,8 +110,8 @@
                     name="notes"></textarea>
         </div>
         <div class="form-actions">
-          <button type="button" class="btn btn--ghost" (click)="showEffectivenessForm.set(null); error.set(null)">Cancelar</button>
-          <button type="submit" class="btn btn--primary" [disabled]="saving()">
+          <button type="button" class="sp-btn sp-btn--secondary" (click)="showEffectivenessForm.set(null); error.set(null)">Cancelar</button>
+          <button type="submit" class="sp-btn sp-btn--primary" [disabled]="saving()">
             {{ saving() ? 'Salvando...' : 'Registrar' }}
           </button>
         </div>
@@ -117,6 +120,7 @@
   </div>
 }
 
+<div class="content-card">
 <!-- Filtros -->
 <div class="filters-bar">
   <input class="filter-input" type="text" placeholder="Filtrar por colaborador"
@@ -132,7 +136,7 @@
     <option value="true">Aprovados</option>
     <option value="false">Reprovados</option>
   </select>
-  <button class="btn btn--ghost" type="button" (click)="loadRecords(0)">Buscar</button>
+  <button class="sp-btn sp-btn--secondary" type="button" (click)="loadRecords(0)">Buscar</button>
 </div>
 
 @if (loading()) {
@@ -193,7 +197,7 @@
                      r.effectivenessResult === 'PARTIALLY_EFFECTIVE' ? 'Parcial' : 'Não efetivo' }}
                 </span>
               } @else if (r.passed && isSupervisor()) {
-                <button class="btn btn--ghost btn--sm" type="button"
+                <button class="sp-btn sp-btn--secondary sp-btn--sm" type="button"
                         (click)="openEffectivenessForm(r.id)">Avaliar</button>
               } @else {
                 <span class="text-muted">—</span>
@@ -211,3 +215,4 @@
     </table>
   </div>
 }
+</div>

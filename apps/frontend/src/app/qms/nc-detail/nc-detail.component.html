@@ -1,6 +1,12 @@
-<div class="nc-detail-page">
-  <div class="page-header">
-    <a routerLink="/qms/non-conformances" class="back-link">← Não-Conformidades</a>
+<div class="nc-detail-page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · NÃO CONFORMIDADES</p>
+      <h1 class="sp-title">Não Conformidade <span class="sp-title-accent">/ Detalhe</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      <a routerLink="/qms/non-conformances" class="back-link">← Não-Conformidades</a>
+    </div>
   </div>
 
   @if (loading()) {
@@ -100,7 +106,7 @@
         <div class="actions-header">
           <h3>Ações Corretivas</h3>
           @if (isSupervisor && nc.status === 'IN_ANALYSIS') {
-            <button type="button" class="btn btn--primary btn--sm" (click)="showActionForm.set(!showActionForm())">
+            <button type="button" class="sp-btn sp-btn--primary btn--sm" (click)="showActionForm.set(!showActionForm())">
               {{ showActionForm() ? 'Cancelar' : '+ Nova Ação' }}
             </button>
           }
@@ -148,7 +154,7 @@
               </label>
             </div>
             <div class="form-actions">
-              <button type="submit" class="btn btn--primary" [disabled]="!isActionFormValid || actionSubmitting()">
+              <button type="submit" class="sp-btn sp-btn--primary" [disabled]="!isActionFormValid || actionSubmitting()">
                 {{ actionSubmitting() ? 'Salvando…' : 'Salvar Ação' }}
               </button>
             </div>
@@ -176,16 +182,16 @@
                   @if (isSupervisor) {
                     <div class="action-item__btns">
                       @if (action.status === 'PENDING') {
-                        <button type="button" class="btn btn--secondary btn--sm" (click)="startEditCapa(action)" [attr.data-testid]="'btn-edit-capa-' + action.id">
+                        <button type="button" class="sp-btn sp-btn--secondary btn--sm" (click)="startEditCapa(action)" [attr.data-testid]="'btn-edit-capa-' + action.id">
                           Editar CAPA
                         </button>
-                        <button type="button" class="btn btn--primary btn--sm" (click)="submitForEffectiveness(action)" [disabled]="capaActionLoading()" [attr.data-testid]="'btn-submit-effectiveness-' + action.id">
+                        <button type="button" class="sp-btn sp-btn--primary btn--sm" (click)="submitForEffectiveness(action)" [disabled]="capaActionLoading()" [attr.data-testid]="'btn-submit-effectiveness-' + action.id">
                           Enviar para Verificação
                         </button>
                         <button type="button" class="btn btn--danger btn--sm" (click)="deleteAction(action.id)">Excluir</button>
                       }
                       @if (action.status === 'PENDING_EFFECTIVENESS') {
-                        <button type="button" class="btn btn--primary btn--sm" (click)="openVerifyModal(action)" [attr.data-testid]="'btn-verify-effectiveness-' + action.id">
+                        <button type="button" class="sp-btn sp-btn--primary btn--sm" (click)="openVerifyModal(action)" [attr.data-testid]="'btn-verify-effectiveness-' + action.id">
                           Confirmar Eficácia
                         </button>
                       }
@@ -224,8 +230,8 @@
                       <input type="date" [ngModel]="editForm.effectivenessCheckDate" (ngModelChange)="capaEditForm.update(f => f ? {...f, effectivenessCheckDate: $event} : f)" name="capaDate" />
                     </label>
                     <div class="form-actions">
-                      <button type="button" class="btn btn--primary btn--sm" (click)="saveCapaEdit(action)" [disabled]="capaActionLoading()">Salvar</button>
-                      <button type="button" class="btn btn--secondary btn--sm" (click)="cancelEditCapa()">Cancelar</button>
+                      <button type="button" class="sp-btn sp-btn--primary btn--sm" (click)="saveCapaEdit(action)" [disabled]="capaActionLoading()">Salvar</button>
+                      <button type="button" class="sp-btn sp-btn--secondary btn--sm" (click)="cancelEditCapa()">Cancelar</button>
                     </div>
                   </div>
                 }
@@ -248,7 +254,7 @@
           @if (isSupervisor) {
             <button
               type="button"
-              class="btn btn--primary btn--sm"
+              class="sp-btn sp-btn--primary btn--sm"
               (click)="openLinkDocModal()"
               data-testid="btn-link-document"
             >
@@ -341,8 +347,8 @@
             <input type="text" [ngModel]="effectivenessCheckedBy()" (ngModelChange)="effectivenessCheckedBy.set($event)" placeholder="Usuário responsável" />
           </label>
           <div class="modal-actions">
-            <button type="button" class="btn btn--primary" (click)="confirmVerify(nc.id)" [disabled]="!effectivenessResult() || !effectivenessCheckedBy() || capaActionLoading()">Confirmar</button>
-            <button type="button" class="btn btn--secondary" (click)="showVerifyModal.set(false)">Cancelar</button>
+            <button type="button" class="sp-btn sp-btn--primary" (click)="confirmVerify(nc.id)" [disabled]="!effectivenessResult() || !effectivenessCheckedBy() || capaActionLoading()">Confirmar</button>
+            <button type="button" class="sp-btn sp-btn--secondary" (click)="showVerifyModal.set(false)">Cancelar</button>
           </div>
         </div>
       </div>
@@ -372,7 +378,7 @@
                 />
                 <button
                   type="button"
-                  class="btn btn--secondary btn--sm"
+                  class="sp-btn sp-btn--secondary btn--sm"
                   (click)="searchDocuments()"
                   [disabled]="linkDocSearchLoading() || linkDocSearch().length < 2"
                 >
@@ -416,14 +422,14 @@
           <div class="modal-actions">
             <button
               type="button"
-              class="btn btn--primary"
+              class="sp-btn sp-btn--primary"
               [disabled]="!linkDocSelectedId() || linkDocSubmitting()"
               (click)="submitLinkDoc()"
               data-testid="btn-confirm-link-doc"
             >
               {{ linkDocSubmitting() ? 'Vinculando…' : 'Vincular' }}
             </button>
-            <button type="button" class="btn btn--secondary" (click)="closeLinkDocModal()">Cancelar</button>
+            <button type="button" class="sp-btn sp-btn--secondary" (click)="closeLinkDocModal()">Cancelar</button>
           </div>
         </div>
       </div>

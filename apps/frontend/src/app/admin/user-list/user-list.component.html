@@ -1,10 +1,12 @@
-<div class="page-wrapper">
-  <div class="page-header">
+<div class="sp-page user-list-page">
+  <div class="sp-page-header">
     <div>
-      <h1 class="page-title">Gestão de Usuários</h1>
-      <p class="page-subtitle">Cadastro e administração de contas do sistema</p>
+      <p class="sp-kicker">ADMINISTRAÇÃO · USUÁRIOS</p>
+      <h1 class="sp-title">Usuários <span class="sp-title-accent">/ Papéis</span></h1>
     </div>
-    <button class="btn-primary" (click)="openCreateDialog()">+ Novo Usuário</button>
+    <div class="sp-page-actions">
+      <button class="sp-btn sp-btn--primary" (click)="openCreateDialog()">+ Novo Usuário</button>
+    </div>
   </div>
 
   @if (successMessage()) {

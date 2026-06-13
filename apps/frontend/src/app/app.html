@@ -1,5 +1,5 @@
 @if (showNav()) {
-  <div class="app-shell">
+  <div class="app-shell" appAutoTranslate>
     <app-nav />
     <div class="shell-body">
       <app-sidebar />
@@ -12,5 +12,7 @@
     </div>
   </div>
 } @else {
-  <router-outlet />
+  <div appAutoTranslate>
+    <router-outlet />
+  </div>
 }

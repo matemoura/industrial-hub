@@ -2,16 +2,18 @@
   <div class="toast" role="status" aria-live="polite">{{ alertToast() }}</div>
 }
 
-<div class="page-header">
-  <div class="page-header__left">
-    <h1 class="page-title">Dashboard de Calibração</h1>
-    <p class="page-subtitle">ISO 13485 §7.6 — Visão geral dos planos</p>
+<div class="sp-page-header">
+  <div>
+    <p class="sp-kicker">MANUTENÇÃO · CALIBRAÇÃO</p>
+    <h1 class="sp-title">Calibração <span class="sp-title-accent">/ Dashboard</span></h1>
   </div>
   @if (isAdmin()) {
-    <button class="btn btn--secondary" type="button" data-testid="btn-run-alerts"
-            [disabled]="runningAlerts()" (click)="runAlerts()">
-      {{ runningAlerts() ? 'Enviando alertas...' : '&#128276; Rodar Alertas' }}
-    </button>
+    <div class="sp-page-actions">
+      <button class="sp-btn sp-btn--secondary" type="button" data-testid="btn-run-alerts"
+              [disabled]="runningAlerts()" (click)="runAlerts()">
+        {{ runningAlerts() ? 'Enviando alertas...' : '&#128276; Rodar Alertas' }}
+      </button>
+    </div>
   }
 </div>
 

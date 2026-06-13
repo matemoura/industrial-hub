@@ -1,26 +1,25 @@
-<div class="page">
-  <header class="page-header">
-    <div class="page-header__title">
-      <h1>Paradas Planejadas</h1>
+<div class="page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">OEE · PARADAS PLANEJADAS</p>
+      <h1 class="sp-title">Paradas <span class="sp-title-accent">/ Calendário</span></h1>
     </div>
-    <div class="page-header__nav">
+    <div class="sp-page-actions">
       <button class="btn btn--ghost" (click)="prevMonth()" data-testid="btn-prev-month">‹</button>
       <span class="month-label" data-testid="month-label">{{ monthLabel() }}</span>
       <button class="btn btn--ghost" (click)="nextMonth()" data-testid="btn-next-month">›</button>
-    </div>
-    <div class="page-header__actions">
       @if (isSupervisor()) {
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           (click)="openForm()"
           data-testid="btn-add-downtime"
         >
           + Registrar Parada
         </button>
       }
-      <a routerLink="/oee/efficiency" class="btn btn--secondary">Dashboard OEE</a>
+      <a routerLink="/oee/efficiency" class="sp-btn sp-btn--secondary">Dashboard OEE</a>
     </div>
-  </header>
+  </div>
 
   @if (loading()) {
     <div class="loading" data-testid="loading-state">Carregando paradas planejadas…</div>
@@ -207,7 +206,7 @@
             <div class="form-actions">
               <button
                 type="submit"
-                class="btn btn--primary"
+                class="sp-btn sp-btn--primary"
                 [disabled]="submitting() || !formStartAt() || !formEndAt()"
                 data-testid="btn-submit-form"
               >

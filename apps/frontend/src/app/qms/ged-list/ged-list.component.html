@@ -1,16 +1,18 @@
-<div class="ged-list-page">
+<div class="ged-list-page sp-page">
 
   <!-- Header -->
-  <div class="page-header">
-    <div class="page-header__title">
-      <h2>Documentos Controlados</h2>
-      <span class="page-subtitle">GED — Gestão de Documentos</span>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · GED · ISO 13485 §4.2.4</p>
+      <h1 class="sp-title">Documentos <span class="sp-title-accent">/ Controlados</span></h1>
     </div>
-    @if (isSupervisor) {
-      <button class="btn btn--primary" data-testid="create-btn" (click)="openCreateModal()">
-        + Novo Documento
-      </button>
-    }
+    <div class="sp-page-actions">
+      @if (isSupervisor) {
+        <button class="sp-btn sp-btn--primary" data-testid="create-btn" (click)="openCreateModal()">
+          + Novo Documento
+        </button>
+      }
+    </div>
   </div>
 
   <!-- Filtros -->
@@ -37,7 +39,7 @@
         }
       </select>
     </div>
-    <button class="btn btn--outline" (click)="applyFilters()">Filtrar</button>
+    <button class="sp-btn sp-btn--secondary" (click)="applyFilters()">Filtrar</button>
   </div>
 
   <!-- Tabela / Skeleton / Empty -->
@@ -59,7 +61,7 @@
       <span class="empty-state__icon" aria-hidden="true">📄</span>
       <p class="empty-state__msg">Nenhum documento encontrado.</p>
       @if (isSupervisor) {
-        <button class="btn btn--primary" (click)="openCreateModal()">Criar primeiro documento</button>
+        <button class="sp-btn sp-btn--primary" (click)="openCreateModal()">Criar primeiro documento</button>
       }
     </div>
   } @else {
@@ -98,7 +100,7 @@
               <td class="doc-revision">{{ row.currentRevisionNumber ?? '—' }}</td>
               <td class="doc-updated">{{ formatDate(row.updatedAt) }}</td>
               <td>
-                <a class="btn btn--sm btn--outline"
+                <a class="sp-btn sp-btn--secondary btn--sm"
                    [routerLink]="['/qms/ged', row.id]"
                    data-testid="view-btn">
                   Ver
@@ -113,7 +115,7 @@
     <!-- Paginação -->
     @if (page()!.totalPages > 1) {
       <div class="pagination">
-        <button class="btn btn--outline btn--sm"
+        <button class="sp-btn sp-btn--secondary btn--sm"
                 [disabled]="page()!.number === 0"
                 (click)="goToPage(page()!.number - 1)">
           ← Anterior
@@ -121,7 +123,7 @@
         <span class="pagination__info">
           Página {{ page()!.number + 1 }} de {{ page()!.totalPages }}
         </span>
-        <button class="btn btn--outline btn--sm"
+        <button class="sp-btn sp-btn--secondary btn--sm"
                 [disabled]="page()!.number >= page()!.totalPages - 1"
                 (click)="goToPage(page()!.number + 1)">
           Próximo →
@@ -188,8 +190,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeCreateModal()">Cancelar</button>
-        <button class="btn btn--primary"
+        <button class="sp-btn sp-btn--secondary" (click)="closeCreateModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary"
                 [disabled]="!selectedFile() || createLoading()"
                 (click)="submitCreate()">
           @if (createLoading()) {

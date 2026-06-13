@@ -2,37 +2,41 @@
   <div class="toast" role="status" aria-live="polite">{{ toast() }}</div>
 }
 
+<div class="sp-page calib-page">
+
 <!-- Header -->
-<div class="page-header">
-  <div class="page-header__left">
-    <h1 class="page-title">Agenda de Calibrações</h1>
-    <p class="page-subtitle">ISO 13485 §7.6</p>
+<div class="sp-page-header">
+  <div>
+    <p class="sp-kicker">MANUTENÇÃO · ISO 13485 §7.6</p>
+    <h1 class="sp-title">Calibrações <span class="sp-title-accent">/ Agenda</span></h1>
   </div>
   @if (isSupervisor()) {
-    <button class="btn btn--primary" type="button" data-testid="btn-new-plan" (click)="openNewPlanForm()">
-      + Novo Plano
-    </button>
+    <div class="sp-page-actions">
+      <button class="sp-btn sp-btn--primary" type="button" data-testid="btn-new-plan" (click)="openNewPlanForm()">
+        + Novo Plano
+      </button>
+    </div>
   }
 </div>
 
 <!-- KPI Summary -->
 @if (summary()) {
   <div class="kpi-grid">
-    <div class="kpi-card kpi-card--total">
+    <div class="kpi-card kpi-card--neutral">
+      <span class="kpi-card__label">TOTAL PLANOS</span>
       <span class="kpi-card__value">{{ summary()!.totalSchedules }}</span>
-      <span class="kpi-card__label">Total Planos</span>
     </div>
     <div class="kpi-card" [class.kpi-card--danger]="summary()!.overdueCount > 0" [class.kpi-card--ok]="summary()!.overdueCount === 0">
+      <span class="kpi-card__label">VENCIDOS</span>
       <span class="kpi-card__value">{{ summary()!.overdueCount }}</span>
-      <span class="kpi-card__label">Vencidos</span>
     </div>
     <div class="kpi-card" [class.kpi-card--warn]="summary()!.dueSoon14Days > 0" [class.kpi-card--ok]="summary()!.dueSoon14Days === 0">
+      <span class="kpi-card__label">VENCE EM 14 DIAS</span>
       <span class="kpi-card__value">{{ summary()!.dueSoon14Days }}</span>
-      <span class="kpi-card__label">Vence em 14 dias</span>
     </div>
-    <div class="kpi-card kpi-card--total">
+    <div class="kpi-card kpi-card--neutral">
+      <span class="kpi-card__label">OUT_OF_TOL./MÊS</span>
       <span class="kpi-card__value">{{ summary()!.outOfToleranceLastMonth }}</span>
-      <span class="kpi-card__label">OUT_OF_TOLERANCE/mês</span>
     </div>
   </div>
 }
@@ -80,7 +84,7 @@
       </div>
       <div class="form-actions">
         <button type="button" class="btn btn--ghost" (click)="showNewPlanForm.set(false)">Cancelar</button>
-        <button type="submit" class="btn btn--primary" [disabled]="savingPlan() || !planEquipmentId()">
+        <button type="submit" class="sp-btn sp-btn--primary" [disabled]="savingPlan() || !planEquipmentId()">
           {{ savingPlan() ? 'Salvando...' : 'Criar Plano' }}
         </button>
       </div>
@@ -163,7 +167,7 @@
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn--ghost" (click)="showRecordForm.set(false)">Cancelar</button>
-          <button type="submit" class="btn btn--primary"
+          <button type="submit" class="sp-btn sp-btn--primary"
                   [disabled]="savingRecord() || !recordCalibratedAt() || !recordTechnician()">
             {{ savingRecord() ? 'Salvando...' : 'Registrar' }}
           </button>
@@ -302,4 +306,6 @@
     </div>
   }
 
-</div>
+</div><!-- /main-layout -->
+
+</div><!-- /sp-page -->

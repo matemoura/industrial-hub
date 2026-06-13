@@ -1,4 +1,14 @@
-<div class="risk-detail-page">
+<div class="risk-detail-page sp-page">
+
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · ISO 14971</p>
+      <h1 class="sp-title">Risco <span class="sp-title-accent">/ Detalhe</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      <a routerLink="/qms/risks" class="back-link">← Gestão de Risco</a>
+    </div>
+  </div>
 
   @if (loading()) {
     <div class="loading-state">
@@ -7,50 +17,44 @@
     </div>
   } @else if (risk(); as r) {
 
-    <!-- ── Header ──────────────────────────────────────────────────── -->
-    <div class="page-header">
-      <div class="header-back">
-        <a routerLink="/qms/risks" class="back-link">← Gestão de Risco</a>
-      </div>
-      <div class="header-main">
-        <div class="header-info">
-          <p class="page-kicker">QMS · FMEA · ISO 14971</p>
-          <h1 class="page-title">{{ r.process }}</h1>
-          <div class="header-meta">
-            <span class="level-chip"
-                  [style.background-color]="riskLevelColors[r.riskLevel]"
-                  [style.color]="'#fff'">
-              {{ riskLevelLabels[r.riskLevel] }}
-            </span>
-            <span class="status-chip"
-                  [style.background-color]="statusColors[r.status]"
-                  [style.color]="'#fff'">
-              {{ statusLabels[r.status] }}
-            </span>
-            <span class="rpn-badge">RPN: {{ r.rpn }}</span>
-            <span class="owner-badge">Responsável: {{ r.owner }}</span>
-          </div>
+    <!-- ── Risk identity ────────────────────────────────────────────── -->
+    <div class="risk-identity">
+      <div class="header-info">
+        <h2 class="risk-process-title">{{ r.process }}</h2>
+        <div class="header-meta">
+          <span class="level-chip"
+                [style.background-color]="riskLevelColors[r.riskLevel]"
+                [style.color]="'#fff'">
+            {{ riskLevelLabels[r.riskLevel] }}
+          </span>
+          <span class="status-chip"
+                [style.background-color]="statusColors[r.status]"
+                [style.color]="'#fff'">
+            {{ statusLabels[r.status] }}
+          </span>
+          <span class="rpn-badge">RPN: {{ r.rpn }}</span>
+          <span class="owner-badge">Responsável: {{ r.owner }}</span>
         </div>
-
-        <!-- Status transition buttons -->
-        @if (isSupervisor()) {
-          <div class="transition-actions">
-            @if (r.status === 'IDENTIFIED') {
-              <button class="btn btn--warn" [disabled]="statusLoading()" (click)="startMitigation()">
-                Iniciar Mitigação
-              </button>
-            } @else if (r.status === 'BEING_MITIGATED') {
-              <button class="btn btn--ok" [disabled]="statusLoading()" (click)="markMitigated()">
-                Marcar como Mitigado
-              </button>
-            } @else if (r.status === 'MITIGATED') {
-              <button class="btn btn--outline" [disabled]="statusLoading()" (click)="acceptRisk()">
-                Aceitar Risco
-              </button>
-            }
-          </div>
-        }
       </div>
+
+      <!-- Status transition buttons -->
+      @if (isSupervisor()) {
+        <div class="transition-actions">
+          @if (r.status === 'IDENTIFIED') {
+            <button class="btn btn--warn" [disabled]="statusLoading()" (click)="startMitigation()">
+              Iniciar Mitigação
+            </button>
+          } @else if (r.status === 'BEING_MITIGATED') {
+            <button class="btn btn--ok" [disabled]="statusLoading()" (click)="markMitigated()">
+              Marcar como Mitigado
+            </button>
+          } @else if (r.status === 'MITIGATED') {
+            <button class="sp-btn sp-btn--secondary" [disabled]="statusLoading()" (click)="acceptRisk()">
+              Aceitar Risco
+            </button>
+          }
+        </div>
+      }
     </div>
 
     <!-- ── NC Link ─────────────────────────────────────────────────── -->
@@ -105,7 +109,7 @@
       <div class="section-header">
         <h2 class="section-title">Ações de Mitigação</h2>
         @if (isSupervisor()) {
-          <button class="btn btn--primary btn--sm" (click)="openAddActionModal()">
+          <button class="sp-btn sp-btn--primary btn--sm" (click)="openAddActionModal()">
             + Adicionar Ação
           </button>
         }
@@ -175,7 +179,7 @@
   } @else {
     <div class="empty-state">
       <p>Risco não encontrado.</p>
-      <a routerLink="/qms/risks" class="btn btn--outline">Voltar para lista</a>
+      <a routerLink="/qms/risks" class="sp-btn sp-btn--secondary">Voltar para lista</a>
     </div>
   }
 
@@ -210,8 +214,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeAddActionModal()">Cancelar</button>
-        <button class="btn btn--primary"
+        <button class="sp-btn sp-btn--secondary" (click)="closeAddActionModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary"
                 [disabled]="addActionLoading()"
                 (click)="submitAddAction()">
           @if (addActionLoading()) { Salvando… } @else { Adicionar }
@@ -282,7 +286,7 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeCompleteModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--secondary" (click)="closeCompleteModal()">Cancelar</button>
         <button class="btn btn--ok"
                 [disabled]="completeActionLoading()"
                 (click)="submitCompleteAction()">

@@ -6,6 +6,12 @@
   <div class="detail-container">
 
     <!-- Header -->
+    <div class="sp-page-header">
+      <div>
+        <p class="sp-kicker">GESTÃO · ISO 13485 §4.1</p>
+        <h1 class="sp-title">Mudança <span class="sp-title-accent">/ Detalhe</span></h1>
+      </div>
+    </div>
     <div class="detail-header">
       <div class="detail-header__left">
         <div class="detail-header__code">{{ change()!.code }}</div>
@@ -31,9 +37,9 @@
     <!-- Contextual Actions -->
     <div class="actions-bar">
       @if (change()!.status === 'DRAFT' && change()!.requestedBy === currentUsername()) {
-        <button class="btn btn--outline" (click)="openEditModal()">&#9998; Editar</button>
+        <button class="sp-btn sp-btn--secondary" (click)="openEditModal()">&#9998; Editar</button>
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           data-testid="btn-submit"
           (click)="submitForReview()"
           [disabled]="actionLoading()"
@@ -43,7 +49,7 @@
       }
       @if (change()!.status === 'SUBMITTED' && isSupervisor()) {
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           data-testid="btn-review"
           (click)="openReviewModal()"
         >
@@ -69,7 +75,7 @@
       }
       @if (change()!.status === 'APPROVED' && isSupervisor()) {
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           data-testid="btn-implement"
           (click)="implementChange()"
           [disabled]="actionLoading()"
@@ -139,7 +145,7 @@
         <div class="card-header-row">
           <h2 class="card-title">Vínculos</h2>
           @if (isSupervisor()) {
-            <button class="btn btn--outline btn--sm" (click)="openAddLinkModal()">+ Vínculo</button>
+            <button class="sp-btn sp-btn--secondary btn--sm" (click)="openAddLinkModal()">+ Vínculo</button>
           }
         </div>
         @if (change()!.links.length === 0) {
@@ -246,8 +252,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeEditModal()">Cancelar</button>
-        <button class="btn btn--primary" (click)="saveEdit()" [disabled]="actionLoading()">Salvar</button>
+        <button class="sp-btn sp-btn--secondary" (click)="closeEditModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary" (click)="saveEdit()" [disabled]="actionLoading()">Salvar</button>
       </div>
     </div>
   </div>
@@ -287,8 +293,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeReviewModal()">Cancelar</button>
-        <button class="btn btn--primary" (click)="submitReview()" [disabled]="actionLoading()">Enviar Revisão</button>
+        <button class="sp-btn sp-btn--secondary" (click)="closeReviewModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary" (click)="submitReview()" [disabled]="actionLoading()">Enviar Revisão</button>
       </div>
     </div>
   </div>
@@ -315,7 +321,7 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeRejectModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--secondary" (click)="closeRejectModal()">Cancelar</button>
         <button class="btn btn--danger" (click)="submitRejection()" [disabled]="actionLoading()">Rejeitar</button>
       </div>
     </div>
@@ -350,8 +356,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeAddLinkModal()">Cancelar</button>
-        <button class="btn btn--primary" (click)="addLink()" [disabled]="actionLoading() || !newLink.entityId">Adicionar</button>
+        <button class="sp-btn sp-btn--secondary" (click)="closeAddLinkModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary" (click)="addLink()" [disabled]="actionLoading() || !newLink.entityId">Adicionar</button>
       </div>
     </div>
   </div>

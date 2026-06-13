@@ -1,21 +1,24 @@
-<div class="ranking-page">
-  <div class="page-header">
-    <div class="header-left">
+<div class="ranking-page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · FORNECEDORES</p>
+      <h1 class="sp-title">Ranking <span class="sp-title-accent">/ Fornecedores</span></h1>
+    </div>
+    <div class="sp-page-actions">
       <a routerLink="/qms/suppliers" class="back-link">← Fornecedores</a>
-      <h2>Ranking de Qualidade</h2>
     </div>
-    <div class="period-selector">
-      @for (d of dayOptions; track d) {
-        <button
-          type="button"
-          [class.period-btn--active]="selectedDays() === d"
-          class="period-btn"
-          (click)="changePeriod(d)"
-        >
-          {{ d }} dias
-        </button>
-      }
-    </div>
+  </div>
+  <div class="period-selector">
+    @for (d of dayOptions; track d) {
+      <button
+        type="button"
+        [class.period-btn--active]="selectedDays() === d"
+        class="period-btn"
+        (click)="changePeriod(d)"
+      >
+        {{ d }} dias
+      </button>
+    }
   </div>
 
   @if (errorMsg()) {

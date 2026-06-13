@@ -1,192 +1,134 @@
-<div class="wo-list-page">
+<div class="sp-page" data-testid="wo-list">
 
-  <div class="page-header">
-    <h2>Ordens de Serviço</h2>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · TPM</p>
+      <h1 class="sp-title">Ordens de Serviço <span class="sp-title-accent">/ Lista</span></h1>
+    </div>
   </div>
 
   @if (plantContext.selectedPlantId()) {
-    <div class="plant-filter-chip" data-testid="plant-filter-chip" role="status">
-      Filtrando por planta
-    </div>
+    <div class="plant-chip" data-testid="plant-filter-chip" role="status">Filtrando por planta</div>
   }
 
   @if (globalMetrics(); as m) {
-    <div class="global-metrics">
-      <div class="metric-card">
-        <span class="metric-label">MTTR Global</span>
-        <span class="metric-value">{{ m.mttr !== null ? (m.mttr | number:'1.1-1') + ' h' : 'N/A' }}</span>
-        <span class="metric-sub">tempo médio de reparo (corretivas)</span>
+    <div class="kpi-row">
+      <div class="kpi-card kpi-card--blue">
+        <p class="kpi-card__label">MTTR GLOBAL</p>
+        <p class="kpi-card__value">{{ m.mttr !== null ? (m.mttr | number:'1.1-1') + 'h' : 'N/A' }}</p>
+        <p class="kpi-card__sub">tempo médio de reparo</p>
       </div>
-      <div class="metric-card">
-        <span class="metric-label">Total de OS</span>
-        <span class="metric-value">{{ m.totalOrders }}</span>
-        <span class="metric-sub">ordens registradas</span>
+      <div class="kpi-card kpi-card--neutral">
+        <p class="kpi-card__label">TOTAL DE OS</p>
+        <p class="kpi-card__value">{{ m.totalOrders }}</p>
+        <p class="kpi-card__sub">ordens registradas</p>
       </div>
-      <div class="metric-card">
-        <span class="metric-label">OS Abertas</span>
-        <span class="metric-value">{{ m.openOrders }}</span>
-        <span class="metric-sub">em aberto ou em andamento</span>
+      <div class="kpi-card kpi-card--warn">
+        <p class="kpi-card__label">OS ABERTAS</p>
+        <p class="kpi-card__value">{{ m.openOrders }}</p>
+        <p class="kpi-card__sub">em aberto ou em andamento</p>
       </div>
     </div>
   }
 
-  <div class="filters">
-    <label class="filter-field">
-      Equipamento (ID)
-      <input
-        type="text"
-        [ngModel]="filterEquipmentId()"
-        (ngModelChange)="filterEquipmentId.set($event)"
-        name="equipmentId"
-        placeholder="ID do equipamento"
-      />
-    </label>
+  <div class="wo-filters">
+    <input type="text" class="filter-chip filter-chip--text"
+           [ngModel]="filterEquipmentId()" (ngModelChange)="filterEquipmentId.set($event)"
+           name="equipmentId" placeholder="ID do equipamento"/>
 
-    <label class="filter-field">
-      Tipo
-      <select [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="type">
-        <option value="">Todos</option>
-        @for (t of woTypes; track t) {
-          <option [value]="t">{{ woTypeLabels[t] }}</option>
-        }
-      </select>
-    </label>
+    <select class="filter-chip" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="type">
+      <option value="">Todos os tipos</option>
+      @for (t of woTypes; track t) { <option [value]="t">{{ woTypeLabels[t] }}</option> }
+    </select>
 
-    <label class="filter-field">
-      Status
-      <select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="status">
-        <option value="">Todos</option>
-        @for (s of woStatuses; track s) {
-          <option [value]="s">{{ woStatusLabels[s] }}</option>
-        }
-      </select>
-    </label>
+    <select class="filter-chip" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="status">
+      <option value="">Todos os status</option>
+      @for (s of woStatuses; track s) { <option [value]="s">{{ woStatusLabels[s] }}</option> }
+    </select>
 
-    <label class="filter-field">
-      Prioridade
-      <select [ngModel]="filterPriority()" (ngModelChange)="filterPriority.set($event)" name="priority">
-        <option value="">Todas</option>
-        @for (p of woPriorities; track p) {
-          <option [value]="p">{{ woPriorityLabels[p] }}</option>
-        }
-      </select>
-    </label>
+    <select class="filter-chip" [ngModel]="filterPriority()" (ngModelChange)="filterPriority.set($event)" name="priority">
+      <option value="">Todas as prioridades</option>
+      @for (p of woPriorities; track p) { <option [value]="p">{{ woPriorityLabels[p] }}</option> }
+    </select>
 
     @if (shifts().length > 0) {
-      <label class="filter-field">
-        Turno
-        <select
-          (change)="onShiftChange($event)"
-          name="shiftId"
-          data-testid="shift-filter"
-        >
-          <option value="">Todos os turnos</option>
-          @for (s of shifts(); track s.id) {
-            <option [value]="s.id">{{ s.name }}</option>
-          }
-        </select>
-      </label>
-    }
-    @if (shiftsErrorMsg()) {
-      <p class="error" data-testid="shifts-error-msg">{{ shiftsErrorMsg() }}</p>
+      <select class="filter-chip" (change)="onShiftChange($event)" name="shiftId" data-testid="shift-filter">
+        <option value="">Todos os turnos</option>
+        @for (s of shifts(); track s.id) { <option [value]="s.id">{{ s.name }}</option> }
+      </select>
     }
 
-    <label class="filter-field filter-field--checkbox">
-      <input
-        type="checkbox"
-        data-testid="filter-sla-breached"
-        [ngModel]="filterSlaBreached()"
-        (ngModelChange)="filterSlaBreached.set($event)"
-        name="slaBreached"
-      />
-      Apenas SLA vencido
+    <label class="filter-toggle" data-testid="filter-sla-label">
+      <input type="checkbox" [ngModel]="filterSlaBreached()" (ngModelChange)="filterSlaBreached.set($event)" name="slaBreached"/>
+      SLA vencido
     </label>
 
-    <div class="filter-actions">
-      <button type="button" class="btn btn--primary" (click)="applyFilters()">Filtrar</button>
-      <button type="button" class="btn btn--secondary" (click)="clearFilters()">Limpar</button>
-    </div>
+    <button type="button" class="sp-btn sp-btn--primary" (click)="applyFilters()">Filtrar</button>
+    <button type="button" class="sp-btn sp-btn--secondary" (click)="clearFilters()">Limpar</button>
   </div>
 
+  @if (shiftsErrorMsg()) {
+    <p class="sp-error" data-testid="shifts-error-msg">{{ shiftsErrorMsg() }}</p>
+  }
+
   @if (loading()) {
-    <p class="loading-msg">Carregando…</p>
-  }
-
-  @if (errorMsg()) {
-    <p class="error-msg">{{ errorMsg() }}</p>
-  }
-
-  @if (page(); as p) {
+    <div class="wo-table-card">
+      @for (i of [1,2,3,4,5]; track i) { <div class="wo-skeleton-row"></div> }
+    </div>
+  } @else if (errorMsg()) {
+    <div class="sp-error" role="alert">{{ errorMsg() }}</div>
+  } @else if (page(); as p) {
     @if (p.content.length === 0) {
-      <p class="empty-msg">Nenhuma ordem de serviço encontrada com os filtros aplicados.</p>
+      <div class="wo-empty">Nenhuma ordem de serviço encontrada com os filtros aplicados.</div>
     } @else {
-      <table class="wo-table">
-        <thead>
-          <tr>
-            <th>Equipamento</th>
-            <th>Título</th>
-            <th>Tipo</th>
-            <th>Prioridade</th>
-            <th>Status</th>
-            <th>SLA</th>
-            <th>Turno</th>
-            <th>Aberta por</th>
-            <th>Data</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (wo of p.content; track wo.id) {
-            <tr class="wo-row" (click)="openEquipment(wo.equipmentId)">
-              <td class="wo-equipment">
-                <span class="eq-code">{{ wo.equipmentCode }}</span>
-                <span class="eq-name">{{ wo.equipmentName }}</span>
-              </td>
-              <td class="wo-title">{{ wo.title }}</td>
-              <td>
-                <span [class]="'type-badge type-' + wo.type.toLowerCase()">
-                  {{ woTypeLabels[wo.type] }}
-                </span>
-              </td>
-              <td>
-                <span [class]="'priority-chip priority-' + wo.priority.toLowerCase()">
-                  {{ woPriorityLabels[wo.priority] }}
-                </span>
-              </td>
-              <td>
-                <span [class]="'status-chip status-' + wo.status.toLowerCase().replace('_', '-')">
-                  {{ woStatusLabels[wo.status] }}
-                </span>
-              </td>
-              <td>
-                <app-sla-breached-chip [slaBreached]="wo.slaBreached" />
-              </td>
-              <td>
-                @if (wo.shiftName) {
-                  <span class="shift-chip" [attr.data-testid]="'shift-chip-' + wo.id">{{ wo.shiftName }}</span>
-                }
-              </td>
-              <td>{{ wo.openedBy }}</td>
-              <td>{{ wo.openedAt.slice(0, 10) }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <div class="wo-table-card">
+        <div class="wo-table-header">
+          <span>EQUIPAMENTO</span>
+          <span>TÍTULO</span>
+          <span>TIPO</span>
+          <span>PRIORIDADE</span>
+          <span>STATUS</span>
+          <span>SLA</span>
+          <span>TURNO</span>
+          <span>ABERTA POR</span>
+          <span>DATA</span>
+        </div>
+        @for (wo of p.content; track wo.id) {
+          <div class="wo-table-row" (click)="openEquipment(wo.equipmentId)">
+            <div class="wo-equipment">
+              <span class="eq-code">{{ wo.equipmentCode }}</span>
+              <span class="eq-name">{{ wo.equipmentName }}</span>
+            </div>
+            <span class="wo-title">{{ wo.title }}</span>
+            <span>
+              <span [class]="'type-badge type-' + wo.type.toLowerCase()">{{ woTypeLabels[wo.type] }}</span>
+            </span>
+            <span>
+              <span [class]="'priority-chip priority-' + wo.priority.toLowerCase()">{{ woPriorityLabels[wo.priority] }}</span>
+            </span>
+            <span>
+              <span [class]="'status-chip status-' + wo.status.toLowerCase().replace('_', '-')">{{ woStatusLabels[wo.status] }}</span>
+            </span>
+            <span><app-sla-breached-chip [slaBreached]="wo.slaBreached" /></span>
+            <span>
+              @if (wo.shiftName) {
+                <span class="shift-chip" [attr.data-testid]="'shift-chip-' + wo.id">{{ wo.shiftName }}</span>
+              }
+            </span>
+            <span class="wo-by">{{ wo.openedBy }}</span>
+            <span class="wo-date">{{ wo.openedAt.slice(0, 10) }}</span>
+          </div>
+        }
+      </div>
 
       @if (p.totalPages > 1) {
-        <div class="pagination">
-          <button
-            type="button"
-            [disabled]="p.page === 0"
-            (click)="goToPage(p.page - 1)"
-          >Anterior</button>
-          <span>{{ p.page + 1 }} / {{ p.totalPages }}</span>
-          <button
-            type="button"
-            [disabled]="p.page >= p.totalPages - 1"
-            (click)="goToPage(p.page + 1)"
-          >Próxima</button>
+        <div class="wo-pagination">
+          <button type="button" class="pg-btn" [disabled]="p.page === 0" (click)="goToPage(p.page - 1)">← Anterior</button>
+          <span class="pg-info">{{ p.page + 1 }} / {{ p.totalPages }}</span>
+          <button type="button" class="pg-btn" [disabled]="p.page >= p.totalPages - 1" (click)="goToPage(p.page + 1)">Próxima →</button>
         </div>
       }
     }
   }
+
 </div>

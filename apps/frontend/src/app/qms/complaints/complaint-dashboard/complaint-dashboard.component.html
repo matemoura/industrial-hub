@@ -1,7 +1,10 @@
 <section class="complaint-dashboard">
 
-  <div class="dashboard-header">
-    <h1 class="dashboard-title">Dashboard — Reclamações de Clientes</h1>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · RECLAMAÇÕES</p>
+      <h1 class="sp-title">Reclamações <span class="sp-title-accent">/ Dashboard</span></h1>
+    </div>
   </div>
 
   <!-- ── Seletor de período ── -->
@@ -10,7 +13,7 @@
     <input class="form-input" type="date" [(ngModel)]="fromDate" aria-label="Data início" />
     <span class="period-separator">até</span>
     <input class="form-input" type="date" [(ngModel)]="toDate" aria-label="Data fim" />
-    <button class="btn btn--primary" [disabled]="loading()" (click)="loadIndicators()">
+    <button class="sp-btn sp-btn--primary" [disabled]="loading()" (click)="loadIndicators()">
       @if (loading()) { Carregando... } @else { Carregar }
     </button>
   </div>

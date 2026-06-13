@@ -1,16 +1,16 @@
-<div class="spare-part-page">
+<div class="sp-page spare-part-page" data-testid="spare-part-list">
 
-  <div class="page-header">
-    <h2>Catálogo de Peças de Reposição</h2>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · TPM · ESTOQUE</p>
+      <h1 class="sp-title">Peças de Reposição <span class="sp-title-accent">/ Catálogo</span></h1>
+    </div>
     @if (isAdmin()) {
-      <button
-        type="button"
-        class="btn btn--primary"
-        data-testid="btn-new-part"
-        (click)="openCreateDialog()"
-      >
-        + Nova Peça
-      </button>
+      <div class="sp-page-actions">
+        <button type="button" class="sp-btn sp-btn--primary" data-testid="btn-new-part" (click)="openCreateDialog()">
+          + Nova Peça
+        </button>
+      </div>
     }
   </div>
 
@@ -21,30 +21,18 @@
   }
 
   <!-- Filters -->
-  <div class="filters">
-    <label class="filter-field">
-      Categoria
-      <input
-        type="text"
-        [value]="filterCategory()"
-        (input)="filterCategory.set($any($event.target).value)"
-        placeholder="Ex: Rolamentos"
-      />
-    </label>
+  <div class="sp-filters">
+    <input type="text" class="filter-chip filter-chip--text"
+           [value]="filterCategory()" (input)="filterCategory.set($any($event.target).value)"
+           placeholder="Categoria (ex: Rolamentos)"/>
 
-    <label class="filter-field filter-checkbox">
-      <input
-        type="checkbox"
-        [checked]="filterBelowMin()"
-        (change)="filterBelowMin.set($any($event.target).checked)"
-      />
+    <label class="filter-toggle">
+      <input type="checkbox" [checked]="filterBelowMin()" (change)="filterBelowMin.set($any($event.target).checked)"/>
       Apenas abaixo do mínimo
     </label>
 
-    <div class="filter-actions">
-      <button type="button" class="btn btn--primary" (click)="applyFilters()">Filtrar</button>
-      <button type="button" class="btn btn--secondary" (click)="clearFilters()">Limpar</button>
-    </div>
+    <button type="button" class="sp-btn sp-btn--primary" (click)="applyFilters()">Filtrar</button>
+    <button type="button" class="sp-btn sp-btn--secondary" (click)="clearFilters()">Limpar</button>
   </div>
 
   <!-- Snackbar -->
@@ -102,7 +90,7 @@
               <td class="part-actions">
                 <button
                   type="button"
-                  class="btn btn--secondary btn--sm"
+                  class="sp-btn sp-btn--secondary btn--sm"
                   data-testid="btn-edit-part"
                   (click)="openEditDialog(part)"
                 >
@@ -110,7 +98,7 @@
                 </button>
                 <button
                   type="button"
-                  class="btn btn--secondary btn--sm"
+                  class="sp-btn sp-btn--secondary btn--sm"
                   data-testid="btn-stock-part"
                   (click)="openStockDialog(part)"
                 >
@@ -164,8 +152,8 @@
           <input formControlName="minStockQty" type="number" min="0" />
         </div>
         <div class="dialog-actions">
-          <button type="button" class="btn btn--secondary" (click)="closeDialog()">Cancelar</button>
-          <button type="submit" class="btn btn--primary" [disabled]="form.invalid || submitting()">
+          <button type="button" class="sp-btn sp-btn--secondary" (click)="closeDialog()">Cancelar</button>
+          <button type="submit" class="sp-btn sp-btn--primary" [disabled]="form.invalid || submitting()">
             {{ submitting() ? 'Salvando…' : 'Salvar' }}
           </button>
         </div>
@@ -192,8 +180,8 @@
           <input formControlName="reason" type="text" placeholder="Ex: Reposição de fornecedor" />
         </div>
         <div class="dialog-actions">
-          <button type="button" class="btn btn--secondary" (click)="closeDialog()">Cancelar</button>
-          <button type="submit" class="btn btn--primary" [disabled]="stockForm.invalid || submitting()">
+          <button type="button" class="sp-btn sp-btn--secondary" (click)="closeDialog()">Cancelar</button>
+          <button type="submit" class="sp-btn sp-btn--primary" [disabled]="stockForm.invalid || submitting()">
             {{ submitting() ? 'Ajustando…' : 'Confirmar' }}
           </button>
         </div>

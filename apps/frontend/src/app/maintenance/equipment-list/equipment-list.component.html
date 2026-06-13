@@ -1,79 +1,69 @@
-<div class="equipment-list-page">
+<div class="sp-page" data-testid="equipment-list">
 
-  <div class="page-header">
-    <h2>Equipamentos</h2>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · TPM · ISO 13485 §6.3</p>
+      <h1 class="sp-title">Equipamentos <span class="sp-title-accent">/ Ativos</span></h1>
+    </div>
     @if (isAdmin) {
-      <a routerLink="/maintenance/equipment/new" class="btn btn--primary">+ Novo Equipamento</a>
+      <div class="sp-page-actions">
+        <a routerLink="/maintenance/equipment/new" class="sp-btn sp-btn--primary">+ Novo Equipamento</a>
+      </div>
     }
   </div>
 
-  <div class="filters">
-    <label class="filter-field">
-      Tipo
-      <select [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="type">
-        <option value="">Todos</option>
-        @for (t of equipmentTypes; track t) {
-          <option [value]="t">{{ typeLabels[t] }}</option>
-        }
-      </select>
-    </label>
+  <div class="eq-filters">
+    <select class="filter-chip" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="type">
+      <option value="">Todos os tipos</option>
+      @for (t of equipmentTypes; track t) {
+        <option [value]="t">{{ typeLabels[t] }}</option>
+      }
+    </select>
 
-    <label class="filter-field">
-      Status
-      <select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="status">
-        <option value="">Todos</option>
-        @for (s of equipmentStatuses; track s) {
-          <option [value]="s">{{ statusLabels[s] }}</option>
-        }
-      </select>
-    </label>
+    <select class="filter-chip" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="status">
+      <option value="">Todos os status</option>
+      @for (s of equipmentStatuses; track s) {
+        <option [value]="s">{{ statusLabels[s] }}</option>
+      }
+    </select>
 
-    <div class="filter-actions">
-      <button type="button" class="btn btn--primary" (click)="applyFilters()">Filtrar</button>
-      <button type="button" class="btn btn--secondary" (click)="clearFilters()">Limpar</button>
-    </div>
+    <button type="button" class="sp-btn sp-btn--primary" (click)="applyFilters()">Filtrar</button>
+    <button type="button" class="sp-btn sp-btn--secondary" (click)="clearFilters()">Limpar</button>
   </div>
 
   @if (loading()) {
-    <p class="loading-msg">Carregando…</p>
+    <div class="eq-table-card">
+      @for (i of [1,2,3,4,5]; track i) { <div class="eq-skeleton-row"></div> }
+    </div>
+  } @else if (errorMsg()) {
+    <div class="sp-error" role="alert">{{ errorMsg() }}</div>
+  } @else if (equipment().length === 0) {
+    <div class="eq-empty">Nenhum equipamento encontrado com os filtros aplicados.</div>
+  } @else {
+    <div class="eq-table-card" data-testid="equipment-table">
+      <div class="eq-table-header">
+        <span>CÓDIGO</span>
+        <span>NOME</span>
+        <span>TIPO</span>
+        <span>STATUS</span>
+        <span>LOCALIZAÇÃO</span>
+        <span>ADQUIRIDO EM</span>
+      </div>
+      @for (eq of equipment(); track eq.id) {
+        <div class="eq-table-row" data-testid="equipment-row" (click)="openDetail(eq.id)">
+          <span class="eq-code">{{ eq.code }}</span>
+          <span class="eq-name">{{ eq.name }}</span>
+          <span class="eq-type">{{ typeLabels[eq.type] }}</span>
+          <span>
+            <span [class]="'status-chip status-' + eq.status.toLowerCase().replace('_', '-')">
+              {{ statusLabels[eq.status] }}
+            </span>
+          </span>
+          <span class="eq-location">{{ eq.location ?? '—' }}</span>
+          <span class="eq-date">{{ eq.acquiredAt ?? '—' }}</span>
+        </div>
+      }
+    </div>
   }
 
-  @if (errorMsg()) {
-    <p class="error-msg">{{ errorMsg() }}</p>
-  }
-
-  @if (!loading()) {
-    @if (equipment().length === 0) {
-      <p class="empty-msg">Nenhum equipamento encontrado com os filtros aplicados.</p>
-    } @else {
-      <table class="eq-table">
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Nome</th>
-            <th>Tipo</th>
-            <th>Status</th>
-            <th>Localização</th>
-            <th>Adquirido em</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (eq of equipment(); track eq.id) {
-            <tr class="eq-row" data-testid="equipment-row" (click)="openDetail(eq.id)">
-              <td class="eq-code">{{ eq.code }}</td>
-              <td class="eq-name">{{ eq.name }}</td>
-              <td>{{ typeLabels[eq.type] }}</td>
-              <td>
-                <span [class]="'status-chip status-' + eq.status.toLowerCase().replace('_', '-')">
-                  {{ statusLabels[eq.status] }}
-                </span>
-              </td>
-              <td>{{ eq.location ?? '—' }}</td>
-              <td>{{ eq.acquiredAt ?? '—' }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
-    }
-  }
 </div>

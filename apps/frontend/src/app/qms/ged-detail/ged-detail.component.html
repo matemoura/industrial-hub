@@ -14,7 +14,7 @@
   } @else if (!doc()) {
     <div class="empty-state">
       <p>Documento não encontrado.</p>
-      <a routerLink="/qms/ged" class="btn btn--outline">Voltar à lista</a>
+      <a routerLink="/qms/ged" class="sp-btn sp-btn--secondary">Voltar à lista</a>
     </div>
   } @else {
     <!-- Header do Documento -->
@@ -40,7 +40,7 @@
     <!-- Ações -->
     <div class="action-bar">
       @if (isSupervisor) {
-        <button class="btn btn--outline" (click)="openAddRevisionModal()">
+        <button class="sp-btn sp-btn--secondary" (click)="openAddRevisionModal()">
           + Nova Revisão
         </button>
       }
@@ -78,7 +78,7 @@
             <span class="revision-info__value">{{ formatDateTime(doc()!.currentRevision!.uploadedAt) }}</span>
           </div>
         </div>
-        <button class="btn btn--primary btn--sm"
+        <button class="sp-btn sp-btn--primary btn--sm"
                 [disabled]="downloadingRevId() === doc()!.currentRevision!.id"
                 (click)="downloadRevision(doc()!.currentRevision!.id)">
           @if (downloadingRevId() === doc()!.currentRevision!.id) {
@@ -117,7 +117,7 @@
                   <td class="date-cell">{{ formatDateTime(rev.uploadedAt) }}</td>
                   <td class="reason-cell">{{ rev.changeReason }}</td>
                   <td>
-                    <button class="btn btn--outline btn--sm"
+                    <button class="sp-btn sp-btn--secondary btn--sm"
                             [disabled]="downloadingRevId() === rev.id"
                             (click)="downloadRevision(rev.id)"
                             [attr.data-testid]="'download-' + rev.id">
@@ -219,8 +219,8 @@
         </div>
       </div>
       <div class="modal__footer">
-        <button class="btn btn--outline" (click)="closeAddRevisionModal()">Cancelar</button>
-        <button class="btn btn--primary"
+        <button class="sp-btn sp-btn--secondary" (click)="closeAddRevisionModal()">Cancelar</button>
+        <button class="sp-btn sp-btn--primary"
                 [disabled]="!newRevisionFile() || addRevisionLoading()"
                 (click)="submitAddRevision()">
           @if (addRevisionLoading()) {

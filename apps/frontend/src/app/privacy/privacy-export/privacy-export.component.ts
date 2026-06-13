@@ -31,7 +31,7 @@ export class PrivacyExportComponent {
     this.userService.exportMyData().subscribe({
       next: (blob) => {
         const safeUsername = (this.authService.username() ?? 'usuario').replace(/[^a-zA-Z0-9_-]/g, '_');
-        const filename = `meus-dados-${safeUsername}.json`;
+        const filename = `meus-dados-${safeUsername}.pdf`;
 
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');

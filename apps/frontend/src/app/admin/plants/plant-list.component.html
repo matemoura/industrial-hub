@@ -1,22 +1,22 @@
 <section class="plants-page">
-  <header class="page-header">
-    <div class="page-header__title">
-      <h1>Plantas</h1>
-      <p class="page-header__subtitle">Unidades produtivas do grupo MSB</p>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">ADMINISTRAÇÃO · PLANTAS</p>
+      <h1 class="sp-title">Plantas <span class="sp-title-accent">/ Multi-site</span></h1>
     </div>
-    <div class="page-header__actions">
-      @if (!loading()) {
+    @if (!loading()) {
+      <div class="sp-page-actions">
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-new-plant"
           (click)="openCreateDialog()"
         >
           + Nova Planta
         </button>
-      }
-    </div>
-  </header>
+      </div>
+    }
+  </div>
 
   @if (successMsg()) {
     <div class="alert alert--success" role="status" data-testid="success-msg">{{ successMsg() }}</div>
@@ -42,7 +42,7 @@
         <path d="M16 28l6-12 6 12M18 24h10" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
       <p>Nenhuma planta cadastrada.</p>
-      <button class="btn btn--primary" type="button" (click)="openCreateDialog()">
+      <button class="sp-btn sp-btn--primary" type="button" (click)="openCreateDialog()">
         Cadastrar planta
       </button>
     </div>
@@ -194,7 +194,7 @@
       <footer class="dialog__footer">
         <button class="btn btn--ghost" type="button" (click)="closeDialog()">Cancelar</button>
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-submit-create"
           [disabled]="!isCreateValid() || submitting()"
@@ -278,7 +278,7 @@
       <footer class="dialog__footer">
         <button class="btn btn--ghost" type="button" (click)="closeDialog()">Cancelar</button>
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-submit-edit"
           [disabled]="!isEditValid() || submitting()"

@@ -1,7 +1,9 @@
-<div class="equipment-form-page">
-  <div class="page-header">
-    <a [routerLink]="isEditMode ? ['/maintenance/equipment', editId()] : '/maintenance/equipment'" class="back-link">← Voltar</a>
-    <h2>{{ isEditMode ? 'Editar Equipamento' : 'Cadastrar Equipamento' }}</h2>
+<div class="equipment-form-page sp-page">
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · EQUIPAMENTO</p>
+      <h1 class="sp-title">Equipamento <span class="sp-title-accent">/ Formulário</span></h1>
+    </div>
   </div>
 
   <form class="equipment-form" (ngSubmit)="submit()">
@@ -100,8 +102,8 @@
     }
 
     <div class="form-actions">
-      <a [routerLink]="isEditMode ? ['/maintenance/equipment', editId()] : '/maintenance/equipment'" class="btn btn--secondary">Cancelar</a>
-      <button type="submit" class="btn btn--primary" data-testid="equipment-submit" [disabled]="!isValid || loading()">
+      <a [routerLink]="isEditMode ? ['/maintenance/equipment', editId()] : '/maintenance/equipment'" class="sp-btn sp-btn--secondary">Cancelar</a>
+      <button type="submit" class="sp-btn sp-btn--primary" data-testid="equipment-submit" [disabled]="!isValid || loading()">
         @if (loading()) {
           {{ isEditMode ? 'Salvando…' : 'Cadastrando…' }}
         } @else {

@@ -1,17 +1,14 @@
-<div class="page-wrapper">
-  <div class="page-header">
+<div class="sp-page audit-trail-page">
+  <div class="sp-page-header">
     <div>
-      <h1 class="page-title">Trilha de Auditoria</h1>
-      <p class="page-subtitle">Registro completo de ações e eventos do sistema</p>
+      <p class="sp-kicker">ADMINISTRAÇÃO · ISO 13485 §4.2.5</p>
+      <h1 class="sp-title">Trilha de Auditoria <span class="sp-title-accent">/ Registro</span></h1>
     </div>
-    <button
-      class="btn-export"
-      type="button"
-      data-testid="btn-export-csv"
-      (click)="exportCsv()"
-    >
-      Exportar CSV
-    </button>
+    <div class="sp-page-actions">
+      <button class="sp-btn sp-btn--secondary" type="button" data-testid="btn-export-csv" (click)="exportCsv()">
+        ↓ Exportar CSV
+      </button>
+    </div>
   </div>
 
   @if (errorMsg()) {

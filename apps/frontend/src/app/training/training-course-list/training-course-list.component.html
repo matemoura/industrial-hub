@@ -2,91 +2,95 @@
   <div class="toast toast--success" role="status" aria-live="polite">{{ toast() }}</div>
 }
 
-<div class="page-header">
-  <div class="page-header__left">
-    <h1 class="page-title">Catálogo de Cursos</h1>
-    <p class="page-subtitle">Gestão de treinamentos e competências (ISO 13485 §6.2)</p>
+<div class="sp-page-header">
+  <div>
+    <p class="sp-kicker">TREINAMENTOS · CURSOS</p>
+    <h1 class="sp-title">Cursos <span class="sp-title-accent">/ Catálogo</span></h1>
   </div>
   @if (isAdmin()) {
-    <button class="btn btn--primary" type="button" (click)="newCourse()">
-      + Novo Curso
-    </button>
+    <div class="sp-page-actions">
+      <button class="sp-btn sp-btn--primary" type="button" (click)="newCourse()">
+        + Novo Curso
+      </button>
+    </div>
   }
 </div>
 
-<!-- Filtros -->
-<div class="filters-bar">
-  <select class="filter-select" [ngModel]="filterCategory()" (ngModelChange)="filterCategory.set($event)">
-    <option value="">Todas as categorias</option>
-    @for (cat of categories; track cat) {
-      <option [value]="cat">{{ categoryLabels[cat] }}</option>
-    }
-  </select>
+<div class="content-card">
+  <!-- Filtros -->
+  <div class="filters-bar">
+    <select class="filter-select" [ngModel]="filterCategory()" (ngModelChange)="filterCategory.set($event)">
+      <option value="">Todas as categorias</option>
+      @for (cat of categories; track cat) {
+        <option [value]="cat">{{ categoryLabels[cat] }}</option>
+      }
+    </select>
 
-  <select class="filter-select" [ngModel]="filterActive()" (ngModelChange)="filterActive.set($event)">
-    <option value="">Todos os status</option>
-    <option value="true">Ativos</option>
-    <option value="false">Inativos</option>
-  </select>
-</div>
+    <select class="filter-select" [ngModel]="filterActive()" (ngModelChange)="filterActive.set($event)">
+      <option value="">Todos os status</option>
+      <option value="true">Ativos</option>
+      <option value="false">Inativos</option>
+    </select>
+  </div>
 
-@if (loading()) {
-  <div class="loading-state" aria-label="Carregando cursos...">
-    @for (i of [1, 2, 3, 4, 5]; track i) {
-      <div class="skeleton-row"></div>
-    }
-  </div>
-} @else if (filtered().length === 0) {
-  <div class="empty-state">
-    <p>Nenhum curso encontrado.</p>
-    @if (isAdmin()) {
-      <button class="btn btn--primary" type="button" (click)="newCourse()">Criar primeiro curso</button>
-    }
-  </div>
-} @else {
-  <div class="table-wrap">
-    <table class="data-table" aria-label="Lista de cursos de treinamento">
-      <thead>
-        <tr>
-          <th scope="col">Código</th>
-          <th scope="col">Título</th>
-          <th scope="col">Categoria</th>
-          <th scope="col">Duração</th>
-          <th scope="col">Validade</th>
-          <th scope="col">Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        @for (course of filtered(); track course.id) {
-          <tr class="data-row" (click)="goTo(course)" [class.data-row--inactive]="!course.active"
-              tabindex="0" role="button" [attr.aria-label]="'Ver curso ' + course.code"
-              (keydown.enter)="goTo(course)">
-            <td><code class="course-code">{{ course.code }}</code></td>
-            <td class="course-title">{{ course.title }}</td>
-            <td>
-              <span class="category-chip"
-                    [style.background-color]="categoryColors[course.category] + '22'"
-                    [style.color]="categoryColors[course.category]"
-                    [style.border-color]="categoryColors[course.category] + '55'">
-                {{ categoryLabels[course.category] }}
-              </span>
-            </td>
-            <td>{{ course.durationHours }}h</td>
-            <td>
-              @if (course.validityMonths) {
-                {{ course.validityMonths }} meses
-              } @else {
-                <span class="text-muted">Sem vencimento</span>
-              }
-            </td>
-            <td>
-              <span class="status-chip" [class.status-chip--active]="course.active" [class.status-chip--inactive]="!course.active">
-                {{ course.active ? 'Ativo' : 'Inativo' }}
-              </span>
-            </td>
+  @if (loading()) {
+    <div class="loading-state" aria-label="Carregando cursos...">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="skeleton-row"></div>
+      }
+    </div>
+  } @else if (filtered().length === 0) {
+    <div class="empty-state">
+      <p>Nenhum curso encontrado.</p>
+      @if (isAdmin()) {
+        <button class="sp-btn sp-btn--primary" type="button" (click)="newCourse()">Criar primeiro curso</button>
+      }
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table" aria-label="Lista de cursos de treinamento">
+        <thead>
+          <tr>
+            <th scope="col">Código</th>
+            <th scope="col">Título</th>
+            <th scope="col">Categoria</th>
+            <th scope="col">Duração</th>
+            <th scope="col">Validade</th>
+            <th scope="col">Status</th>
           </tr>
-        }
-      </tbody>
-    </table>
-  </div>
-}
+        </thead>
+        <tbody>
+          @for (course of filtered(); track course.id) {
+            <tr class="data-row" (click)="goTo(course)" [class.data-row--inactive]="!course.active"
+                tabindex="0" role="button" [attr.aria-label]="'Ver curso ' + course.code"
+                (keydown.enter)="goTo(course)">
+              <td><code class="course-code">{{ course.code }}</code></td>
+              <td class="course-title">{{ course.title }}</td>
+              <td>
+                <span class="category-chip"
+                      [style.background-color]="categoryColors[course.category] + '22'"
+                      [style.color]="categoryColors[course.category]"
+                      [style.border-color]="categoryColors[course.category] + '55'">
+                  {{ categoryLabels[course.category] }}
+                </span>
+              </td>
+              <td>{{ course.durationHours }}h</td>
+              <td>
+                @if (course.validityMonths) {
+                  {{ course.validityMonths }} meses
+                } @else {
+                  <span class="text-muted">Sem vencimento</span>
+                }
+              </td>
+              <td>
+                <span class="status-chip" [class.status-chip--active]="course.active" [class.status-chip--inactive]="!course.active">
+                  {{ course.active ? 'Ativo' : 'Inativo' }}
+                </span>
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+</div>

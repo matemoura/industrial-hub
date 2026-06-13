@@ -1,33 +1,38 @@
-<section class="complaint-list">
+<section class="sp-page complaint-list" data-testid="complaint-list">
+
+  <!-- ── Cabeçalho ── -->
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · RECLAMAÇÕES · ISO 13485 §8.2.1 / ANVISA RDC 665</p>
+      <h1 class="sp-title">Reclamações <span class="sp-title-accent">/ Clientes</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      <button class="sp-btn sp-btn--primary" data-testid="btn-new-complaint" (click)="openCreateModal()">
+        + Nova Reclamação
+      </button>
+    </div>
+  </div>
 
   <!-- ── Indicadores ── -->
   <div class="kpi-cards" role="list">
-    <div class="kpi-card" role="listitem">
-      <span class="kpi-card__label">Recebidas</span>
+    <div class="kpi-card kpi-card--neutral" role="listitem">
+      <span class="kpi-card__label">RECEBIDAS</span>
       <span class="kpi-card__value" data-testid="kpi-total">{{ indicators()?.totalReceived ?? 0 }}</span>
     </div>
-    <div class="kpi-card" role="listitem">
-      <span class="kpi-card__label">Em Investigação</span>
+    <div class="kpi-card kpi-card--blue" role="listitem">
+      <span class="kpi-card__label">EM INVESTIGAÇÃO</span>
       <span class="kpi-card__value">{{ indicators()?.byStatus?.['UNDER_INVESTIGATION'] ?? 0 }}</span>
     </div>
-    <div class="kpi-card" [class.kpi-card--danger]="notReportedCount() > 0" role="listitem" data-testid="card-not-reported">
-      <span class="kpi-card__label">Não Reportadas à ANVISA</span>
+    <div class="kpi-card" [class.kpi-card--danger]="notReportedCount() > 0" [class.kpi-card--ok]="notReportedCount() === 0" role="listitem" data-testid="card-not-reported">
+      <span class="kpi-card__label">NÃO REPORTADAS ANVISA</span>
       <span class="kpi-card__value" [class.kpi-card__value--danger]="notReportedCount() > 0">
         {{ notReportedCount() }}
       </span>
     </div>
-    <div class="kpi-card" role="listitem">
-      <span class="kpi-card__label">Reportadas ANVISA</span>
+    <div class="kpi-card kpi-card--ok" role="listitem">
+      <span class="kpi-card__label">REPORTADAS ANVISA</span>
       <span class="kpi-card__value">{{ indicators()?.reportedToAnvisa ?? 0 }}</span>
     </div>
-  </div>
-
-  <!-- ── Cabeçalho ── -->
-  <div class="list-header">
-    <h1 class="list-header__title">Reclamações de Clientes</h1>
-    <button class="btn btn--primary" data-testid="btn-new-complaint" (click)="openCreateModal()">
-      + Nova Reclamação
-    </button>
   </div>
 
   <!-- ── Filtros ── -->
@@ -208,7 +213,7 @@
 
       <div class="modal__footer">
         <button class="btn btn--ghost" (click)="closeCreateModal()">Cancelar</button>
-        <button class="btn btn--primary" [disabled]="createLoading()" (click)="submitCreate()">
+        <button class="sp-btn sp-btn--primary" [disabled]="createLoading()" (click)="submitCreate()">
           @if (createLoading()) { Salvando... } @else { Registrar }
         </button>
       </div>

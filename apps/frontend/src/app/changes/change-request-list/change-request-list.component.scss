@@ -8,28 +8,6 @@
   margin: 0 auto;
 }
 
-.page-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  margin-bottom: 24px;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.page-title {
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: #1F3A4A;
-  margin: 0 0 4px;
-}
-
-.page-subtitle {
-  font-size: 0.85rem;
-  color: #818286;
-  margin: 0;
-}
-
 /* Summary Cards */
 .summary-cards {
   display: grid;
@@ -39,36 +17,38 @@
 }
 
 .summary-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 16px;
+  background: #FFFFFF;
+  border: 1px solid #E3ECEF;
+  border-top: 3px solid #818286;
+  border-radius: 14px;
+  padding: 16px 18px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  border-top: 4px solid transparent;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+  gap: 4px;
 }
 
-.summary-card--draft { border-top-color: #818286; }
-.summary-card--submitted { border-top-color: #56A4BB; }
-.summary-card--review { border-top-color: #E8A93C; }
-.summary-card--approved { border-top-color: #3FA66A; }
-.summary-card--implemented { border-top-color: #1F3A4A; }
+.summary-card--draft        { border-top-color: #818286; }
+.summary-card--submitted    { border-top-color: #56A4BB; }
+.summary-card--review       { border-top-color: #E8A93C; }
+.summary-card--approved     { border-top-color: #3FA66A; }
+.summary-card--implemented  { border-top-color: #1F3A4A; }
 
 .summary-card__count {
-  font-size: 2rem;
-  font-weight: 700;
+  font-size: 24px;
+  font-weight: 600;
   color: #1F3A4A;
-  line-height: 1;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
 }
 
 .summary-card__label {
-  font-size: 0.78rem;
-  color: #818286;
-  text-align: center;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: #9aabb5;
   text-transform: uppercase;
-  letter-spacing: 0.03em;
+  margin: 0 0 6px;
+  order: -1;
 }
 
 /* Filters */
@@ -108,19 +88,22 @@
   font-size: 0.9rem;
 
   th {
-    background: #F4F7F9;
-    color: #1F3A4A;
-    font-weight: 600;
-    padding: 12px 16px;
+    background: #FAFCFD;
+    color: #9aabb5;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    padding: 10px 12px;
     text-align: left;
-    border-bottom: 1px solid #D9E4E8;
+    border-bottom: 1px solid #EDF3F5;
     white-space: nowrap;
   }
 
   td {
-    padding: 12px 16px;
-    border-bottom: 1px solid #F4F7F9;
+    padding: 11px 12px;
+    border-bottom: 1px solid #F4F8FA;
     color: #1F3A4A;
+    font-size: 13px;
     vertical-align: middle;
   }
 }

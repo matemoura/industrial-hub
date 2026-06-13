@@ -1,22 +1,22 @@
 <section class="webhooks-page">
-  <header class="page-header">
-    <div class="page-header__title">
-      <h1>Webhooks</h1>
-      <p class="page-header__subtitle">Gerencie integrações outbound com sistemas externos via webhooks</p>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">ADMINISTRAÇÃO · WEBHOOKS</p>
+      <h1 class="sp-title">Webhooks <span class="sp-title-accent">/ Integrações</span></h1>
     </div>
-    <div class="page-header__actions">
-      @if (!isLoading()) {
+    @if (!isLoading()) {
+      <div class="sp-page-actions">
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-new-webhook"
           (click)="openCreateDialog()"
         >
           + Nova Subscription
         </button>
-      }
-    </div>
-  </header>
+      </div>
+    }
+  </div>
 
   <!-- Alerts -->
   @if (successMsg()) {
@@ -47,7 +47,7 @@
       </svg>
       <p class="empty-state__title">Nenhuma subscription configurada</p>
       <p class="empty-state__subtitle">Crie uma subscription para receber eventos do sistema em sistemas externos.</p>
-      <button class="btn btn--primary" type="button" (click)="openCreateDialog()">
+      <button class="sp-btn sp-btn--primary" type="button" (click)="openCreateDialog()">
         Criar primeira subscription
       </button>
     </div>
@@ -392,7 +392,7 @@
           Cancelar
         </button>
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-submit-dialog"
           [disabled]="!isFormValid() || formSubmitting()"

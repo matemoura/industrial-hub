@@ -3,8 +3,11 @@
     @for (i of [1, 2, 3]; track i) { <div class="skeleton-row"></div> }
   </div>
 } @else {
-  <div class="page-header">
-    <h1 class="page-title">{{ isEdit() ? 'Editar Curso' : 'Novo Curso' }}</h1>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">TREINAMENTOS · NOVO CURSO</p>
+      <h1 class="sp-title">Curso <span class="sp-title-accent">/ Formulário</span></h1>
+    </div>
   </div>
 
   @if (error()) {
@@ -80,17 +83,17 @@
     </div>
 
     <div class="form-actions">
-      <button type="button" class="btn btn--ghost" (click)="cancel()">Cancelar</button>
+      <button type="button" class="sp-btn sp-btn--secondary" (click)="cancel()">Cancelar</button>
 
       @if (isEdit()) {
-        <button type="button" class="btn btn--danger-outline"
+        <button type="button" class="sp-btn sp-btn--danger-outline"
                 [disabled]="deactivating()"
                 (click)="deactivate()">
           {{ deactivating() ? 'Desativando...' : 'Desativar' }}
         </button>
       }
 
-      <button type="submit" class="btn btn--primary"
+      <button type="submit" class="sp-btn sp-btn--primary"
               [disabled]="saving() || f.invalid">
         {{ saving() ? 'Salvando...' : (isEdit() ? 'Salvar alterações' : 'Criar curso') }}
       </button>

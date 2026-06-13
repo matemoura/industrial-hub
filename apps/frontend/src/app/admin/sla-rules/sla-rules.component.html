@@ -1,13 +1,13 @@
 <section class="sla-rules-page">
-  <header class="page-header">
-    <div class="page-header__title">
-      <h1>Regras de SLA</h1>
-      <p class="page-header__subtitle">Configure prazos de atendimento por entidade e severidade/prioridade</p>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">ADMINISTRAÇÃO · SLA</p>
+      <h1 class="sp-title">Regras SLA <span class="sp-title-accent">/ Escalonamento</span></h1>
     </div>
-    <div class="page-header__actions">
-      @if (!loading()) {
+    @if (!loading()) {
+      <div class="sp-page-actions">
         <button
-          class="btn btn--ghost"
+          class="sp-btn sp-btn--secondary"
           type="button"
           data-testid="btn-run-escalation"
           [disabled]="runningEscalation()"
@@ -21,16 +21,16 @@
           }
         </button>
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-new-rule"
           (click)="openCreateDialog()"
         >
           + Nova Regra
         </button>
-      }
-    </div>
-  </header>
+      </div>
+    }
+  </div>
 
   @if (successMsg()) {
     <div class="alert alert--success" role="status" data-testid="success-msg">{{ successMsg() }}</div>
@@ -56,7 +56,7 @@
         <path d="M24 14v10M24 30v2" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round"/>
       </svg>
       <p>Nenhuma regra de SLA configurada.</p>
-      <button class="btn btn--primary" type="button" (click)="openCreateDialog()">
+      <button class="sp-btn sp-btn--primary" type="button" (click)="openCreateDialog()">
         Criar primeira regra
       </button>
     </div>
@@ -109,7 +109,7 @@
                 </td>
                 <td class="actions-cell">
                   <button
-                    class="btn btn--primary btn--sm"
+                    class="sp-btn sp-btn--primary btn--sm"
                     type="button"
                     data-testid="btn-save-edit"
                     [disabled]="!isEditValid() || submitting()"
@@ -266,7 +266,7 @@
       <footer class="dialog__footer">
         <button class="btn btn--ghost" type="button" (click)="closeDialog()">Cancelar</button>
         <button
-          class="btn btn--primary"
+          class="sp-btn sp-btn--primary"
           type="button"
           data-testid="btn-submit-create"
           [disabled]="!isFormValid() || submitting()"

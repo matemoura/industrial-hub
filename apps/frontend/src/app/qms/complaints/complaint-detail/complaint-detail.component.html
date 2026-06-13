@@ -6,6 +6,12 @@
   <section class="complaint-detail">
 
     <!-- ── Header ── -->
+    <div class="sp-page-header">
+      <div>
+        <p class="sp-kicker">QMS · RECLAMAÇÕES</p>
+        <h1 class="sp-title">Reclamação <span class="sp-title-accent">/ Detalhe</span></h1>
+      </div>
+    </div>
     <div class="detail-header">
       <div class="detail-header__meta">
         <a routerLink="/qms/complaints" class="back-link">← Reclamações</a>
@@ -44,7 +50,7 @@
       <div class="detail-actions">
         @if (canGenerateMdr()) {
           <button
-            class="btn btn--primary"
+            class="sp-btn sp-btn--primary"
             [disabled]="isGeneratingMdr()"
             (click)="generateMdr()"
             data-testid="btn-generate-mdr"
@@ -72,7 +78,7 @@
 
       @if (nextStatus()) {
         <div class="transition-action">
-          <button class="btn btn--primary" (click)="transition()" data-testid="btn-transition">
+          <button class="sp-btn sp-btn--primary" (click)="transition()" data-testid="btn-transition">
             {{ transitionLabel() }}
           </button>
         </div>
@@ -101,7 +107,7 @@
           <div class="alert alert--error" role="alert">{{ saveError() }}</div>
         }
         <div class="card-footer">
-          <button class="btn btn--primary" [disabled]="isSaving()" (click)="saveInvestigation()">
+          <button class="sp-btn sp-btn--primary" [disabled]="isSaving()" (click)="saveInvestigation()">
             @if (isSaving()) { Salvando... } @else { Salvar }
           </button>
         </div>
@@ -140,7 +146,7 @@
           } @else {
             <div class="link-input-group">
               <input class="form-input form-input--sm" type="text" [(ngModel)]="linkNcId" placeholder="UUID da NC..." />
-              <button class="btn btn--primary btn--sm" (click)="submitLinkNc()">Salvar</button>
+              <button class="sp-btn sp-btn--primary btn--sm" (click)="submitLinkNc()">Salvar</button>
               <button class="btn btn--ghost btn--sm" (click)="showLinkNcInput.set(false)">Cancelar</button>
             </div>
           }
@@ -164,7 +170,7 @@
           } @else {
             <div class="link-input-group">
               <input class="form-input form-input--sm" type="text" [(ngModel)]="linkCapaId" placeholder="UUID da CAPA..." />
-              <button class="btn btn--primary btn--sm" (click)="submitLinkCapa()">Salvar</button>
+              <button class="sp-btn sp-btn--primary btn--sm" (click)="submitLinkCapa()">Salvar</button>
               <button class="btn btn--ghost btn--sm" (click)="showLinkCapaInput.set(false)">Cancelar</button>
             </div>
           }
@@ -232,7 +238,7 @@
       </div>
       <div class="modal__footer">
         <button class="btn btn--ghost" (click)="closeAnvisaModal()">Cancelar</button>
-        <button class="btn btn--primary" (click)="submitAnvisaReport()">Registrar</button>
+        <button class="sp-btn sp-btn--primary" (click)="submitAnvisaReport()">Registrar</button>
       </div>
     </div>
   </div>

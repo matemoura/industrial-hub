@@ -264,5 +264,13 @@ export const routes: Routes = [
         (m) => m.ManagementReviewComponent,
       ),
   },
+  {
+    path: 'dynamics-import',
+    canActivate: [authGuard, mustChangePasswordGuard],
+    loadComponent: () =>
+      import('./production/dynamics-import/dynamics-import.component').then(
+        (m) => m.DynamicsImportComponent,
+      ),
+  },
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
 ];

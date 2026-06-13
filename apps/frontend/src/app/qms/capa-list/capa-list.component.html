@@ -1,87 +1,73 @@
-<div class="capa-list-page">
-  <div class="page-header">
-    <h1 class="page-title">CAPAs — Ações Corretivas e Preventivas</h1>
+<div class="sp-page" data-testid="capa-list">
+
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">QMS · CAPAs · ISO 13485 §8.5.2</p>
+      <h1 class="sp-title">Ações Corretivas <span class="sp-title-accent">/ Preventivas</span></h1>
+    </div>
   </div>
 
-  <div class="filters">
-    <select [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="filterType">
+  <div class="capa-filters">
+    <select class="filter-chip" [ngModel]="filterType()" (ngModelChange)="filterType.set($event)" name="filterType">
       <option value="">Todos os tipos</option>
-      @for (t of types; track t) {
-        <option [value]="t">{{ typeLabels[t] }}</option>
-      }
+      @for (t of types; track t) { <option [value]="t">{{ typeLabels[t] }}</option> }
     </select>
-    <select [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)" name="filterStatus"
-            data-testid="filter-status">
+    <select class="filter-chip" [ngModel]="filterStatus()" (ngModelChange)="filterStatus.set($event)"
+            name="filterStatus" data-testid="filter-status">
       <option value="">Todos os status</option>
-      @for (s of statuses; track s) {
-        <option [value]="s">{{ statusLabels[s] }}</option>
-      }
+      @for (s of statuses; track s) { <option [value]="s">{{ statusLabels[s] }}</option> }
     </select>
-    <button type="button" class="btn btn--primary btn--sm" (click)="applyFilters()">Filtrar</button>
+    <button type="button" class="sp-btn sp-btn--primary" (click)="applyFilters()">Filtrar</button>
   </div>
 
-  <div class="table-wrap">
-    <table class="data-table">
-      <thead>
-        <tr>
-          <th>NC</th>
-          <th>Descrição</th>
-          <th>Tipo</th>
-          <th>Status</th>
-          <th>Responsável</th>
-          <th>Prazo</th>
-          <th>Data verif. eficácia</th>
-        </tr>
-      </thead>
-      <tbody>
-        @if (loading()) {
-          @for (_ of [1, 2, 3, 4, 5]; track $index) {
-            <tr class="skeleton-row">
-              @for (__ of [1, 2, 3, 4, 5, 6, 7]; track $index) {
-                <td><span class="skeleton-cell"></span></td>
-              }
-            </tr>
-          }
-        } @else if (!page()?.content?.length) {
-          <tr>
-            <td colspan="7" class="empty-state">Nenhuma CAPA encontrada.</td>
-          </tr>
-        } @else {
-          @for (row of page()!.content; track row.actionId) {
-            <tr data-testid="capa-row">
-              <td class="nc-code">{{ row.ncCode | slice:0:8 }}</td>
-              <td class="description">{{ row.description }}</td>
-              <td>
-                <span [class]="'type-chip type-chip--' + row.type.toLowerCase()"
-                      [attr.data-testid]="'type-' + row.type">
-                  {{ typeLabels[row.type] }}
-                </span>
-              </td>
-              <td>
-                <span [class]="'status-chip status-chip--' + row.status.toLowerCase().replace('_', '-')"
-                      [attr.data-testid]="'status-' + row.status">
-                  {{ statusLabels[row.status] }}
-                </span>
-              </td>
-              <td>{{ row.responsible }}</td>
-              <td>{{ row.dueDate ?? '—' }}</td>
-              <td>{{ row.effectivenessCheckDate ?? '—' }}</td>
-            </tr>
-          }
-        }
-      </tbody>
-    </table>
+  <div class="capa-table-card">
+    <div class="capa-table-header">
+      <span>NC</span>
+      <span>DESCRIÇÃO</span>
+      <span>TIPO</span>
+      <span>STATUS</span>
+      <span>RESPONSÁVEL</span>
+      <span>PRAZO</span>
+      <span>VERIF. EFICÁCIA</span>
+    </div>
+
+    @if (loading()) {
+      @for (_ of [1, 2, 3, 4, 5]; track $index) {
+        <div class="capa-skeleton-row"></div>
+      }
+    } @else if (!page()?.content?.length) {
+      <div class="capa-empty">Nenhuma CAPA encontrada.</div>
+    } @else {
+      @for (row of page()!.content; track row.actionId) {
+        <div class="capa-table-row" data-testid="capa-row">
+          <span class="nc-code">{{ row.ncCode | slice:0:8 }}</span>
+          <span class="capa-desc">{{ row.description }}</span>
+          <span>
+            <span [class]="'type-chip type-chip--' + row.type.toLowerCase()"
+                  [attr.data-testid]="'type-' + row.type">
+              {{ typeLabels[row.type] }}
+            </span>
+          </span>
+          <span>
+            <span [class]="'status-chip status-chip--' + row.status.toLowerCase().replace('_', '-')"
+                  [attr.data-testid]="'status-' + row.status">
+              {{ statusLabels[row.status] }}
+            </span>
+          </span>
+          <span class="capa-responsible">{{ row.responsible }}</span>
+          <span class="capa-date">{{ row.dueDate ?? '—' }}</span>
+          <span class="capa-date">{{ row.effectivenessCheckDate ?? '—' }}</span>
+        </div>
+      }
+    }
   </div>
 
   @if (page() && page()!.totalPages > 1) {
-    <div class="pagination">
-      <button class="btn btn--secondary btn--sm"
-              [disabled]="page()!.number === 0"
-              (click)="goToPage(page()!.number - 1)">← Anterior</button>
-      <span class="pagination__info">{{ page()!.number + 1 }} / {{ page()!.totalPages }}</span>
-      <button class="btn btn--secondary btn--sm"
-              [disabled]="page()!.number >= page()!.totalPages - 1"
-              (click)="goToPage(page()!.number + 1)">Próxima →</button>
+    <div class="capa-pagination">
+      <button class="pg-btn" [disabled]="page()!.number === 0" (click)="goToPage(page()!.number - 1)">← Anterior</button>
+      <span class="pg-info">{{ page()!.number + 1 }} / {{ page()!.totalPages }}</span>
+      <button class="pg-btn" [disabled]="page()!.number >= page()!.totalPages - 1" (click)="goToPage(page()!.number + 1)">Próxima →</button>
     </div>
   }
+
 </div>

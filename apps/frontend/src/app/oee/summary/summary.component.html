@@ -1,33 +1,5 @@
-<div class="page">
+<div class="sp-page page">
   <h2>Period Summary</h2>
-
-  <!-- Import Section -->
-  <section class="import-section">
-    <h3>Importar dados do Dynamics</h3>
-    <div class="import-row">
-      <input
-        type="file"
-        accept=".xlsx"
-        (change)="onFileSelected($event)"
-        #fileInput
-      />
-      <button
-        type="button"
-        class="btn btn--primary btn--sm"
-        data-testid="import-btn"
-        [disabled]="!selectedFile() || importing()"
-        (click)="uploadFile()"
-      >
-        {{ importing() ? 'Importando…' : 'Importar Excel' }}
-      </button>
-    </div>
-    @if (importSuccess()) {
-      <p class="msg msg--success" data-testid="import-success">{{ importSuccess() }}</p>
-    }
-    @if (importError()) {
-      <p class="msg msg--error" data-testid="import-error">{{ importError() }}</p>
-    }
-  </section>
 
   <!-- Period Filter -->
   <form class="filters" (ngSubmit)="search()">

@@ -1,71 +1,85 @@
-<div class="dashboard-page">
+<div class="sp-page" data-testid="maintenance-dashboard">
 
-  <div class="page-header">
-    <h2>Dashboard de Manutenção</h2>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">MANUTENÇÃO · TPM</p>
+      <h1 class="sp-title">Dashboard <span class="sp-title-accent">/ Manutenção</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      <a routerLink="/maintenance/work-orders" class="sp-btn sp-btn--primary">Ver OS →</a>
+    </div>
   </div>
 
-  <!-- Critical Stock Card -->
-  <section class="card card--critical" aria-labelledby="critical-stock-title">
-    <div class="card__header">
-      <h3 id="critical-stock-title" class="card__title">
-        <span class="card__icon" aria-hidden="true">⚠</span>
-        Estoque Crítico
-      </h3>
-      <a routerLink="/maintenance/spare-parts" class="card__action-link">Ver catálogo</a>
+  <!-- Estoque Crítico -->
+  <section class="stock-card" aria-labelledby="critical-stock-title">
+    <div class="stock-card__header">
+      <div>
+        <p class="stock-card__kicker">ESTOQUE CRÍTICO</p>
+        <h2 id="critical-stock-title" class="stock-card__title">Peças abaixo do mínimo</h2>
+      </div>
+      <a routerLink="/maintenance/spare-parts" class="stock-card__link">Ver catálogo →</a>
     </div>
 
     @if (loading()) {
-      <div class="skeleton-list" data-testid="skeleton" aria-label="Carregando…">
-        @for (i of [1, 2, 3]; track i) {
-          <div class="skeleton-row"></div>
-        }
+      <div class="stock-skeleton">
+        @for (i of [1, 2, 3]; track i) { <div class="stock-skeleton-row"></div> }
       </div>
     } @else if (errorMsg()) {
-      <div class="error-banner" data-testid="error" role="alert">
+      <div class="sp-error" data-testid="error" role="alert">
         <p>{{ errorMsg() }}</p>
-        <button type="button" class="btn btn--secondary btn--sm" (click)="loadCriticalStock()">
+        <button type="button" class="sp-btn sp-btn--secondary" (click)="loadCriticalStock()">
           Tentar novamente
         </button>
       </div>
     } @else if (criticalParts().length === 0) {
-      <div class="empty-state" data-testid="empty">
-        <span class="empty-state__icon" aria-hidden="true">✅</span>
-        <p>Todos os estoques estão acima do mínimo.</p>
+      <div class="stock-empty" data-testid="empty">
+        <span aria-hidden="true">✅</span>
+        Todos os estoques estão acima do mínimo.
       </div>
     } @else {
-      <p class="critical-count" data-testid="critical-count">
+      <p class="stock-count" data-testid="critical-count">
         {{ criticalParts().length }} {{ criticalParts().length === 1 ? 'peça abaixo' : 'peças abaixo' }} do mínimo
       </p>
-      <table class="critical-table" data-testid="critical-table">
-        <thead>
-          <tr>
-            <th>Código</th>
-            <th>Peça</th>
-            <th>Categoria</th>
-            <th>Estoque</th>
-            <th>Mín.</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (part of criticalParts(); track part.id) {
-            <tr data-testid="critical-row">
-              <td class="part-code">{{ part.code }}</td>
-              <td>{{ part.name }}</td>
-              <td>{{ part.category ?? '—' }}</td>
-              <td class="stock-critical">{{ part.stockQty }}</td>
-              <td>{{ part.minStockQty }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+
+      <div class="stock-table" data-testid="critical-table">
+        <div class="stock-table__header">
+          <span>CÓDIGO</span>
+          <span>PEÇA</span>
+          <span>CATEGORIA</span>
+          <span>ESTOQUE</span>
+          <span>MÍN.</span>
+        </div>
+        @for (part of criticalParts(); track part.id) {
+          <div class="stock-table__row" data-testid="critical-row">
+            <span class="part-code">{{ part.code }}</span>
+            <span class="part-name">{{ part.name }}</span>
+            <span class="part-category">{{ part.category ?? '—' }}</span>
+            <span class="stock-critical">{{ part.stockQty }}</span>
+            <span class="part-min">{{ part.minStockQty }}</span>
+          </div>
+        }
+      </div>
     }
   </section>
 
   <!-- Quick links -->
   <div class="quick-links">
-    <a routerLink="/maintenance/equipment" class="quick-link">Equipamentos</a>
-    <a routerLink="/maintenance/work-orders" class="quick-link">Ordens de Serviço</a>
-    <a routerLink="/maintenance/schedules" class="quick-link">Planos Preventivos</a>
-    <a routerLink="/maintenance/spare-parts" class="quick-link">Catálogo de Peças</a>
+    <a routerLink="/maintenance/equipment" class="quick-link">
+      <p class="quick-link__kicker">ATIVOS</p>
+      <p class="quick-link__title">Equipamentos</p>
+    </a>
+    <a routerLink="/maintenance/work-orders" class="quick-link">
+      <p class="quick-link__kicker">OS</p>
+      <p class="quick-link__title">Ordens de Serviço</p>
+    </a>
+    <a routerLink="/maintenance/schedules" class="quick-link">
+      <p class="quick-link__kicker">PREVENTIVA</p>
+      <p class="quick-link__title">Planos Preventivos</p>
+    </a>
+    <a routerLink="/maintenance/spare-parts" class="quick-link">
+      <p class="quick-link__kicker">ESTOQUE</p>
+      <p class="quick-link__title">Catálogo de Peças</p>
+    </a>
   </div>
+
 </div>

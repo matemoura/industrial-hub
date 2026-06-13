@@ -1,10 +1,15 @@
-<div class="shifts-page">
+<div class="shifts-page sp-page">
 
-  <div class="page-header">
-    <h2>Turnos</h2>
-    <button class="btn btn--primary" type="button" (click)="openCreateForm()">
-      + Novo Turno
-    </button>
+  <div class="sp-page-header">
+    <div>
+      <p class="sp-kicker">ADMINISTRAÇÃO · TURNOS</p>
+      <h1 class="sp-title">Turnos <span class="sp-title-accent">/ Gestão</span></h1>
+    </div>
+    <div class="sp-page-actions">
+      <button class="sp-btn sp-btn--primary" type="button" (click)="openCreateForm()">
+        + Novo Turno
+      </button>
+    </div>
   </div>
 
   <!-- Snackbar -->
@@ -142,10 +147,10 @@
         }
 
         <div class="form-actions">
-          <button type="button" class="btn btn--secondary" (click)="closeForm()">Cancelar</button>
+          <button type="button" class="sp-btn sp-btn--secondary" (click)="closeForm()">Cancelar</button>
           <button
             type="submit"
-            class="btn btn--primary"
+            class="sp-btn sp-btn--primary"
             [disabled]="form.invalid || submitting()"
             data-testid="btn-save"
           >
@@ -173,7 +178,7 @@
         <strong>{{ selectedShift()?.name }}</strong>?
       </p>
       <div class="form-actions">
-        <button type="button" class="btn btn--secondary" (click)="cancelDeactivate()">Cancelar</button>
+        <button type="button" class="sp-btn sp-btn--secondary" (click)="cancelDeactivate()">Cancelar</button>
         <button
           type="button"
           class="btn btn--danger"

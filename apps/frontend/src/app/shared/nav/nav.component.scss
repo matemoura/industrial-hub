@@ -44,8 +44,12 @@
 // ── Topbar ────────────────────────────────────────────────────────────────────
 .topbar {
   height: 60px;
-  background: linear-gradient(135deg, #1F3A4A 0%, #5F88A1 55%, #56A4BB 100%);
-  color: #fff;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #dbe6ea;
+  box-shadow: 0 1px 0 rgba(86, 164, 187, 0.10);
+  color: #1F3A4A;
   display: flex;
   align-items: center;
   padding: 0 28px;
@@ -53,9 +57,9 @@
   flex-shrink: 0;
   position: relative;
   z-index: 100;
-  min-width: 0;   /* impede overflow no flexbox */
-  overflow: hidden;
-  box-shadow: 0 2px 12px rgba(31, 58, 74, 0.3), 0 1px 0 rgba(156, 229, 238, 0.12);
+  min-width: 0;
+  overflow: visible;
+  animation: msbFadeUp 0.4s ease both;
 }
 
 // ── Marca ─────────────────────────────────────────────────────────────────────
@@ -63,13 +67,21 @@
   flex-shrink: 0;
   display: flex;
   align-items: center;
-  min-width: 200px;
+  min-width: auto;
 }
 
 .brand-logo {
   display: block;
-  height: 34px;
+  height: 30px;
   width: auto;
+}
+
+// ── Divisor ───────────────────────────────────────────────────────────────────
+.topbar-divider {
+  width: 1px;
+  height: 22px;
+  background: #dbe6ea;
+  flex-shrink: 0;
 }
 
 // ── Breadcrumb ────────────────────────────────────────────────────────────────
@@ -78,13 +90,14 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 13px;
+  font-size: 12px;
   min-width: 0;
 }
 
 .bc-page {
-  color: #fff;
+  color: #5F88A1;
   font-weight: 600;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -105,13 +118,13 @@
 }
 
 .role-badge {
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.1em;
-  background: rgba(255, 255, 255, 0.16);
-  color: #fff;
-  padding: 3px 9px;
-  border-radius: 20px;
+  letter-spacing: 0.16em;
+  background: #E4F1F5;
+  color: #2F6B80;
+  padding: 5px 12px;
+  border-radius: 999px;
   white-space: nowrap;
 }
 
@@ -120,7 +133,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: rgba(255, 255, 255, 0.85);
+  color: #5d7689;
   background: transparent;
   border: none;
   padding: 6px;
@@ -130,12 +143,12 @@
   text-decoration: none;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.12);
-    color: #fff;
+    background: #F0F6F8;
+    color: #1F3A4A;
   }
 
   &:focus-visible {
-    outline: 2px solid rgba(156, 229, 238, 0.7);
+    outline: 2px solid rgba(86, 164, 187, 0.5);
     outline-offset: 2px;
   }
 }
@@ -164,7 +177,7 @@
   align-items: center;
   justify-content: center;
   padding: 0 3px;
-  border: 1.5px solid #56A4BB;
+  border: 1.5px solid #fff;
 }
 
 .notification-panel {
@@ -317,16 +330,16 @@
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
-  background: rgba(255, 255, 255, 0.15);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: #E4F1F5;
+  color: #2F6B80;
+  border: 1px solid #C8E6ED;
   padding: 5px 12px;
   border-radius: 8px;
   cursor: pointer;
   white-space: nowrap;
   transition: background 0.15s;
 
-  &:hover { background: rgba(255, 255, 255, 0.22); }
+  &:hover { background: #d0eaf2; }
 }
 
 .change-password-link {
@@ -336,33 +349,32 @@
 // ── Logout ────────────────────────────────────────────────────────────────────
 .topbar-logout {
   font-family: inherit;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.08em;
-  background: rgba(255, 255, 255, 0.12);
-  color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  padding: 5px 12px;
-  border-radius: 6px;
+  letter-spacing: 0.14em;
+  background: transparent;
+  color: #818286;
+  border: none;
+  padding: 8px 4px;
+  border-radius: 0;
   cursor: pointer;
-  transition: background 0.15s;
+  transition: color 0.2s;
 
-  &:hover { background: rgba(255, 255, 255, 0.2); }
-  &:focus-visible { outline: 2px solid rgba(156, 229, 238, 0.7); outline-offset: 2px; }
+  &:hover { color: #D24A4A; }
+  &:focus-visible { outline: 2px solid rgba(86, 164, 187, 0.5); outline-offset: 2px; }
 }
 
 // ── Avatar ────────────────────────────────────────────────────────────────────
 .topbar-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
   background: linear-gradient(135deg, #56A4BB, #5F88A1);
-  color: #fff;
+  color: #FFFFFF;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   display: grid;
   place-items: center;
-  border: 2px solid rgba(255, 255, 255, 0.3);
   flex-shrink: 0;
   letter-spacing: 0.02em;
 }
@@ -381,15 +393,15 @@
   flex-shrink: 0;
   transition: background 0.15s;
 
-  &:hover { background: rgba(255, 255, 255, 0.12); }
-  &:focus-visible { outline: 2px solid rgba(156, 229, 238, 0.7); outline-offset: 2px; }
+  &:hover { background: #F0F6F8; }
+  &:focus-visible { outline: 2px solid rgba(86, 164, 187, 0.5); outline-offset: 2px; }
 }
 
 .hamburger-line {
   display: block;
   width: 20px;
   height: 2px;
-  background: rgba(255, 255, 255, 0.9);
+  background: #5d7689;
   border-radius: 2px;
   transition: transform 0.2s, opacity 0.2s;
 }
