@@ -36,6 +36,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/industrial_hub
       SPRING_DATASOURCE_USERNAME: hub_user
       SPRING_DATASOURCE_PASSWORD: hub_pass
+      APP_JWT_VALIDATE_SECRET: "false"
+      MANAGEMENT_HEALTH_MAIL_ENABLED: "false"
     ports:
       - "8080:8080"
     depends_on:
@@ -46,6 +48,8 @@ services:
     build:
       context: ../../apps/frontend
     container_name: industrial-hub-frontend
+    environment:
+      BACKEND_URL: http://backend:8080
     ports:
       - "80:80"
     depends_on:
