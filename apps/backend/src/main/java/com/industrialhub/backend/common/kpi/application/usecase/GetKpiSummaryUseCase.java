@@ -6,6 +6,8 @@ import com.industrialhub.backend.maintenance.domain.WorkOrder;
 import com.industrialhub.backend.maintenance.infrastructure.EquipmentRepository;
 import com.industrialhub.backend.maintenance.infrastructure.WorkOrderRepository;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
+import com.industrialhub.backend.production.infrastructure.ImportProductionBatchRepository;
+import com.industrialhub.backend.production.infrastructure.ProductionOrderRepository;
 import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
 import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
@@ -13,6 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.OptionalDouble;
@@ -25,17 +28,23 @@ public class GetKpiSummaryUseCase {
     private final WorkOrderRepository workOrderRepository;
     private final EquipmentRepository equipmentRepository;
     private final OeeCalculator oeeCalculator;
+    private final ProductionOrderRepository productionOrderRepository;
+    private final ImportProductionBatchRepository importBatchRepository;
 
     public GetKpiSummaryUseCase(TimeRecordRepository timeRecordRepository,
                                  NonConformanceRepository nonConformanceRepository,
                                  WorkOrderRepository workOrderRepository,
                                  EquipmentRepository equipmentRepository,
-                                 OeeCalculator oeeCalculator) {
+                                 OeeCalculator oeeCalculator,
+                                 ProductionOrderRepository productionOrderRepository,
+                                 ImportProductionBatchRepository importBatchRepository) {
         this.timeRecordRepository = timeRecordRepository;
         this.nonConformanceRepository = nonConformanceRepository;
         this.workOrderRepository = workOrderRepository;
         this.equipmentRepository = equipmentRepository;
         this.oeeCalculator = oeeCalculator;
+        this.productionOrderRepository = productionOrderRepository;
+        this.importBatchRepository = importBatchRepository;
     }
 
     @Transactional(readOnly = true)
@@ -51,8 +60,13 @@ public class GetKpiSummaryUseCase {
         Double mttr = computeMttrGlobal();
         long activeEquipment = equipmentRepository.countByActiveTrue();
 
+        long totalProductionOrdersOpen = productionOrderRepository.countOpenOrders();
+        long totalProductionOrdersOverdue = productionOrderRepository.countOverdueOrders(LocalDate.now());
+        LocalDateTime lastDynamicsSync = importBatchRepository.findLastSyncAt();
+
         return new KpiSummaryResponse(oeeAvg, totalNcOpen, totalNcCritical,
-                totalWorkOrdersOpen, mttr, activeEquipment);
+                totalWorkOrdersOpen, mttr, activeEquipment,
+                totalProductionOrdersOpen, totalProductionOrdersOverdue, lastDynamicsSync);
     }
 
     private Double computeMttrGlobal() {

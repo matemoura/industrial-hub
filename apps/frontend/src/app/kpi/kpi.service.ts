@@ -9,6 +9,9 @@ export interface KpiSummaryResponse {
   totalWorkOrdersOpen: number;
   mttrGlobalHours: number | null;
   activeEquipmentCount: number;
+  totalProductionOrdersOpen: number;
+  totalProductionOrdersOverdue: number;
+  lastDynamicsSync: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

@@ -19,7 +19,7 @@
 
   <!-- ── OEE Hero Card ── -->
   <div class="oee-hero" [class.oee-hero--loading]="loading()">
-    <div class="oee-hero__wave" aria-hidden="true"></div>
+    <img src="grafismo-ondas.svg" alt="" class="oee-hero__grafismo" aria-hidden="true">
     <div class="oee-hero__content">
       <div class="oee-hero__header">
         <div>
@@ -41,7 +41,7 @@
             <app-gauge
               [value]="oeeValue()"
               [target]="0.8"
-              [color]="oeeOk() ? '#56A4BB' : '#E8A93C'"
+              [color]="!oeeHasData() ? '#C8D8DF' : oeeOk() ? '#56A4BB' : '#E8A93C'"
               [size]="180"
               sub="OEE GLOBAL"
               [label]="oeeDisplay()"
@@ -54,7 +54,7 @@
         <!-- KPIs laterais -->
         <div class="oee-kpis">
           @if (loading()) {
-            @for (i of [1,2,3]; track i) { <div class="kpi-side-skeleton"></div> }
+            @for (i of [1,2,3,4]; track i) { <div class="kpi-side-skeleton"></div> }
           } @else {
             <a routerLink="/qms/non-conformances" class="kpi-side" data-testid="kpi-nc-open">
               <span class="kpi-side__label">NCs ABERTAS</span>
@@ -70,7 +70,7 @@
             </a>
 
             <a routerLink="/maintenance/equipment" class="kpi-side" data-testid="kpi-wo-open">
-              <span class="kpi-side__label">ORDENS ABERTAS</span>
+              <span class="kpi-side__label">OS MANUTENÇÃO</span>
               <span class="kpi-side__value">{{ kpi()?.totalWorkOrdersOpen ?? '–' }}</span>
               @if (kpi()?.mttrGlobalHours != null) {
                 <span class="kpi-side__note">MTTR {{ kpi()!.mttrGlobalHours!.toFixed(1) }}h</span>
@@ -82,14 +82,26 @@
               <span class="kpi-side__value">{{ kpi()?.activeEquipmentCount ?? '–' }}</span>
               <span class="kpi-side__note kpi-side__note--ok">● EM OPERAÇÃO</span>
             </a>
+
+            <a routerLink="/production/planning-board" class="kpi-side" data-testid="kpi-prod-orders">
+              <span class="kpi-side__label">OPs PRODUÇÃO</span>
+              <span class="kpi-side__value"
+                    [class.kpi-side__value--danger]="prodOrdersOverdueAlert()">
+                {{ kpi()?.totalProductionOrdersOpen ?? '–' }}
+              </span>
+              @if (prodOrdersOverdueAlert()) {
+                <span class="kpi-side__badge kpi-side__badge--danger">
+                  {{ kpi()!.totalProductionOrdersOverdue }} ATRASADA{{ kpi()!.totalProductionOrdersOverdue > 1 ? 'S' : '' }}
+                </span>
+              } @else {
+                <span class="kpi-side__note">abertas</span>
+              }
+            </a>
           }
         </div>
       </div>
     </div>
   </div>
-
-  <!-- ── Linha de separação com onda ── -->
-  <div class="wave-divider" aria-hidden="true"></div>
 
   <!-- ── Grid de cards ── -->
   <div class="cards-grid">
@@ -162,6 +174,49 @@
       <a routerLink="/maintenance/equipment" class="sp-card__link">Ver equipamentos →</a>
     </div>
 
+    <!-- Produção Card -->
+    <div class="sp-card" data-testid="card-production">
+      <p class="sp-card__kicker">PRODUÇÃO · DYNAMICS</p>
+      <div class="sp-card__title-row">
+        <p class="sp-card__title">
+          @if (!loading() && kpi()) {
+            {{ kpi()!.totalProductionOrdersOpen }}<span class="sp-card__title-muted"> OPs abertas</span>
+          } @else { – }
+        </p>
+        @if (!loading() && prodOrdersOverdueAlert()) {
+          <span class="sp-badge sp-badge--danger">
+            <span class="badge-pulse" aria-hidden="true"></span>
+            {{ kpi()!.totalProductionOrdersOverdue }} ATRASADAS
+          </span>
+        }
+      </div>
+      @if (!loading() && kpi()) {
+        <div class="maint-metrics">
+          <div class="maint-metric">
+            <span class="maint-metric__label">ABERTAS</span>
+            <span class="maint-metric__value">{{ kpi()!.totalProductionOrdersOpen }}</span>
+          </div>
+          <div class="maint-metric">
+            <span class="maint-metric__label"
+                  [class.maint-metric__label--danger]="prodOrdersOverdueAlert()">ATRASADAS</span>
+            <span class="maint-metric__value"
+                  [class.maint-metric__value--danger]="prodOrdersOverdueAlert()">
+              {{ kpi()!.totalProductionOrdersOverdue }}
+            </span>
+          </div>
+        </div>
+        <p class="sp-card__sync-note">
+          Sinc: {{ lastSyncDisplay() }}
+        </p>
+      } @else if (loading()) {
+        <div class="maint-skeleton"></div>
+      }
+      <div class="sp-card__links">
+        <a routerLink="/production/planning-board" class="sp-card__link">Planning Board →</a>
+        <a routerLink="/production/overview" class="sp-card__link">Visão Geral →</a>
+      </div>
+    </div>
+
     <!-- OEE Link Card -->
     <div class="sp-card" data-testid="card-oee-link">
       <p class="sp-card__kicker">EFICIÊNCIA · OEE</p>
@@ -177,31 +232,54 @@
 
   </div>
 
-  <!-- ── Conceito MSB hero ── -->
+  <!-- ── Banda da marca MSB ── -->
   <div class="msb-hero">
-    <div class="msb-hero__wave" aria-hidden="true"></div>
+    <img src="grafismo-ondas.svg" alt="" class="msb-hero__grafismo" aria-hidden="true">
     <div class="msb-hero__content">
       <div class="msb-hero__left">
-        <p class="msb-hero__kicker">CONCEITO MSB</p>
-        <h2 class="msb-hero__headline">Cuidado<br>nos processos.</h2>
+        <p class="msb-hero__kicker">O QUE PRODUZIMOS HOJE</p>
+        <h2 class="msb-hero__headline">Cuidado<br><em>nos processos.</em></h2>
         <p class="msb-hero__body">
-          Cada produto da MSB passa por rigorosos pontos de inspeção.
-          Qualidade e rastreabilidade são os pilares da nossa operação industrial.
+          Cada dispositivo que sai desta planta passa por rigorosos pontos de inspeção.
+          Qualidade e rastreabilidade são os pilares da operação.
+        </p>
+        <div class="msb-hero__toggle">
+          <button type="button"
+                  class="msb-hero__line-btn"
+                  [class.msb-hero__line-btn--active]="brandLine() === 'uro'"
+                  (click)="setBrandLine('uro')">
+            Safira · Urologia
+          </button>
+          <button type="button"
+                  class="msb-hero__line-btn"
+                  [class.msb-hero__line-btn--active]="brandLine() === 'vasc'"
+                  (click)="setBrandLine('vasc')">
+            Twist · Vascular
+          </button>
+        </div>
+        <p class="msb-hero__line-caption">
+          {{ brandLine() === 'uro' ? 'Linha Safira — cestas ureterais de alta precisão' : 'Linha Twist — cateteres vasculares de alta performance' }}
         </p>
       </div>
+
+      <div class="msb-hero__product" aria-hidden="true">
+        <img [src]="brandLine() === 'uro' ? 'safira-curvado.png' : 'twist-cut.png'"
+             [alt]="brandLine() === 'uro' ? 'Safira — linha Urologia' : 'Twist — linha Vascular'" />
+      </div>
+
       <div class="msb-hero__right">
         @if (role() === 'SUPERVISOR' || role() === 'ADMIN') {
           <a routerLink="/analytics/oee" class="msb-hero__stat-link">
-            <span class="msb-hero__stat-label">ANALYTICS OEE</span>
+            <span class="msb-hero__stat-label">{{ 'nav.analytics_oee' | translate }}</span>
             <span class="msb-hero__stat-arrow">→</span>
           </a>
           <a routerLink="/production/overview" class="msb-hero__stat-link">
-            <span class="msb-hero__stat-label">VISÃO GERAL PRODUÇÃO</span>
+            <span class="msb-hero__stat-label">{{ 'nav.production_overview' | translate }}</span>
             <span class="msb-hero__stat-arrow">→</span>
           </a>
         }
         <a routerLink="/oee/summary" class="msb-hero__stat-link">
-          <span class="msb-hero__stat-label">RESUMO OPERACIONAL</span>
+          <span class="msb-hero__stat-label">{{ 'nav.operational_summary' | translate }}</span>
           <span class="msb-hero__stat-arrow">→</span>
         </a>
       </div>

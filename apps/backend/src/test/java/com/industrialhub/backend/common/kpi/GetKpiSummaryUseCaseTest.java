@@ -15,6 +15,8 @@ import com.industrialhub.backend.oee.domain.TimeRecord;
 import com.industrialhub.backend.oee.infrastructure.TimeRecordRepository;
 import com.industrialhub.backend.qms.domain.NcSeverity;
 import com.industrialhub.backend.qms.domain.NcStatus;
+import com.industrialhub.backend.production.infrastructure.ImportProductionBatchRepository;
+import com.industrialhub.backend.production.infrastructure.ProductionOrderRepository;
 import com.industrialhub.backend.qms.infrastructure.NonConformanceRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +44,8 @@ class GetKpiSummaryUseCaseTest {
     @Mock private NonConformanceRepository nonConformanceRepository;
     @Mock private WorkOrderRepository workOrderRepository;
     @Mock private EquipmentRepository equipmentRepository;
+    @Mock private ProductionOrderRepository productionOrderRepository;
+    @Mock private ImportProductionBatchRepository importProductionBatchRepository;
 
     private GetKpiSummaryUseCase useCase;
 
@@ -50,7 +54,8 @@ class GetKpiSummaryUseCaseTest {
         OeeCalculator oeeCalculator = new OeeCalculator();
         useCase = new GetKpiSummaryUseCase(
                 timeRecordRepository, nonConformanceRepository,
-                workOrderRepository, equipmentRepository, oeeCalculator);
+                workOrderRepository, equipmentRepository, oeeCalculator,
+                productionOrderRepository, importProductionBatchRepository);
     }
 
     @Test
@@ -158,6 +163,9 @@ class GetKpiSummaryUseCaseTest {
         when(workOrderRepository.countOpenByEquipmentId(null)).thenReturn(3L);
         when(equipmentRepository.countByActiveTrue()).thenReturn(12L);
         when(workOrderRepository.findCompletedCorrectiveForMetrics(null)).thenReturn(List.of());
+        when(productionOrderRepository.countOpenOrders()).thenReturn(0L);
+        when(productionOrderRepository.countOverdueOrders(any(LocalDate.class))).thenReturn(0L);
+        when(importProductionBatchRepository.findLastSyncAt()).thenReturn(null);
 
         KpiSummaryResponse result = useCase.execute();
 
@@ -172,5 +180,8 @@ class GetKpiSummaryUseCaseTest {
         when(nonConformanceRepository.countBySeverity(NcSeverity.CRITICAL)).thenReturn(0L);
         when(workOrderRepository.countOpenByEquipmentId(null)).thenReturn(0L);
         when(equipmentRepository.countByActiveTrue()).thenReturn(0L);
+        when(productionOrderRepository.countOpenOrders()).thenReturn(0L);
+        when(productionOrderRepository.countOverdueOrders(any(LocalDate.class))).thenReturn(0L);
+        when(importProductionBatchRepository.findLastSyncAt()).thenReturn(null);
     }
 }
