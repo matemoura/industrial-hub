@@ -197,6 +197,15 @@ public class DynamicsExcelParser {
         if (cell.getCellType() == CellType.NUMERIC) {
             return BigDecimal.valueOf(cell.getNumericCellValue()).setScale(4, RoundingMode.HALF_UP);
         }
+        if (cell.getCellType() == CellType.STRING) {
+            // Dynamics exports decimal hours as text (e.g. "01.54" = 1.54h, "00.74" = 0.74h)
+            String val = cell.getStringCellValue().trim().replace(",", ".");
+            try {
+                return new BigDecimal(val).setScale(4, RoundingMode.HALF_UP);
+            } catch (NumberFormatException e) {
+                return BigDecimal.ZERO;
+            }
+        }
         return BigDecimal.ZERO;
     }
 

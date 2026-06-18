@@ -59,8 +59,6 @@ public class DataInitializer implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         createIfAbsent("admin", "admin", Role.ADMIN, "admin@msbbrasil.com");
-        createIfAbsent("supervisor", "supervisor", Role.SUPERVISOR, "supervisor@msbbrasil.com");
-        createIfAbsent("operator", "operator", Role.OPERATOR, "operator@msbbrasil.com");
 
         seedAlertThresholds();
         seedSlaRules();
