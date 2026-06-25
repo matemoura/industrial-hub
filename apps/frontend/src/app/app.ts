@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject, OnInit } from '@angular/core';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
+import { HttpClient } from '@angular/common/http';
 import { toSignal } from '@angular/core/rxjs-interop';
-import { filter, map, startWith } from 'rxjs';
+import { filter, map, startWith, catchError, EMPTY } from 'rxjs';
 import { NavComponent } from './shared/nav/nav.component';
 import { SidebarComponent } from './shared/shell/sidebar.component';
 import { ShellStateService } from './shared/shell/shell-state.service';
@@ -15,8 +16,9 @@ import { AutoTranslateDirective } from './shared/i18n/auto-translate.directive';
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App {
+export class App implements OnInit {
   private readonly router = inject(Router);
+  private readonly http = inject(HttpClient);
   readonly shellState = inject(ShellStateService);
 
   readonly showNav = toSignal(
@@ -27,4 +29,8 @@ export class App {
     ),
     { initialValue: true },
   );
+
+  ngOnInit(): void {
+    this.http.get('/api/actuator/health').pipe(catchError(() => EMPTY)).subscribe();
+  }
 }
