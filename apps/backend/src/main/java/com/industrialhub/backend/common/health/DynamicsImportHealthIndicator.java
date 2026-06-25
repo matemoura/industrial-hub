@@ -23,7 +23,7 @@ public class DynamicsImportHealthIndicator extends AbstractHealthIndicator {
         if (hasRecentImport) {
             builder.up().withDetail("lastImport", "within 30 days");
         } else {
-            builder.down().withDetail("warning", "No import in last 30 days");
+            builder.up().withDetail("warning", "No import in last 30 days");
         }
     }
 }
