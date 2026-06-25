@@ -9,6 +9,7 @@ import com.industrialhub.backend.production.infrastructure.CycleTimeRepository;
 import com.industrialhub.backend.production.infrastructure.ImportProductionBatchRepository;
 import com.industrialhub.backend.production.infrastructure.ProductRepository;
 import com.industrialhub.backend.production.infrastructure.ProductionOrderRepository;
+import com.industrialhub.backend.production.infrastructure.SterilizationLoadRepository;
 import org.apache.poi.ss.usermodel.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,19 +37,22 @@ public class ImportProductionOrdersUseCase {
     private final AuditService auditService;
     private final CycleTimeRepository cycleTimeRepository;
     private final GetStaffingConfigUseCase getStaffingConfig;
+    private final SterilizationLoadRepository loadRepository;
 
     public ImportProductionOrdersUseCase(ProductRepository productRepository,
                                           ProductionOrderRepository orderRepository,
                                           ImportProductionBatchRepository batchRepository,
                                           AuditService auditService,
                                           CycleTimeRepository cycleTimeRepository,
-                                          GetStaffingConfigUseCase getStaffingConfig) {
+                                          GetStaffingConfigUseCase getStaffingConfig,
+                                          SterilizationLoadRepository loadRepository) {
         this.productRepository = productRepository;
         this.orderRepository = orderRepository;
         this.batchRepository = batchRepository;
         this.auditService = auditService;
         this.cycleTimeRepository = cycleTimeRepository;
         this.getStaffingConfig = getStaffingConfig;
+        this.loadRepository = loadRepository;
     }
 
     @Transactional
@@ -93,11 +97,21 @@ public class ImportProductionOrdersUseCase {
             // SEC-117: cache StaffingConfig once before the loop — avoids N queries for each OP row
             StaffingConfig staffingConfig = getStaffingConfig.getOrCreate();
 
-            // Pre-load all existing products and orders into maps — avoids N+1 queries
-            Map<String, Product>          existingProducts = new java.util.HashMap<>();
-            Map<String, ProductionOrder>  existingOrders   = new java.util.HashMap<>();
+            // Pre-load all existing products, orders and sterilization loads — avoids N+1 queries
+            Map<String, Product>           existingProducts = new java.util.HashMap<>();
+            Map<String, ProductionOrder>   existingOrders   = new java.util.HashMap<>();
+            Map<String, SterilizationLoad> loadsBySequencia = new java.util.HashMap<>();
             productRepository.findAll().forEach(p -> existingProducts.put(p.getDynamicsCode(), p));
             orderRepository.findAll().forEach(o -> existingOrders.put(o.getDynamicsOrderNumber(), o));
+            loadRepository.findAll().forEach(l -> {
+                if (l.getBatchCode() != null && !l.getBatchCode().isBlank()) {
+                    loadsBySequencia.put(l.getBatchCode().trim(), l);
+                }
+            });
+
+            int importYear = LocalDate.now().getYear();
+            // Track next sequence locally to avoid repeated DB queries within the same transaction
+            int[] nextSeq = { loadRepository.nextSequenceForYear(importYear) };
 
             for (int i = 1; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
@@ -139,6 +153,11 @@ public class ImportProductionOrdersUseCase {
                     BigDecimal plannedQty = plannedQtyD != null ? BigDecimal.valueOf(plannedQtyD) : BigDecimal.ZERO;
                     BigDecimal producedQty = producedQtyD != null ? BigDecimal.valueOf(producedQtyD) : null;
 
+                    // Resolve sterilization load from the Sequencia column (Dynamics carga/família grouping)
+                    String sequencia = ExcelParsingHelper.getStringByAliases(row, colIndex,
+                            "sequencia", "sequência");
+                    SterilizationLoad resolvedLoad = resolveLoad(sequencia, loadsBySequencia, importYear, nextSeq, username);
+
                     ProductionOrder existingOrder = existingOrders.get(orderNumber.trim());
                     if (existingOrder != null) {
                         // Update Dynamics-managed fields; preserve Hub-managed fields
@@ -152,7 +171,10 @@ public class ImportProductionOrdersUseCase {
                         if (!existingOrder.isPeopleOverridden()) {
                             existingOrder.setPlannedPeople(calculateStaffing(product, plannedQty, dueDate, staffingConfig));
                         }
-                        // Do NOT touch: peopleOverridden, sterilizationLoad (Hub-managed)
+                        // Sequencia drives sterilization load; blank Sequencia preserves existing Hub assignment
+                        if (resolvedLoad != null) {
+                            existingOrder.setSterilizationLoad(resolvedLoad);
+                        }
                         orderRepository.save(existingOrder);
                         updated++;
                     } else {
@@ -168,6 +190,7 @@ public class ImportProductionOrdersUseCase {
                                 .startDate(startDate)
                                 .dueDate(dueDate)
                                 .plannedPeople(staffing)
+                                .sterilizationLoad(resolvedLoad)
                                 .importedAt(LocalDateTime.now())
                                 .updatedAt(LocalDateTime.now())
                                 .build();
@@ -223,6 +246,29 @@ public class ImportProductionOrdersUseCase {
 
         double totalSeconds = plannedQty.doubleValue() * secondsPerUnit;
         return (int) Math.ceil(totalSeconds / ((double) workdaySeconds * workdays));
+    }
+
+    /**
+     * Finds an existing SterilizationLoad by batchCode (= Sequencia) or creates a new one.
+     * Returns null when sequencia is blank — preserves Hub-managed assignment on existing orders.
+     */
+    private SterilizationLoad resolveLoad(String sequencia,
+                                          Map<String, SterilizationLoad> cache,
+                                          int year, int[] nextSeq, String username) {
+        if (sequencia == null || sequencia.isBlank()) return null;
+        String key = sequencia.trim();
+        return cache.computeIfAbsent(key, k -> {
+            String loadNumber = "CARGA-%d-%03d".formatted(year, nextSeq[0]++);
+            SterilizationLoad load = SterilizationLoad.builder()
+                    .loadNumber(loadNumber)
+                    .batchCode(k)
+                    .status(LoadStatus.OPEN)
+                    .method(SterilizationMethod.OTHER)
+                    .createdBy(username)
+                    .createdAt(LocalDateTime.now())
+                    .build();
+            return loadRepository.save(load);
+        });
     }
 
     private ImportProductionBatchResponse saveBatch(String fileName, String username,
