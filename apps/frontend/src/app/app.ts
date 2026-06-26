@@ -33,7 +33,7 @@ export class App implements OnInit, OnDestroy {
   );
 
   ngOnInit(): void {
-    const ping = () => this.http.get('/api/actuator/health').pipe(catchError(() => EMPTY)).subscribe();
+    const ping = () => this.http.get('/actuator/health').pipe(catchError(() => EMPTY)).subscribe();
     ping();
     this.keepAliveInterval = setInterval(ping, 10 * 60 * 1000);
   }
