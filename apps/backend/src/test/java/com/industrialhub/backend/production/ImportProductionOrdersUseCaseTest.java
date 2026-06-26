@@ -9,6 +9,7 @@ import com.industrialhub.backend.production.infrastructure.CycleTimeRepository;
 import com.industrialhub.backend.production.infrastructure.ImportProductionBatchRepository;
 import com.industrialhub.backend.production.infrastructure.ProductRepository;
 import com.industrialhub.backend.production.infrastructure.ProductionOrderRepository;
+import com.industrialhub.backend.production.infrastructure.SterilizationLoadRepository;
 import com.industrialhub.backend.production.domain.CycleTime;
 import com.industrialhub.backend.production.domain.StaffingConfig;
 import org.apache.poi.ss.usermodel.*;
@@ -40,6 +41,7 @@ class ImportProductionOrdersUseCaseTest {
     @Mock private AuditService auditService;
     @Mock private CycleTimeRepository cycleTimeRepository;
     @Mock private GetStaffingConfigUseCase getStaffingConfig;
+    @Mock private SterilizationLoadRepository loadRepository;
 
     private ImportProductionOrdersUseCase useCase;
 
@@ -47,7 +49,7 @@ class ImportProductionOrdersUseCaseTest {
     void setUp() {
         useCase = new ImportProductionOrdersUseCase(
                 productRepository, orderRepository, batchRepository, auditService,
-                cycleTimeRepository, getStaffingConfig);
+                cycleTimeRepository, getStaffingConfig, loadRepository);
     }
 
     private MockMultipartFile buildExcel(String... rows) throws Exception {
